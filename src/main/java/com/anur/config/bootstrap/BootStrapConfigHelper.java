@@ -8,11 +8,11 @@ import com.anur.util.ConfigHelper;
  */
 public class BootStrapConfigHelper extends ConfigHelper {
 
-    public static Integer getServerProt() {
-        Optional.ofNullable(RESOURCE_BUNDLE.getString(BootStrapConfigConstant.SERVER_PORT))
-                .map(port -> Integer.valueOf(port))
-                .orElseThrow();
-    }
+//    public static Integer getServerProt() {
+//        Optional.ofNullable(RESOURCE_BUNDLE.getString(BootStrapConfigConstant.SERVER_PORT))
+//                .map(port -> Integer.valueOf(port))
+//                .orElseThrow();
+//    }
 
     public static class BootStrapConfigConstant {
 
@@ -21,5 +21,4 @@ public class BootStrapConfigHelper extends ConfigHelper {
         public static final String CLIENT_ADDR = "client.addr";
     }
 
-    public static class BootstrapConfigIncorrectException
 }
