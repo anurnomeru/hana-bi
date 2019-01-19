@@ -10,9 +10,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
  */
-public class HanabiHandler extends ChannelInboundHandlerAdapter {
+public class ServerHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(HanabiHandler.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(ServerHandler.class);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {

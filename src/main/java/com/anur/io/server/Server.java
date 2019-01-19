@@ -39,7 +39,7 @@ public class Server {
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
-                                                .addLast(new HanabiHandler());
+                                                .addLast(new ServerHandler());
                                }
                            });
 
