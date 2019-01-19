@@ -1,9 +1,6 @@
-package com.anur.io;
+package com.anur.io.server;
 
 import java.net.InetSocketAddress;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.anur.io.handler.InitialHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -11,6 +8,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
  *
@@ -24,10 +22,7 @@ public class Server {
         this.port = port;
     }
 
-    static Logger logger = LoggerFactory.getLogger("123123");
-
     public static void main(String[] args) throws InterruptedException {
-        logger.info("123123123");
         new Server(9876).start();
     }
 
@@ -44,7 +39,7 @@ public class Server {
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
-                                                .addLast(new InitialHandler());
+                                                .addLast(new HanabiHandler());
                                }
                            });
 
