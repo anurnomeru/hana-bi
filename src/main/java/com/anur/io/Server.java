@@ -1,6 +1,9 @@
 package com.anur.io;
 
 import java.net.InetSocketAddress;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.anur.io.handler.InitialHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -21,9 +24,11 @@ public class Server {
         this.port = port;
     }
 
+    static Logger logger = LoggerFactory.getLogger("123123");
+
     public static void main(String[] args) throws InterruptedException {
-        int port = Integer.parseInt(args[0]);
-        new Server(port).start();
+        logger.info("123123123");
+        new Server(9876).start();
     }
 
     public void start() throws InterruptedException {
@@ -39,7 +44,7 @@ public class Server {
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
-                                                .addLast(serverHandler);
+                                                .addLast(new InitialHandler());
                                }
                            });
 
