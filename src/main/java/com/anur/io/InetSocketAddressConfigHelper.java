@@ -11,6 +11,10 @@ import com.anur.util.ConfigHelper;
  */
 public class InetSocketAddressConfigHelper extends ConfigHelper {
 
+    public void refreshConfig() {
+        ConfigHelper.refresh();
+    }
+
     private static Integer getServerPort() {
         return getConfig(ConfigEnum.SERVER_PORT, Integer::valueOf);
     }
@@ -19,7 +23,7 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
     }
 
-    private static List<HanabiInetSocketAddress> getClientPort() {
+    public static List<HanabiInetSocketAddress> getCluster() {
         return getConfigSimilar(ConfigEnum.CLIENT_ADDR, pair -> {
             String serverName = pair.getKey();
             String[] split = pair.getValue()
