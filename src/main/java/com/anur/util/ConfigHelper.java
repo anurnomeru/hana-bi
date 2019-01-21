@@ -12,6 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import com.anur.exception.HanabiException;
 import io.netty.util.internal.StringUtil;
+import javafx.util.Pair;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -52,7 +53,7 @@ public class ConfigHelper {
     /**
      * 根据key模糊得获取某些配置，匹配规则为 key%
      */
-    protected static <T> List<T> getConfigSimilar(ConfigEnum configEnum, Function<String, T> transfer) {
+    protected static <T> List<T> getConfigSimilar(ConfigEnum configEnum, Function<Pair<String, String>, T> transfer) {
         List<T> tList;
         try {
             READ_LOCK.lock();
@@ -65,9 +66,14 @@ public class ConfigHelper {
                 }
             }
 
+            String key = configEnum.key;
+
             tList = keys.stream()
-                        .map(s -> RESOURCE_BUNDLE.getString(s))
-                        .map(transfer)
+                        .map(k -> {
+                            String subKey = k.length() > key.length() ? k.substring(key.length() + 1) : k;
+                            String val = RESOURCE_BUNDLE.getString(k);
+                            return transfer.apply(new Pair<>(subKey, val));
+                        })
                         .collect(Collectors.toList());
         } catch (Throwable e) {
             throw new ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.getKey(), configEnum.getAdv()));
