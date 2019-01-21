@@ -1,12 +1,17 @@
 package com.anur.util;
 
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.anur.exception.HanabiException;
+import io.netty.util.internal.StringUtil;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -19,6 +24,8 @@ public class ConfigHelper {
 
     private static Lock WRITE_LOCK;
 
+    private static String ERROR_FORMATTER = "读取application.properties配置异常，异常项目：%s，建议：%s";
+
     static {
         ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
         READ_LOCK = readWriteLock.readLock();
@@ -29,18 +36,45 @@ public class ConfigHelper {
     /**
      * 根据key获取某个配置
      */
-    protected static <T> T getConfig(String key, Function<String, T> transfer) {
+    protected static <T> T getConfig(ConfigEnum configEnum, Function<String, T> transfer) {
         T t;
         try {
             READ_LOCK.lock();
-            t = Optional.of(key)
-                        .map(s -> RESOURCE_BUNDLE.getString(s))
+            t = Optional.of(RESOURCE_BUNDLE.getString(configEnum.getKey()))
                         .map(transfer)
-                        .orElseThrow(() -> new ApplicationConfigException("读取application.properties配置异常，异常项目：" + key));
+                        .orElseThrow(() -> new ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.getKey(), configEnum.getAdv())));
         } finally {
             READ_LOCK.unlock();
         }
         return t;
+    }
+
+    /**
+     * 根据key模糊得获取某些配置，匹配规则为 key%
+     */
+    protected static <T> List<T> getConfigSimilar(ConfigEnum configEnum, Function<String, T> transfer) {
+        List<T> tList;
+        try {
+            READ_LOCK.lock();
+            Enumeration<String> stringEnumeration = RESOURCE_BUNDLE.getKeys();
+            List<String> keys = new ArrayList<>();
+            while (stringEnumeration.hasMoreElements()) {
+                String k = stringEnumeration.nextElement();
+                if (k.startsWith(configEnum.getKey())) {
+                    keys.add(k);
+                }
+            }
+
+            tList = keys.stream()
+                        .map(s -> RESOURCE_BUNDLE.getString(s))
+                        .map(transfer)
+                        .collect(Collectors.toList());
+        } catch (Throwable e) {
+            throw new ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.getKey(), configEnum.getAdv()));
+        } finally {
+            READ_LOCK.unlock();
+        }
+        return tList;
     }
 
     /**
@@ -60,5 +94,30 @@ public class ConfigHelper {
         public ApplicationConfigException(String message) {
             super(message);
         }
+    }
+
+    public enum ConfigEnum {
+        SERVER_PORT("server.port", "server.port 是本机的对外端口号配置，请检查配置是否正确。"),
+
+        SERVER_NAME("server.name", "server.name 是本机的服务名，应唯一。"),
+
+        CLIENT_ADDR("client.addr", "client.addr 的配置格式应由如下组成：client.addr.{服务名}:{选举leader使用端口号}:{集群内机器通讯使用端口号}");
+
+        ConfigEnum(String key, String adv) {
+            this.key = key;
+            this.adv = adv;
+        }
+
+        public String getKey() {
+            return key;
+        }
+
+        public String getAdv() {
+            return adv;
+        }
+
+        private String key;
+
+        private String adv;
     }
 }

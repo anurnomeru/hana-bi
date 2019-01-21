@@ -1,5 +1,7 @@
 package com.anur.config.bootstrap;
 
+import java.sql.SQLOutput;
+import java.util.List;
 import java.util.function.Function;
 import com.anur.util.ConfigHelper;
 
@@ -9,29 +11,53 @@ import com.anur.util.ConfigHelper;
 public class BootStrapConfigHelper extends ConfigHelper {
 
     public static Integer getServerPort() {
-        return getConfig(BootStrapConfigConstant.SERVER_PORT, Integer::valueOf);
+        return getConfig(ConfigEnum.SERVER_PORT, Integer::valueOf);
     }
 
     public static String getServerName() {
-        return getConfig(BootStrapConfigConstant.SERVER_NAME, Function.identity());
+        return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
     }
 
-    public static String getClientPort() {
-        return getConfig(BootStrapConfigConstant.CLIENT_ADDR, Function.identity());
+    public static List<HanabiInetSocketAddress> getClientPort() {
+        return getConfigSimilar(ConfigEnum.CLIENT_ADDR, s -> {
+            String[] split = s.split(":");
+            return new HanabiInetSocketAddress(split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]));
+        });
     }
 
     public static void main(String[] args) {
+        List<HanabiInetSocketAddress> l = getClientPort();
         System.out.println(getServerPort());
         System.out.println(getServerName());
-        System.out.println(getClientPort());
     }
 
-    public static class BootStrapConfigConstant {
+    /**
+     * 保存了初始化连接另一个客户端需要哪个地址、哪些端口
+     */
+    public static class HanabiInetSocketAddress {
 
-        public static final String SERVER_PORT = "server.port";
+        private String host;
 
-        public static final String SERVER_NAME = "server.name";
+        private int serverPort;
 
-        public static final String CLIENT_ADDR = "client.addr";
+        private int clientPort;
+
+        public HanabiInetSocketAddress(String host, int serverPort, int clientPort) {
+            this.host = host;
+            this.serverPort = serverPort;
+            this.clientPort = clientPort;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public int getServerPort() {
+            return serverPort;
+        }
+
+        public int getClientPort() {
+            return clientPort;
+        }
     }
 }
