@@ -8,7 +8,7 @@ import com.anur.util.ConfigHelper;
  */
 public class BootStrapConfigHelper extends ConfigHelper {
 
-    public static Integer getServerProt() {
+    public static Integer getServerPort() {
         return getConfig(BootStrapConfigConstant.SERVER_PORT, Integer::valueOf);
     }
 
@@ -21,7 +21,7 @@ public class BootStrapConfigHelper extends ConfigHelper {
     }
 
     public static void main(String[] args) {
-        System.out.println(getServerProt());
+        System.out.println(getServerPort());
         System.out.println(getServerName());
         System.out.println(getClientPort());
     }
