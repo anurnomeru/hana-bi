@@ -27,7 +27,7 @@ public class VotesBox {
     }
 
     /**
-     * 投票
+     * 给投票箱投票
      */
     public int vote(Votes votes) {
         return this.lockSupplier(() -> {
@@ -43,11 +43,13 @@ public class VotesBox {
     /**
      * 初始化投票箱
      */
-    public void initVoteBox(int genneration) {
-        this.lockSupplier(() -> {
-            this.generation = genneration;
-            box = new HashMap<>();
-            return null;
+    public int initVoteBox(int generation) {
+        return this.lockSupplier(() -> {
+            if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
+                this.generation = generation;
+                box = new HashMap<>();
+            }
+            return this.generation;
         });
     }
 
