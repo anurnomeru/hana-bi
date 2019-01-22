@@ -2,7 +2,6 @@ package com.anur.core.elect.vote;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
@@ -42,13 +41,14 @@ public abstract class VotesBox extends ReentrantLocker {
     /**
      * 初始化投票箱
      */
-    public int initVoteBox(int generation) {
+    public boolean initVoteBox(int generation) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 this.generation = generation;
                 box = new HashMap<>();
+                return true;
             }
-            return this.generation;
+            return false;
         });
     }
 
@@ -58,7 +58,7 @@ public abstract class VotesBox extends ReentrantLocker {
     public int vote(Votes votes) {
         return this.lockSupplier(() -> {
             if (votes.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
-                this.initVoteBox(this.generation);
+                this.initVoteBox(this.generation);// 必定返回true
             }
 
             box.put(votes.getServerName(), votes.isActive());
