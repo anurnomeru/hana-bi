@@ -14,11 +14,6 @@ import com.anur.core.lock.ReentrantLocker;
 public abstract class VotesBox extends ReentrantLocker {
 
     /**
-     * 如何去成为一个leader
-     */
-    protected abstract void becomeLeader();
-
-    /**
      * 投票箱
      */
     protected Map<String/* serverName */, Boolean/* active */> box;
@@ -34,9 +29,9 @@ public abstract class VotesBox extends ReentrantLocker {
     }
 
     /**
-     * 当选票大于一半以上时调用这个方法
+     * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
-    protected abstract void doWhenMoreThenHalfOfVotes();
+    protected abstract void becomeLeader();
 
     /**
      * 初始化投票箱
@@ -70,7 +65,7 @@ public abstract class VotesBox extends ReentrantLocker {
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.entrySet()
                    .size() >= votesNeed) {
-                this.doWhenMoreThenHalfOfVotes();
+                this.becomeLeader();
             }
 
             return this.generation;
