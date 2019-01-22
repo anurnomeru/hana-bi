@@ -1,4 +1,4 @@
-package com.anur.core.elect;
+package com.anur.core.elect.vote.model;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22

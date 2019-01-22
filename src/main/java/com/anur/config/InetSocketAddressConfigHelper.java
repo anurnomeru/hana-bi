@@ -1,4 +1,4 @@
-package com.anur.io;
+package com.anur.config;
 
 import java.util.List;
 import java.util.function.Function;
