@@ -1,7 +1,7 @@
 package com.anur.core.elect.vote.base;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
@@ -16,7 +16,7 @@ public abstract class VotesBox extends ReentrantLocker {
     /**
      * 投票箱
      */
-    protected Map<String/* serverName */, Boolean/* active */> box;
+    protected Set<String/* serverName */> box;
 
     /**
      * 该投票箱的世代信息
@@ -25,7 +25,7 @@ public abstract class VotesBox extends ReentrantLocker {
 
     public VotesBox() {
         this.generation = 0;
-        this.box = new HashMap<>();
+        this.box = new HashSet<>();
     }
 
     /**
@@ -40,7 +40,7 @@ public abstract class VotesBox extends ReentrantLocker {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 this.generation = generation;
-                box = new HashMap<>();
+                box = new HashSet<>();
                 return true;
             }
             return false;
@@ -56,15 +56,14 @@ public abstract class VotesBox extends ReentrantLocker {
                 this.initVotesBox(this.generation);// 必定返回true
             }
 
-            box.put(votes.getServerName(), votes.isActive());
+            box.add(votes.getServerName());
 
             int clusterSize = InetSocketAddressConfigHelper.getCluster()
                                                            .size();
             int votesNeed = clusterSize / 2 + 1;
 
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
-            if (box.entrySet()
-                   .size() >= votesNeed) {
+            if (box.size() >= votesNeed) {
                 this.becomeLeader();
             }
 
