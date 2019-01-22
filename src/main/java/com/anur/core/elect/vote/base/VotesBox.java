@@ -19,6 +19,11 @@ public abstract class VotesBox extends ReentrantLocker {
     protected Set<String/* serverName */> box;
 
     /**
+     * 投票给了谁的投票记录
+     */
+    protected Votes voteRecord;
+
+    /**
      * 该投票箱的世代信息
      */
     protected int generation;
@@ -48,9 +53,9 @@ public abstract class VotesBox extends ReentrantLocker {
     }
 
     /**
-     * 给投票箱投票
+     * 收到某服务的投票，返回当前世代
      */
-    public int vote(Votes votes) {
+    public int receiveVotes(Votes votes) {
         return this.lockSupplier(() -> {
             if (votes.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 this.initVotesBox(this.generation);// 必定返回true
@@ -68,6 +73,19 @@ public abstract class VotesBox extends ReentrantLocker {
             }
 
             return this.generation;
+        });
+    }
+
+    /**
+     * 给某个服务投票，并返回最新的选票
+     */
+    public Votes vote(Votes votes) {
+        return this.lockSupplier(() -> {
+            if (votes.getGeneration() > this.generation) {
+                this.initVotesBox(votes.getGeneration());
+                this.voteRecord = votes;
+            }
+            return this.voteRecord;
         });
     }
 }

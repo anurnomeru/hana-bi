@@ -2,7 +2,6 @@ package com.anur.core.elect;
 
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.vote.base.VoteController;
-import com.anur.core.elect.vote.base.VotesRecord;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.exception.HanabiException;
@@ -22,14 +21,11 @@ public class Elector extends ReentrantLocker implements VoteController {
 
     private Voter voter;
 
-    private VotesRecord votesRecord;
-
     private Timer timer;
 
     public Elector() {
         this.generation = 0;
         this.voter = new Voter();
-        this.votesRecord = new VotesRecord();
         this.timer = Timer.getInstance();
     }
 
@@ -42,7 +38,7 @@ public class Elector extends ReentrantLocker implements VoteController {
 
             Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
             // 给自己投票
-            voter.vote(votes);
+            voter.receiveVotes(votes);
 
             // 让其他服务给自己投一票
             voter.askForVote();
@@ -56,7 +52,7 @@ public class Elector extends ReentrantLocker implements VoteController {
     public void updateGeneration() {
         this.lockSupplier(() -> {
             generation = generation++;
-            if (!votesRecord.initVotesRecord(generation) || !voter.initVotesBox(generation)) {
+            if (!voter.initVotesBox(generation)) {
                 updateGeneration();
             }
             return null;
@@ -69,7 +65,7 @@ public class Elector extends ReentrantLocker implements VoteController {
     public boolean updateGeneration(int generation) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {
-                if (!votesRecord.initVotesRecord(generation) || !voter.initVotesBox(generation)) {// 不会出现这种情况
+                if (!voter.initVotesBox(generation)) {// 不会出现这种情况
                     throw new UnbelievableException("不可能出现这种情况！！");
                 }
                 return true;
@@ -83,12 +79,11 @@ public class Elector extends ReentrantLocker implements VoteController {
      */
     public boolean voteResoponse(Votes votes) {
         return this.lockSupplier(() -> {
-
             // 尝试更新一下现在的世代
             updateGeneration(votes.getGeneration());
 
             // 尝试进行投票，如果投票后，票还是同一张，代表投票成功
-            Votes latestVotes = votesRecord.vote(votes);
+            Votes latestVotes = voter.vote(votes);
             return votes.equals(latestVotes);
         });
     }
