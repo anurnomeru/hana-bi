@@ -1,5 +1,6 @@
 package com.anur.core.elect.vote.model;
 
+import java.util.Objects;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22
  *
@@ -17,19 +18,12 @@ public class Votes {
      */
     private String serverName;
 
-    /**
-     * true  - 投票有效
-     * false - 投票无效
-     */
-    private boolean active;
-
     public Votes() {
     }
 
-    public Votes(int generation, String serverName, boolean active) {
+    public Votes(int generation, String serverName) {
         this.generation = generation;
         this.serverName = serverName;
-        this.active = active;
     }
 
     public int getGeneration() {
@@ -40,7 +34,21 @@ public class Votes {
         return serverName;
     }
 
-    public boolean isActive() {
-        return active;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Votes votes = (Votes) o;
+        return generation == votes.generation &&
+            Objects.equals(serverName, votes.serverName);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(generation, serverName);
     }
 }

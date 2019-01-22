@@ -13,12 +13,12 @@ public class VotesRecord extends ReentrantLocker {
     /**
      * 该投票箱的世代信息
      */
-    protected int generation;
+    private int generation;
 
     /**
      * 投票给了谁
      */
-    public String votedServerName;
+    private Votes votes;
 
     public VotesRecord() {
         this.generation = 0;
@@ -31,7 +31,7 @@ public class VotesRecord extends ReentrantLocker {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票记录
                 this.generation = generation;
-                this.votedServerName = null;
+                this.votes = null;
                 return true;
             }
             return false;
@@ -39,23 +39,15 @@ public class VotesRecord extends ReentrantLocker {
     }
 
     /**
-     * 给某个服务投票，投票成功则返回true
-     * 1、新的一轮投票（generation更大），返回true
-     * 2、当前一轮的投票，如果投的是同一个server，返回true
+     * 给某个服务投票，返回最新的选票
      */
-    public boolean vote(Votes votes) {
+    public Votes vote(Votes votes) {
         return this.lockSupplier(() -> {
             if (votes.getGeneration() > this.generation) {
                 this.initVotesRecord(votes.getGeneration());
-                this.votedServerName = votes.getServerName();
-                return true;
-            } else if (votes.getGeneration() == this.generation) {
-                if (votes.getServerName()
-                         .equals(votedServerName)) {
-                    return true;
-                }
+                this.votes = votes;
             }
-            return false;
+            return this.votes;
         });
     }
 }
