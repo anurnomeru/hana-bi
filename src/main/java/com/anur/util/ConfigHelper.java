@@ -40,7 +40,7 @@ public class ConfigHelper {
     /**
      * 优先获取缓存中的值，如果获取不到再从配置文件获取
      */
-    private static <T> T cacheSupplier(ConfigEnum configEnum, Supplier<T> supplier) {
+    private static <T> T lockSupplier(ConfigEnum configEnum, Supplier<T> supplier) {
         T t;
         try {
             READ_LOCK.lock();
@@ -75,16 +75,16 @@ public class ConfigHelper {
      * 根据key获取某个配置
      */
     protected static <T> T getConfig(ConfigEnum configEnum, Function<String, T> transfer) {
-        return cacheSupplier(configEnum, () -> Optional.of(RESOURCE_BUNDLE.getString(configEnum.getKey()))
-                                                       .map(transfer)
-                                                       .orElseThrow(() -> new ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.getKey(), configEnum.getAdv()))));
+        return lockSupplier(configEnum, () -> Optional.of(RESOURCE_BUNDLE.getString(configEnum.getKey()))
+                                                      .map(transfer)
+                                                      .orElseThrow(() -> new ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.getKey(), configEnum.getAdv()))));
     }
 
     /**
      * 根据key模糊得获取某些配置，匹配规则为 key%
      */
     protected static <T> List<T> getConfigSimilar(ConfigEnum configEnum, Function<Pair<String, String>, T> transfer) {
-        return cacheSupplier(configEnum, () -> {
+        return lockSupplier(configEnum, () -> {
             List<T> tList;
             try {
                 Enumeration<String> stringEnumeration = RESOURCE_BUNDLE.getKeys();

@@ -12,5 +12,5 @@ public abstract class Elector {
     /**
      * 世代信息
      */
-    private AtomicInteger genneration;
+    private AtomicInteger generation;
 }
