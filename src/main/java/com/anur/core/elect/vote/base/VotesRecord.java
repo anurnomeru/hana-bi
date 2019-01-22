@@ -1,4 +1,4 @@
-package com.anur.core.elect.vote;
+package com.anur.core.elect.vote.base;
 
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
@@ -29,7 +29,7 @@ public class VotesRecord extends ReentrantLocker {
      */
     public boolean initVotesRecord(int generation) {
         return this.lockSupplier(() -> {
-            if (generation > this.generation) {
+            if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票记录
                 this.generation = generation;
                 this.votedServerName = null;
                 return true;
