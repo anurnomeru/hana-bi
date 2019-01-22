@@ -1,6 +1,7 @@
 package com.anur.config;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import com.anur.util.ConfigHelper;
 
@@ -15,11 +16,11 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         ConfigHelper.refresh();
     }
 
-    private static Integer getServerPort() {
+    public static Integer getServerPort() {
         return getConfig(ConfigEnum.SERVER_PORT, Integer::valueOf);
     }
 
-    private static String getServerName() {
+    public static String getServerName() {
         return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
     }
 
@@ -50,6 +51,23 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
             this.host = host;
             this.serverPort = serverPort;
             this.clientPort = clientPort;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            HanabiInetSocketAddress that = (HanabiInetSocketAddress) o;
+            return Objects.equals(serverName, that.serverName);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(serverName);
         }
 
         public String getServerName() {

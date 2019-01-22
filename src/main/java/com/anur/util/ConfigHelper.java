@@ -117,7 +117,7 @@ public class ConfigHelper {
         }
     }
 
-    public enum ConfigEnum {
+    protected enum ConfigEnum {
         SERVER_PORT("server.port", "server.port 是本机的对外端口号配置，请检查配置是否正确。"),
 
         SERVER_NAME("server.name", "server.name 是本机的服务名，应唯一。"),

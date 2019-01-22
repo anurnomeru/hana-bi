@@ -23,6 +23,15 @@ public class Votes {
      */
     private boolean active;
 
+    public Votes() {
+    }
+
+    public Votes(int generation, String serverName, boolean active) {
+        this.generation = generation;
+        this.serverName = serverName;
+        this.active = active;
+    }
+
     public int getGeneration() {
         return generation;
     }
