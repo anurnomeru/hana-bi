@@ -1,4 +1,4 @@
-package com.anur.io.server;
+package com.anur.core.elect;
 
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
@@ -9,10 +9,12 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
+ *
+ * 服务器的选举信息接收处理器
  */
-public class ServerHandler extends ChannelInboundHandlerAdapter {
+public class ServerElectHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ServerHandler.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(ServerElectHandler.class);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {

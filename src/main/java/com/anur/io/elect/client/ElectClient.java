@@ -1,6 +1,7 @@
-package com.anur.io.client;
+package com.anur.io.elect.client;
 
 import java.net.InetSocketAddress;
+import com.anur.core.elect.ClientElectHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -12,17 +13,17 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
  */
-public class Client {
+public class ElectClient {
 
     private final String host;
 
     private final int port;
 
     public static void main(String[] args) throws Exception {
-        new Client("localhost", 9876).start();
+        new ElectClient("localhost", 9876).start();
     }
 
-    public Client(String host, int port) {
+    public ElectClient(String host, int port) {
         this.host = host;
         this.port = port;
     }
@@ -40,7 +41,7 @@ public class Client {
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
                              socketChannel.pipeline()
-                                          .addLast(new ClientHandler());
+                                          .addLast(new ClientElectHandler());
                          }
                      });
 

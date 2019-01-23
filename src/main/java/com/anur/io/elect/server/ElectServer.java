@@ -1,4 +1,4 @@
-package com.anur.io.server;
+package com.anur.io.elect.server;
 
 import java.net.InetSocketAddress;
 import io.netty.bootstrap.ServerBootstrap;
@@ -14,16 +14,16 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
  *
  * 供其他端连接的套接字服务端入口
  */
-public class Server {
+public class ElectServer {
 
     private final int port;
 
-    public Server(int port) {
+    public ElectServer(int port) {
         this.port = port;
     }
 
     public static void main(String[] args) throws InterruptedException {
-        new Server(9876).start();
+        new ElectServer(9876).start();
     }
 
     public void start() throws InterruptedException {

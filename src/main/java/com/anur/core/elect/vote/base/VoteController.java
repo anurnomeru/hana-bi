@@ -99,7 +99,7 @@ public abstract class VoteController extends ReentrantLocker {
 
             if (votes.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 logger.info("来自服务 {} 的选票世代大于当前世代", votes.getServerName());
-                this.initVotesBox(this.generation);
+                throw new UnbelievableException("出现了不可能出现的情况！选票大于了当前的世代");
             } else if (this.generation > votes.getGeneration()) {// 如果选票的世代小于当前世代，投票无效
                 logger.info("来自服务 {} 的选票世代小于当前世代，选票无效", votes.getServerName());
                 return null;

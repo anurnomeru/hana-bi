@@ -1,9 +1,8 @@
-package com.anur.io.client;
+package com.anur.core.elect;
 
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.io.server.ServerHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -12,9 +11,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
  */
-public class ClientHandler extends ChannelInboundHandlerAdapter {
+public class ClientElectHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ServerHandler.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(ClientElectHandler.class);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
