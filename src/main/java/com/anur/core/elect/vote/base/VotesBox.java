@@ -5,6 +5,7 @@ import java.util.Set;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
+import com.anur.exception.HanabiException;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22
@@ -37,6 +38,56 @@ public abstract class VotesBox extends ReentrantLocker {
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
     protected abstract void becomeLeader();
+
+    /**
+     * 如何向其他节点发起拉票请求
+     */
+    protected abstract void askForVote();
+
+    /**
+     * 强制更新世代信息
+     */
+    public void updateGeneration() {
+        this.lockSupplier(() -> {
+            generation = generation++;
+            if (!this.initVotesBox(generation)) {
+                updateGeneration();
+            }
+            return null;
+        });
+    }
+
+    /**
+     * 强制更新世代信息，如果世代比当前大，那么就更新，并返回true
+     */
+    public boolean updateGeneration(int generation) {
+        return this.lockSupplier(() -> {
+            if (generation > this.generation) {
+                if (!this.initVotesBox(generation)) {// 不会出现这种情况
+                    throw new UnbelievableException("不可能出现这种情况！！");
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /**
+     * 开始进行选举
+     */
+    public void beginElect() {
+        this.lockSupplier(() -> {
+            updateGeneration();
+
+            Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
+            // 给自己投票
+            this.receiveVotes(votes);
+
+            // 让其他服务给自己投一票
+            this.askForVote();
+            return null;
+        });
+    }
 
     /**
      * 初始化投票箱
@@ -77,15 +128,22 @@ public abstract class VotesBox extends ReentrantLocker {
     }
 
     /**
-     * 给某个服务投票，并返回最新的选票
+     * 给某个服务投票，如果投票成功，则返回true
      */
-    public Votes vote(Votes votes) {
+    public boolean vote(Votes votes) {
         return this.lockSupplier(() -> {
             if (votes.getGeneration() > this.generation) {
                 this.initVotesBox(votes.getGeneration());
                 this.voteRecord = votes;
             }
-            return this.voteRecord;
+            return votes.equals(this.voteRecord);
         });
+    }
+
+    private static class UnbelievableException extends HanabiException {
+
+        public UnbelievableException(String message) {
+            super(message);
+        }
     }
 }
