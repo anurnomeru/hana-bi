@@ -1,10 +1,10 @@
 package com.anur.core.elect;
 
-import com.anur.core.elect.vote.base.VotesBox;
+import com.anur.core.elect.vote.base.VoteController;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22
  */
-public class Voter extends VotesBox {
+public class Voter extends VoteController {
 
     @Override
     protected void becomeLeader() {
