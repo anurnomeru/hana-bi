@@ -1,4 +1,4 @@
-package com.anur.core.elect;
+package com.anur.io.elect.client;
 
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
