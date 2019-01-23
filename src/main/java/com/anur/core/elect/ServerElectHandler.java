@@ -10,7 +10,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
  *
- * 服务器的选举信息接收处理器
+ * 服务器的选举信息接收处理器，这个需要一直启动着，等待其他节点发送选票过来，
  */
 public class ServerElectHandler extends ChannelInboundHandlerAdapter {
 
@@ -18,31 +18,31 @@ public class ServerElectHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.info("连接建立");
+        LOGGER.debug("连接建立");
         super.channelActive(ctx);
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.info("连接断开");
+        LOGGER.debug("连接断开");
         super.channelInactive(ctx);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        LOGGER.info("数据读取：" + ((ByteBuf) msg).toString(Charset.defaultCharset()));
+        LOGGER.debug("数据读取：" + ((ByteBuf) msg).toString(Charset.defaultCharset()));
         super.channelRead(ctx, msg);
     }
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.info("数据读取完毕");
+        LOGGER.debug("数据读取完毕");
         super.channelReadComplete(ctx);
     }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        LOGGER.info("触发事件");
+        LOGGER.debug("触发事件");
         super.userEventTriggered(ctx, evt);
     }
 
@@ -53,7 +53,7 @@ public class ServerElectHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        LOGGER.info("触发异常");
+        LOGGER.debug("触发异常");
         super.exceptionCaught(ctx, cause);
     }
 }

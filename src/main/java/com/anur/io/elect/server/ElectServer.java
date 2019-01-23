@@ -1,6 +1,7 @@
 package com.anur.io.elect.server;
 
 import java.net.InetSocketAddress;
+import com.anur.core.elect.ServerElectHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -39,7 +40,7 @@ public class ElectServer {
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
-                                                .addLast(new ServerHandler());
+                                                .addLast(new ServerElectHandler());
                                }
                            });
 
