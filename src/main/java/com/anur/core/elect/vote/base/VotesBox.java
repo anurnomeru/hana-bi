@@ -1,8 +1,10 @@
 package com.anur.core.elect.vote.base;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfigHelper.HanabiCluster;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.exception.HanabiException;
@@ -37,12 +39,12 @@ public abstract class VotesBox extends ReentrantLocker {
     /**
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
-    protected abstract void becomeLeader();
+    protected abstract void becomeLeader(List<HanabiCluster> hanabiClusterList);
 
     /**
      * 如何向其他节点发起拉票请求
      */
-    protected abstract void askForVote();
+    protected abstract void askForVote(List<HanabiCluster> hanabiClusterList);
 
     /**
      * 强制更新世代信息
@@ -75,7 +77,7 @@ public abstract class VotesBox extends ReentrantLocker {
             this.voteRecord = votes;
 
             // 让其他服务给自己投一票
-            this.askForVote();
+            this.askForVote(InetSocketAddressConfigHelper.getCluster());
             return null;
         });
     }
@@ -93,13 +95,13 @@ public abstract class VotesBox extends ReentrantLocker {
 
             box.add(votes.getServerName());
 
-            int clusterSize = InetSocketAddressConfigHelper.getCluster()
-                                                           .size();
+            List<HanabiCluster> hanabiClusterList = InetSocketAddressConfigHelper.getCluster();
+            int clusterSize = hanabiClusterList.size();
             int votesNeed = clusterSize / 2 + 1;
 
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.size() >= votesNeed) {
-                this.becomeLeader();
+                this.becomeLeader(hanabiClusterList);
             }
 
             return null;
@@ -108,10 +110,14 @@ public abstract class VotesBox extends ReentrantLocker {
 
     /**
      * 某个服务来请求投票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
+     *
+     * 返回结果
+     *
+     * 为true代表接受投票成功。
+     * 为false代表已经给其他服务投过票了，
      */
     public boolean vote(Votes votes) {
         return this.lockSupplier(() -> {
-
             if (votes.getGeneration() > this.generation) {
                 this.initVotesBox(votes.getGeneration());
                 this.voteRecord = votes;

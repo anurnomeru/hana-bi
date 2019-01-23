@@ -24,19 +24,19 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
     }
 
-    public static List<HanabiInetSocketAddress> getCluster() {
+    public static List<HanabiCluster> getCluster() {
         return getConfigSimilar(ConfigEnum.CLIENT_ADDR, pair -> {
             String serverName = pair.getKey();
             String[] split = pair.getValue()
                                  .split(":");
-            return new HanabiInetSocketAddress(serverName, split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]));
+            return new HanabiCluster(serverName, split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]));
         });
     }
 
     /**
      * 保存了初始化连接另一个客户端需要哪个地址、哪些端口
      */
-    public static class HanabiInetSocketAddress {
+    public static class HanabiCluster {
 
         private String serverName;
 
@@ -46,7 +46,7 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
 
         private int clientPort;
 
-        public HanabiInetSocketAddress(String serverName, String host, int serverPort, int clientPort) {
+        public HanabiCluster(String serverName, String host, int serverPort, int clientPort) {
             this.serverName = serverName;
             this.host = host;
             this.serverPort = serverPort;
@@ -61,7 +61,7 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            HanabiInetSocketAddress that = (HanabiInetSocketAddress) o;
+            HanabiCluster that = (HanabiCluster) o;
             return Objects.equals(serverName, that.serverName);
         }
 
