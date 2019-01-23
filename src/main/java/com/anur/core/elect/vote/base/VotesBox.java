@@ -58,30 +58,21 @@ public abstract class VotesBox extends ReentrantLocker {
     }
 
     /**
-     * 强制更新世代信息，如果世代比当前大，那么就更新，并返回true
-     */
-    public boolean updateGeneration(int generation) {
-        return this.lockSupplier(() -> {
-            if (generation > this.generation) {
-                if (!this.initVotesBox(generation)) {// 不会出现这种情况
-                    throw new UnbelievableException("不可能出现这种情况！！");
-                }
-                return true;
-            }
-            return false;
-        });
-    }
-
-    /**
      * 开始进行选举
+     *
+     * 1、首先更新一下世代信息，重置投票箱和投票记录
+     * 2、首先给自己投一票
+     * 3、请求其他服务，要求其他服务给自己投票（需要子类去实现）
      */
     public void beginElect() {
         this.lockSupplier(() -> {
             updateGeneration();
 
             Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
-            // 给自己投票
+            // 给自己投票箱投票
             this.receiveVotes(votes);
+            // 记录一下，自己给自己投了票
+            this.voteRecord = votes;
 
             // 让其他服务给自己投一票
             this.askForVote();
@@ -90,26 +81,14 @@ public abstract class VotesBox extends ReentrantLocker {
     }
 
     /**
-     * 初始化投票箱
+     * 给当前服务的投票箱投票
      */
-    public boolean initVotesBox(int generation) {
-        return this.lockSupplier(() -> {
-            if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
-                this.generation = generation;
-                box = new HashSet<>();
-                return true;
-            }
-            return false;
-        });
-    }
-
-    /**
-     * 收到某服务的投票，返回当前世代
-     */
-    public int receiveVotes(Votes votes) {
-        return this.lockSupplier(() -> {
+    public void receiveVotes(Votes votes) {
+        this.lockSupplier(() -> {
             if (votes.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
-                this.initVotesBox(this.generation);// 必定返回true
+                this.initVotesBox(this.generation);
+            } else if (this.generation > votes.getGeneration()) {// 如果选票的世代小于当前世代，投票无效
+                return null;
             }
 
             box.add(votes.getServerName());
@@ -123,20 +102,36 @@ public abstract class VotesBox extends ReentrantLocker {
                 this.becomeLeader();
             }
 
-            return this.generation;
+            return null;
         });
     }
 
     /**
-     * 给某个服务投票，如果投票成功，则返回true
+     * 某个服务来请求投票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
      */
     public boolean vote(Votes votes) {
         return this.lockSupplier(() -> {
+
             if (votes.getGeneration() > this.generation) {
                 this.initVotesBox(votes.getGeneration());
                 this.voteRecord = votes;
             }
             return votes.equals(this.voteRecord);
+        });
+    }
+
+    /**
+     * 初始化投票箱
+     */
+    private boolean initVotesBox(int generation) {
+        return this.lockSupplier(() -> {
+            if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
+                this.generation = generation;
+                this.voteRecord = null;
+                this.box = new HashSet<>();
+                return true;
+            }
+            return false;
         });
     }
 
