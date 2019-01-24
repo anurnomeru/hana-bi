@@ -3,57 +3,28 @@ package com.anur.io.elect.server;
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.alibaba.fastjson.JSON;
+import com.anur.core.elect.vote.model.Votes;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
  *
  * 服务器的选举信息接收处理器，这个需要一直启动着，等待其他节点发送选票过来，
  */
-public class ServerElectHandler extends ChannelInboundHandlerAdapter {
+public class ServerElectHandler extends SimpleChannelInboundHandler {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ServerElectHandler.class);
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.debug("连接建立");
-        super.channelActive(ctx);
-    }
+    private Logger logger = LoggerFactory.getLogger(ServerElectHandler.class);
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.debug("连接断开");
-        super.channelInactive(ctx);
-    }
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
+        logger.info(o.toString());
+        String str = ((ByteBuf) o).toString(Charset.defaultCharset());
+        logger.info(str);
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        LOGGER.debug("数据读取：" + ((ByteBuf) msg).toString(Charset.defaultCharset()));
-        super.channelRead(ctx, msg);
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.debug("数据读取完毕");
-        super.channelReadComplete(ctx);
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        LOGGER.debug("触发事件");
-        super.userEventTriggered(ctx, evt);
-    }
-
-    @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        LOGGER.debug("触发异常");
-        super.exceptionCaught(ctx, cause);
+        Votes votes = JSON.parseObject(str, Votes.class);
+        logger.info(votes.toString());
     }
 }

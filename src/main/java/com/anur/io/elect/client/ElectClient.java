@@ -1,7 +1,6 @@
 package com.anur.io.elect.client;
 
 import java.net.InetSocketAddress;
-import com.anur.core.elect.ClientElectHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -9,6 +8,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19

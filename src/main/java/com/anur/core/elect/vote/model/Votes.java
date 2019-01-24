@@ -34,6 +34,14 @@ public class Votes {
         return serverName;
     }
 
+    public void setGeneration(int generation) {
+        this.generation = generation;
+    }
+
+    public void setServerName(String serverName) {
+        this.serverName = serverName;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -50,5 +58,13 @@ public class Votes {
     @Override
     public int hashCode() {
         return Objects.hash(generation, serverName);
+    }
+
+    @Override
+    public String toString() {
+        return "Votes{" +
+            "generation=" + generation +
+            ", serverName='" + serverName + '\'' +
+            '}';
     }
 }

@@ -3,6 +3,8 @@ package com.anur.io.elect.client;
 import java.nio.charset.Charset;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.alibaba.fastjson.JSON;
+import com.anur.core.elect.vote.model.Votes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,9 +21,12 @@ public class ClientElectHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.debug("连接建立");
+        Votes votes = new Votes();
+        votes.setGeneration(1);
+        votes.setServerName("sssssss");
+
         ctx.channel()
-           .writeAndFlush(Unpooled.copiedBuffer("channelActive!!", Charset.defaultCharset()));
+           .writeAndFlush(Unpooled.copiedBuffer(JSON.toJSONString(votes) + "\n", Charset.defaultCharset()));
         super.channelActive(ctx);
     }
 

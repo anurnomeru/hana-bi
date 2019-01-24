@@ -1,7 +1,6 @@
 package com.anur.io.elect.server;
 
 import java.net.InetSocketAddress;
-import com.anur.core.elect.ServerElectHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -9,6 +8,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
@@ -40,6 +40,7 @@ public class ElectServer {
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
+                                                .addLast(new LineBasedFrameDecoder(100))
                                                 .addLast(new ServerElectHandler());
                                }
                            });
