@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
 import com.anur.core.coder.ProtocolEnum;
@@ -26,9 +27,19 @@ public class ClientElectHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Votes votes = new Votes();
-        votes.setGeneration(1);
-        votes.setServerName("sssssss");
+        votes.setGeneration(2);
+        votes.setServerName(InetSocketAddressConfigHelper.getServerName());
 
+        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
+
+        votes.setServerName("hanabi.2");
+        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
+
+        votes.setGeneration(1);
+        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
+
+        votes.setGeneration(2);
+        votes.setServerName("hanabi.2");
         ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
         super.channelActive(ctx);
     }

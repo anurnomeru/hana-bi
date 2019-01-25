@@ -52,16 +52,20 @@ public class Elector implements Runnable {
                 DecodeWrapper decodeWrapper = Coder.decode(msg);
                 switch (decodeWrapper.protocolEnum) {
                 case CANVASSED:
-                    Canvass canvass = voter.vote((Votes) decodeWrapper.object);
+                    Votes votes = (Votes) decodeWrapper.object;
+                    Canvass canvass = voter.vote(votes);
 
                     Votes myVote;
 
-                    // 返回true代表同意某个服务来的投票
+                    // 返回true代表同意某个节点来的投票
                     if (canvass.isAgreed()) {
+                        logger.info("来自节点 {}，世代 {}，的选票请求有效，返回选票", votes.getServerName(), votes.getGeneration());
 
                         // 那么则生成一张选票，返回给服务器
                         myVote = new Votes(canvass.getGeneration(), InetSocketAddressConfigHelper.getServerName());
                     } else {
+                        logger.info("来自节点 {}，世代 {}，的选票请求无效", votes.getServerName(), votes.getGeneration());
+
                         // 否则无需返回选票给服务器，
                         myVote = null;
                     }

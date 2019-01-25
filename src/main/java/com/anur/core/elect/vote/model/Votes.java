@@ -15,7 +15,7 @@ public class Votes {
     private int generation;
 
     /**
-     * 投递该选票的服务名
+     * 投递该选票的节点名
      */
     private String serverName;
 
