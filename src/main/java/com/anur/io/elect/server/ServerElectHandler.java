@@ -1,10 +1,7 @@
 package com.anur.io.elect.server;
 
 import java.nio.charset.Charset;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.alibaba.fastjson.JSON;
-import com.anur.core.elect.vote.model.Votes;
+import java.util.function.BiConsumer;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -16,15 +13,18 @@ import io.netty.channel.SimpleChannelInboundHandler;
  */
 public class ServerElectHandler extends SimpleChannelInboundHandler {
 
-    private Logger logger = LoggerFactory.getLogger(ServerElectHandler.class);
+    /**
+     * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
+     */
+    private BiConsumer<ChannelHandlerContext, String> msgConsumer;
+
+    public ServerElectHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+        this.msgConsumer = msgConsumer;
+    }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) throws Exception {
-        logger.info(o.toString());
+    protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) {
         String str = ((ByteBuf) o).toString(Charset.defaultCharset());
-        logger.info(str);
-
-        Votes votes = JSON.parseObject(str, Votes.class);
-        logger.info(votes.toString());
+        msgConsumer.accept(channelHandlerContext, str);
     }
 }

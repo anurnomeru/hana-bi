@@ -1,10 +1,11 @@
 package com.anur.core.elect.vote.model;
 
 import java.util.Objects;
+
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22
  *
- * 选票相关
+ * 选票内容
  */
 public class Votes {
 

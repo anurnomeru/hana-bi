@@ -7,7 +7,16 @@ import com.anur.core.elect.vote.model.Votes;
  */
 public enum ProtocolEnum {
 
-    VOTE(Votes.class);
+    /**
+     * 候选者发往其他节点的拉票请求
+     */
+    CANVASSED(Votes.class),
+
+    /**
+     * 收到拉票请求后的回包
+     */
+    CANVASSED_RESPONSE(Votes.class),
+    ;
 
     ProtocolEnum(Class clazz) {
         this.clazz = clazz;

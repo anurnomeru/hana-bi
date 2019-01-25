@@ -12,9 +12,7 @@ public class Coder {
 
     private static final String REGEX = "-";
 
-    public static String encode(ProtocolEnum protocolEnum, Object obj) {
-        return protocolEnum.name() + REGEX + JSON.toJSONString(obj);
-    }
+    private static final String SUFFIX = "\n";
 
     public static DecodeWrapper decode(String str) {
         if (StringUtil.isNullOrEmpty(str)) {
@@ -34,15 +32,19 @@ public class Coder {
                                                        .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到的请求有误：" + str)));
     }
 
-    public static class DecodeWrapper<T> {
+    public static String encode(ProtocolEnum protocolEnum, Object obj) {
+        return protocolEnum.name() + REGEX + JSON.toJSONString(obj) + SUFFIX;
+    }
+
+    public static class DecodeWrapper {
 
         public ProtocolEnum protocolEnum;
 
-        public T t;
+        public Object object;
 
-        public DecodeWrapper(ProtocolEnum protocolEnum, T t) {
+        public DecodeWrapper(ProtocolEnum protocolEnum, Object object) {
             this.protocolEnum = protocolEnum;
-            this.t = t;
+            this.object = object;
         }
     }
 

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiCluster;
+import com.anur.core.elect.vote.model.Canvass;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.exception.HanabiException;
@@ -124,23 +125,22 @@ public abstract class VoteController extends ReentrantLocker {
     }
 
     /**
-     * 某个服务来请求投票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
+     * 某个服务来拉票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
      *
      * 返回结果
      *
      * 为true代表接受投票成功。
      * 为false代表已经给其他服务投过票了，
      */
-    public boolean vote(Votes votes) {
+    public Canvass vote(Votes votes) {
         return this.lockSupplier(() -> {
             logger.info("收到来自服务 {} 的拉票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
             if (votes.getGeneration() > this.generation) {
+
                 this.initVotesBox(votes.getGeneration());
                 this.voteRecord = votes;
-            } else {
-
             }
-            return votes.equals(this.voteRecord);
+            return new Canvass(this.generation, votes.equals(this.voteRecord));
         });
     }
 

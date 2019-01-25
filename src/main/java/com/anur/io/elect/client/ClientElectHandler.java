@@ -1,9 +1,13 @@
 package com.anur.io.elect.client;
 
 import java.nio.charset.Charset;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
+import com.anur.core.coder.Coder;
+import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.vote.model.Votes;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -25,8 +29,7 @@ public class ClientElectHandler extends ChannelInboundHandlerAdapter {
         votes.setGeneration(1);
         votes.setServerName("sssssss");
 
-        ctx.channel()
-           .writeAndFlush(Unpooled.copiedBuffer(JSON.toJSONString(votes) + "\n", Charset.defaultCharset()));
+        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
         super.channelActive(ctx);
     }
 
@@ -38,7 +41,16 @@ public class ClientElectHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        LOGGER.debug("数据读取：" + ((ByteBuf) msg).toString(Charset.defaultCharset()));
+        String str = ((ByteBuf) msg).toString(Charset.defaultCharset());
+        LOGGER.debug("数据读取：" + str);
+
+        DecodeWrapper decodeWrapper = Coder.decode(str);
+
+        Votes votes = (Votes) decodeWrapper.object;
+        LOGGER.info(Optional.ofNullable(votes)
+                            .map(Votes::toString)
+                            .orElse("没拿到正确的选票"));
+
         super.channelRead(ctx, msg);
     }
 

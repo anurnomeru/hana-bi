@@ -20,7 +20,7 @@ public class ElectClient {
     private final int port;
 
     public static void main(String[] args) throws Exception {
-        new ElectClient("localhost", 9876).start();
+        new ElectClient("localhost", 10000).start();
     }
 
     public ElectClient(String host, int port) {

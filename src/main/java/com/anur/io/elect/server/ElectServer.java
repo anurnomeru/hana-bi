@@ -1,8 +1,10 @@
 package com.anur.io.elect.server;
 
 import java.net.InetSocketAddress;
+import java.util.function.BiConsumer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -19,12 +21,14 @@ public class ElectServer {
 
     private final int port;
 
-    public ElectServer(int port) {
-        this.port = port;
-    }
+    /**
+     * 将如何消费消息的权利交给上级，将业务处理从Server中剥离
+     */
+    private BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
-    public static void main(String[] args) throws InterruptedException {
-        new ElectServer(9876).start();
+    public ElectServer(int port, BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+        this.port = port;
+        this.msgConsumer = msgConsumer;
     }
 
     public void start() throws InterruptedException {
@@ -41,7 +45,7 @@ public class ElectServer {
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
                                                 .addLast(new LineBasedFrameDecoder(100))
-                                                .addLast(new ServerElectHandler());
+                                                .addLast(new ServerElectHandler(msgConsumer));
                                }
                            });
 
