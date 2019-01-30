@@ -24,12 +24,12 @@ public class Coder {
         ProtocolEnum protocolEnum = Optional.of(str)
                                             .map(s -> s.substring(0, regexIndex))
                                             .map(ProtocolEnum::valueOf)
-                                            .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到的请求有误：" + str));
+                                            .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
 
         return new DecodeWrapper(protocolEnum, Optional.of(str)
                                                        .map(s -> s.substring(regexIndex + 1))
                                                        .map(s -> JSON.parseObject(s, protocolEnum.clazz))
-                                                       .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到的请求有误：" + str)));
+                                                       .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
     }
 
     public static String encode(ProtocolEnum protocolEnum, Object obj) {

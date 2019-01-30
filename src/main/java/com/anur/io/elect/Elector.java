@@ -13,6 +13,7 @@ import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.vote.base.VoteController;
 import com.anur.core.elect.vote.model.Canvass;
 import com.anur.core.elect.vote.model.Votes;
+import com.anur.core.elect.vote.model.VotesResponse;
 import com.anur.io.elect.client.ElectClient;
 import com.anur.io.elect.server.ElectServer;
 import io.netty.buffer.Unpooled;
@@ -35,11 +36,15 @@ public class Elector implements Runnable {
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
     public static void main(String[] args) {
-        Elector elector = new Elector();
-        elector.init();
-
-        Thread thread = new Thread(elector);
-        thread.start();
+        Votes myVote = null;
+        String s = Coder.encode(ProtocolEnum.CANVASSED_RESPONSE, myVote);
+        DecodeWrapper d = Coder.decode(s);
+        System.out.println();
+        //        Elector elector = new Elector();
+        //        elector.init();
+        //
+        //        Thread thread = new Thread(elector);
+        //        thread.start();
     }
 
     /**
@@ -55,19 +60,19 @@ public class Elector implements Runnable {
                     Votes votes = (Votes) decodeWrapper.object;
                     Canvass canvass = voter.vote(votes);
 
-                    Votes myVote;
+                    VotesResponse myVote;
 
                     // 返回true代表同意某个节点来的投票
                     if (canvass.isAgreed()) {
                         logger.info("来自节点 {}，世代 {}，的选票请求有效，返回选票", votes.getServerName(), votes.getGeneration());
 
                         // 那么则生成一张选票，返回给服务器
-                        myVote = new Votes(canvass.getGeneration(), InetSocketAddressConfigHelper.getServerName());
+                        myVote = new VotesResponse(canvass.getGeneration(), InetSocketAddressConfigHelper.getServerName(), true);
                     } else {
                         logger.info("来自节点 {}，世代 {}，的选票请求无效", votes.getServerName(), votes.getGeneration());
 
-                        // 否则无需返回选票给服务器，
-                        myVote = null;
+                        // 否则生成一张无效选票，返回给服务器
+                        myVote = new VotesResponse(canvass.getGeneration(), InetSocketAddressConfigHelper.getServerName(), false);
                     }
 
                     ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED_RESPONSE, myVote), Charset.defaultCharset()));

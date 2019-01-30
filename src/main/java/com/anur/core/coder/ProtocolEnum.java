@@ -1,6 +1,7 @@
 package com.anur.core.coder;
 
 import com.anur.core.elect.vote.model.Votes;
+import com.anur.core.elect.vote.model.VotesResponse;
 
 /**
  * Created by Anur IjuoKaruKas on 1/24/2019
@@ -15,7 +16,7 @@ public enum ProtocolEnum {
     /**
      * 收到拉票请求后的回包
      */
-    CANVASSED_RESPONSE(Votes.class),
+    CANVASSED_RESPONSE(VotesResponse.class),
     ;
 
     ProtocolEnum(Class clazz) {

@@ -38,14 +38,14 @@ public class ElectClient {
     private static ExecutorService RECONNECTOR = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
                                                                                                            .build());
 
-    private CountDownLatch reconnect_latch;
+    private CountDownLatch reconnectLatch;
 
     public static void main(String[] args) throws Exception {
         new ElectClient("hanabi_test", "localhost", 10000).start();
     }
 
     public ElectClient(String serverName, String host, int port) {
-        this.reconnect_latch = new CountDownLatch(1);
+        this.reconnectLatch = new CountDownLatch(1);
         this.serverName = serverName;
         this.host = host;
         this.port = port;
@@ -54,7 +54,7 @@ public class ElectClient {
     public void start() {
         RECONNECTOR.submit(() -> {
             try {
-                reconnect_latch.await();
+                reconnectLatch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -75,8 +75,8 @@ public class ElectClient {
                              socketChannel.pipeline()
                                           .addLast(
                                               // 这个 handler 用于开启心跳检测
-                                              "IdleStateHandler", new IdleStateHandler(60, 60, 60, TimeUnit.SECONDS))
-                                          .addLast("ClientHeartbeatHandler", new ClientHeartbeatHandler())
+                                              "IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
+                                          .addLast("ClientHeartbeatHandler", new ClientHeartbeatHandler(serverName, reconnectLatch))
                                           .addLast("ClientElectHandler", new ClientElectHandler());
                          }
                      });
@@ -91,11 +91,14 @@ public class ElectClient {
                         return;
                     }
 
-                    logger.info("与节点 {} [{}:{}] 的连接异常，正在重连 ...", serverName, host, port);
+                    if (reconnectLatch.getCount() == 0) {
+                        logger.info("与节点 {} [{}] 的连接异常，正在重连 ...", serverName, host, ((ChannelFuture) future).channel()
+                                                                                                            .remoteAddress());
+                    }
                     ((ChannelFuture) future).channel()
                                             .close();
 
-                    reconnect_latch.countDown();
+                    reconnectLatch.countDown();
                 }
             });
 

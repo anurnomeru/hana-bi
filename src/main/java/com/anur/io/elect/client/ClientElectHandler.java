@@ -10,6 +10,7 @@ import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
 import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.vote.model.Votes;
+import com.anur.core.elect.vote.model.VotesResponse;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -22,7 +23,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class ClientElectHandler extends ChannelInboundHandlerAdapter {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ClientElectHandler.class);
+    private Logger logger = LoggerFactory.getLogger(ClientElectHandler.class);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -45,46 +46,17 @@ public class ClientElectHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.debug("连接断开");
-        super.channelInactive(ctx);
-    }
-
-    @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         String str = ((ByteBuf) msg).toString(Charset.defaultCharset());
-        LOGGER.debug("数据读取：" + str);
+        logger.debug("数据读取：" + str);
 
         DecodeWrapper decodeWrapper = Coder.decode(str);
 
-        Votes votes = (Votes) decodeWrapper.object;
-        LOGGER.info(Optional.ofNullable(votes)
+        VotesResponse votesResponse = (VotesResponse) decodeWrapper.object;
+        logger.info(Optional.ofNullable(votesResponse)
                             .map(Votes::toString)
                             .orElse("没拿到正确的选票"));
 
         super.channelRead(ctx, msg);
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        LOGGER.debug("数据读取完毕");
-        super.channelReadComplete(ctx);
-    }
-
-    @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        LOGGER.debug("触发事件");
-        super.userEventTriggered(ctx, evt);
-    }
-
-    @Override
-    public void channelWritabilityChanged(ChannelHandlerContext ctx) throws Exception {
-        super.channelWritabilityChanged(ctx);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        LOGGER.debug("触发异常");
-        super.exceptionCaught(ctx, cause);
     }
 }
