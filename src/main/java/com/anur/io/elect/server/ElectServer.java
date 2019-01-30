@@ -31,7 +31,7 @@ public class ElectServer {
         this.msgConsumer = msgConsumer;
     }
 
-    public void start() throws InterruptedException {
+    public void start() {
         EventLoopGroup group = new NioEventLoopGroup();
 
         try {
@@ -54,9 +54,15 @@ public class ElectServer {
             f.channel()
              .closeFuture()
              .sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
-            group.shutdownGracefully()
-                 .sync();
+            try {
+                group.shutdownGracefully()
+                     .sync();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

@@ -1,1 +1,1 @@
-https://www.jianshu.com/p/c78b37a2ca47 Netty 断线重连解决方案
+https://www.jianshu.com/p/c78b37a2ca47 Netty 断线重连解决方案，存在【重连时】无限创建线程池问题，已经解决这个问题，但是问题的根源暂不清楚。
