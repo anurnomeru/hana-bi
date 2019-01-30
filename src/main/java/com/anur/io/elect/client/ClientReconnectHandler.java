@@ -1,7 +1,5 @@
 package com.anur.io.elect.client;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,17 +11,24 @@ import io.netty.handler.timeout.IdleStateEvent;
 /**
  * Created by Anur IjuoKaruKas on 1/29/2019
  *
- * 与客户端的心跳机制，断线重连~~
+ * 与客户端的心跳机制以及断线重连~~
  */
-public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
+public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 
     private String serverName;
 
     private CountDownLatch reconnectLatch;
 
-    private Logger logger = LoggerFactory.getLogger(ClientHeartbeatHandler.class);
+    private Logger logger = LoggerFactory.getLogger(ClientReconnectHandler.class);
 
-    public ClientHeartbeatHandler(String serverName, CountDownLatch reconnectLatch) {
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        logger.info("连接节点 {} [{}] 成功", serverName, ctx.channel()
+                                                      .remoteAddress());
+    }
+
+    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch) {
         this.serverName = serverName;
         this.reconnectLatch = reconnectLatch;
     }
@@ -41,8 +46,7 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
                                                                                  .remoteAddress());
                 }
 
-                ctx.channel()
-                   .close();
+                ctx.close();
                 reconnectLatch.countDown();
             } else if (event.state()
                             .equals(IdleState.WRITER_IDLE)) {// 长期未向服务器发送数据
@@ -62,8 +66,7 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
                                                                      .remoteAddress());
         }
 
-        ctx.channel()
-           .close();
+        ctx.close();
         reconnectLatch.countDown();
     }
 }

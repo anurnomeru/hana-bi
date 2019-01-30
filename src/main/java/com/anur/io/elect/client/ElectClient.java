@@ -1,7 +1,5 @@
 package com.anur.io.elect.client;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -34,10 +32,10 @@ public class ElectClient {
 
     private Logger logger = LoggerFactory.getLogger(ElectClient.class);
 
+    private CountDownLatch reconnectLatch;
+
     private static ExecutorService RECONNECT_MANAGER = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
                                                                                                                  .build());
-
-    private CountDownLatch reconnectLatch;
 
     public static void main(String[] args) throws Exception {
         new ElectClient("hanabi_test", "localhost", 10000).start();
@@ -75,7 +73,7 @@ public class ElectClient {
                                           .addLast(
                                               // 这个 handler 用于开启心跳检测
                                               "IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
-                                          .addLast("ClientHeartbeatHandler", new ClientHeartbeatHandler(serverName, reconnectLatch))
+                                          .addLast("ClientHeartbeatHandler", new ClientReconnectHandler(serverName, reconnectLatch))
                                           .addLast("ClientElectHandler", new ClientElectHandler());
                          }
                      });
@@ -84,18 +82,10 @@ public class ElectClient {
             channelFuture.addListener(future -> {
                 if (!future.isSuccess()) {
 
-                    //                    if (((ChannelFuture) future).channel()
-                    //                                                .eventLoop()
-                    //                                                .isShuttingDown()) {
-                    //                        return;
-                    //                    }
-
                     if (reconnectLatch.getCount() == 1) {
                         logger.info("与节点 {} [{}] 的连接异常，正在重连 ...", serverName, host, ((ChannelFuture) future).channel()
                                                                                                             .remoteAddress());
                     }
-                    ((ChannelFuture) future).channel()
-                                            .close();
 
                     reconnectLatch.countDown();
                 }
@@ -109,8 +99,8 @@ public class ElectClient {
             try {
                 eventExecutors.shutdownGracefully()
                               .sync();
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }
