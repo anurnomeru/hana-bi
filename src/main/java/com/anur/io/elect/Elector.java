@@ -36,15 +36,11 @@ public class Elector implements Runnable {
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
     public static void main(String[] args) {
-        Votes myVote = null;
-        String s = Coder.encode(ProtocolEnum.CANVASSED_RESPONSE, myVote);
-        DecodeWrapper d = Coder.decode(s);
-        System.out.println();
-        //        Elector elector = new Elector();
-        //        elector.init();
-        //
-        //        Thread thread = new Thread(elector);
-        //        thread.start();
+        Elector elector = new Elector();
+        elector.init();
+
+        Thread thread = new Thread(elector);
+        thread.start();
     }
 
     /**

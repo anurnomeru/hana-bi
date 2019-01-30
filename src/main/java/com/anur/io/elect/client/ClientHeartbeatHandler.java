@@ -23,8 +23,6 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     private Logger logger = LoggerFactory.getLogger(ClientHeartbeatHandler.class);
 
-    private static Set<ChannelHandlerContext> t = new HashSet<>();
-
     public ClientHeartbeatHandler(String serverName, CountDownLatch reconnectLatch) {
         this.serverName = serverName;
         this.reconnectLatch = reconnectLatch;
@@ -32,14 +30,13 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-        t.add(ctx);
         super.userEventTriggered(ctx, evt);
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state()
                      .equals(IdleState.READER_IDLE)) {// 长期没收到服务器推送数据
 
-                if (reconnectLatch.getCount() == 0) {
+                if (reconnectLatch.getCount() == 1) {
                     logger.info("长时间没有收到节点 {} [{}] 的消息，正在重连 ...", serverName, ctx.channel()
                                                                                  .remoteAddress());
                 }
@@ -60,7 +57,7 @@ public class ClientHeartbeatHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
 
-        if (reconnectLatch.getCount() == 0) {
+        if (reconnectLatch.getCount() == 1) {
             logger.info("与节点 {} [{}] 的连接断开，正在重连 ...", serverName, ctx.channel()
                                                                      .remoteAddress());
         }

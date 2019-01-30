@@ -16,6 +16,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 /**
@@ -25,8 +26,6 @@ import io.netty.handler.timeout.IdleStateHandler;
  */
 public class ElectClient {
 
-    private static List<EventLoopGroup> cc = new ArrayList<>();
-
     private final String serverName;
 
     private final String host;
@@ -35,8 +34,8 @@ public class ElectClient {
 
     private Logger logger = LoggerFactory.getLogger(ElectClient.class);
 
-    private static ExecutorService RECONNECTOR = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
-                                                                                                           .build());
+    private static ExecutorService RECONNECT_MANAGER = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
+                                                                                                                 .build());
 
     private CountDownLatch reconnectLatch;
 
@@ -52,7 +51,7 @@ public class ElectClient {
     }
 
     public void start() {
-        RECONNECTOR.submit(() -> {
+        RECONNECT_MANAGER.submit(() -> {
             try {
                 reconnectLatch.await();
             } catch (InterruptedException e) {
@@ -62,7 +61,6 @@ public class ElectClient {
         });
 
         EventLoopGroup eventExecutors = new NioEventLoopGroup();
-        cc.add(eventExecutors);
 
         try {
             Bootstrap bootstrap = new Bootstrap();
@@ -73,6 +71,7 @@ public class ElectClient {
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
                              socketChannel.pipeline()
+                                          .addLast("LineBasedFrameDecoder", new LineBasedFrameDecoder(Integer.MAX_VALUE))
                                           .addLast(
                                               // 这个 handler 用于开启心跳检测
                                               "IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
@@ -85,13 +84,13 @@ public class ElectClient {
             channelFuture.addListener(future -> {
                 if (!future.isSuccess()) {
 
-                    if (((ChannelFuture) future).channel()
-                                                .eventLoop()
-                                                .isShuttingDown()) {
-                        return;
-                    }
+                    //                    if (((ChannelFuture) future).channel()
+                    //                                                .eventLoop()
+                    //                                                .isShuttingDown()) {
+                    //                        return;
+                    //                    }
 
-                    if (reconnectLatch.getCount() == 0) {
+                    if (reconnectLatch.getCount() == 1) {
                         logger.info("与节点 {} [{}] 的连接异常，正在重连 ...", serverName, host, ((ChannelFuture) future).channel()
                                                                                                             .remoteAddress());
                     }
