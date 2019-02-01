@@ -22,7 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
 /**
  * Created by Anur IjuoKaruKas on 2/1/2019
  *
- * 选举操作服务器操作类
+ * 选举服务器操作类
  */
 public class ElectServerOperator implements Runnable {
 
@@ -66,7 +66,8 @@ public class ElectServerOperator implements Runnable {
             switch (decodeWrapper.protocolEnum) {
             case CANVASSED:
                 Votes votes = (Votes) decodeWrapper.object;
-                Canvass canvass = voter.vote(votes);
+                Canvass canvass = VoteOperator.getInstance()
+                                              .vote(votes);
 
                 VotesResponse myVote;
 
