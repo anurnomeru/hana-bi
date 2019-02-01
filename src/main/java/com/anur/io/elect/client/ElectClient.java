@@ -12,6 +12,8 @@ import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.elect.vote.model.VotesResponse;
+import com.anur.core.util.ShutDownHooker;
+import com.anur.io.elect.common.ShutDownHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -41,6 +43,8 @@ public class ElectClient {
 
     private CountDownLatch reconnectLatch;
 
+    private ShutDownHooker shutDownHooker;
+
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
      */
@@ -49,29 +53,35 @@ public class ElectClient {
     private static ExecutorService RECONNECT_MANAGER = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
                                                                                                                  .build());
 
-    public ElectClient(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+    public ElectClient(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
         this.reconnectLatch = new CountDownLatch(1);
         this.serverName = serverName;
         this.host = host;
         this.port = port;
         this.msgConsumer = msgConsumer;
+        this.shutDownHooker = shutDownHooker;
     }
 
-    public void start()  {
+    public void start() {
         RECONNECT_MANAGER.submit(() -> {
             try {
                 reconnectLatch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            new ElectClient(serverName, host, port, msgConsumer).start();
+            if (shutDownHooker.isShutDown()) {
+                logger.info("与节点 {} [{}:{}] 的连接已被终止，无需再进行重连", serverName, host, port);
+            } else {
+                logger.info("正在重新连接节点 {} [{}:{}] ...", serverName, host, port);
+                new ElectClient(serverName, host, port, msgConsumer, shutDownHooker).start();
+            }
         });
 
-        EventLoopGroup eventExecutors = new NioEventLoopGroup();
+        EventLoopGroup group = new NioEventLoopGroup();
 
         try {
             Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(eventExecutors)
+            bootstrap.group(group)
                      .channel(NioSocketChannel.class)
                      .handler(new ChannelInitializer<SocketChannel>() {
 
@@ -90,24 +100,24 @@ public class ElectClient {
             ChannelFuture channelFuture = bootstrap.connect(host, port);
             channelFuture.addListener(future -> {
                 if (!future.isSuccess()) {
-
                     if (reconnectLatch.getCount() == 1) {
-                        logger.info("与节点 {} [{}] 的连接异常，正在重连 ...", serverName, host, ((ChannelFuture) future).channel()
-                                                                                                            .remoteAddress());
+                        logger.info("连接节点 {} [{}:{}] 失败，准备进行重连 ...", serverName, host, port);
                     }
 
                     reconnectLatch.countDown();
                 }
             });
 
+            shutDownHooker.shutDownRegister(aVoid -> group.shutdownGracefully());
+
             channelFuture.channel()
-                         .closeFuture()
-                         .sync();
-        } catch (InterruptedException ignore) {
+                         .closeFuture().sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         } finally {
             try {
-                eventExecutors.shutdownGracefully()
-                              .sync();
+                group.shutdownGracefully()
+                     .sync();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

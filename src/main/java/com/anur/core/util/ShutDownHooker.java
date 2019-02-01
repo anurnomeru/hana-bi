@@ -1,6 +1,8 @@
 package com.anur.core.util;
 
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Created by Anur IjuoKaruKas on 1/30/2019
@@ -9,12 +11,23 @@ import java.util.function.Consumer;
  */
 public class ShutDownHooker {
 
+    private static Logger logger = LoggerFactory.getLogger(ShutDownHooker.class);
+
     private boolean shutDown;
 
-    private Consumer<Void> shutDownConsumer = aVoid -> {
-    };
+    private Consumer<Void> shutDownConsumer;
+
+    private String shutDownMsg;
+
+    public ShutDownHooker(String shutDownMsg) {
+        this.shutDownMsg = shutDownMsg;
+        this.shutDown = false;
+        this.shutDownConsumer = aVoid -> {
+        };
+    }
 
     public synchronized void shutdown() {
+        logger.info(shutDownMsg);
         shutDown = true;
         shutDownConsumer.accept(null);
     }
@@ -26,5 +39,9 @@ public class ShutDownHooker {
             shutDownConsumer.accept(null);
         }
         this.shutDownConsumer = shutDownSupplier;
+    }
+
+    public synchronized boolean isShutDown() {
+        return shutDown;
     }
 }

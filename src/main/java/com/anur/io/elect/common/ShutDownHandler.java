@@ -11,25 +11,18 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  */
 public class ShutDownHandler extends ChannelInboundHandlerAdapter {
 
-    private ShutDownHooker shutDownHooker;
-
     private Logger logger = LoggerFactory.getLogger(ShutDownHandler.class);
 
     public ShutDownHandler(ShutDownHooker shutDownHooker) {
-        this.shutDownHooker = shutDownHooker;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        shutDownHooker.shutDownRegister(aVoid ->
-            ctx.close()
-        );
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        logger.info("已经销毁====================");
         super.channelInactive(ctx);
     }
 }

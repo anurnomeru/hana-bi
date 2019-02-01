@@ -58,9 +58,10 @@ public class ElectServer {
             ChannelFuture f = serverBootstrap.bind()
                                              .sync();
 
+            shutDownHooker.shutDownRegister(aVoid -> group.shutdownGracefully());
+
             f.channel()
-             .closeFuture()
-             .sync();
+             .closeFuture().sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
