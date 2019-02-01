@@ -2,6 +2,7 @@ package com.anur.io.elect.server;
 
 import java.net.InetSocketAddress;
 import java.util.function.BiConsumer;
+import com.anur.core.util.ShutDownHooker;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -26,9 +27,12 @@ public class ElectServer {
      */
     private BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
-    public ElectServer(int port, BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+    private ShutDownHooker shutDownHooker;
+
+    public ElectServer(int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
         this.port = port;
         this.msgConsumer = msgConsumer;
+        this.shutDownHooker = shutDownHooker;
     }
 
     public void start() {
@@ -51,6 +55,9 @@ public class ElectServer {
 
             ChannelFuture f = serverBootstrap.bind()
                                              .sync();
+
+            shutDownHooker.shutDownRegister(aVoid -> group.shutdownGracefully());
+
             f.channel()
              .closeFuture()
              .sync();

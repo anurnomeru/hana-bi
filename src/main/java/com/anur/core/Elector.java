@@ -18,6 +18,7 @@ import com.anur.core.elect.vote.base.VoteController;
 import com.anur.core.elect.vote.model.Canvass;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.elect.vote.model.VotesResponse;
+import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.client.ElectClient;
 import com.anur.io.elect.server.ElectServer;
 import io.netty.buffer.Unpooled;
@@ -56,6 +57,16 @@ public class Elector implements Runnable {
      * 启动池
      */
     private ExecutorService pool = Executors.newFixedThreadPool(Integer.MAX_VALUE);
+
+    /**
+     * 关闭服务器的钩子
+     */
+    private ShutDownHooker serverShutDownHooker;
+
+    /**
+     * 关闭连接服务器socket的钩子
+     */
+    private ShutDownHooker clientShutDownHooker;
 
     public static void main(String[] args) {
         Elector elector = new Elector();
@@ -107,8 +118,11 @@ public class Elector implements Runnable {
                                 .orElse("没拿到正确的选票"));
         };
 
+        this.serverShutDownHooker = new ShutDownHooker();
+        this.clientShutDownHooker = new ShutDownHooker();
+
         this.voter = new Voter();
-        this.electServer = new ElectServer(InetSocketAddressConfigHelper.getServerPort(), serverMsgConsumer);
+        this.electServer = new ElectServer(InetSocketAddressConfigHelper.getServerPort(), serverMsgConsumer, serverShutDownHooker);
         this.electClient = new ElectClient("hanabi_test", "localhost", 10000, clientMsgConsumer);
         countDownLatch.countDown();
     }
@@ -122,6 +136,16 @@ public class Elector implements Runnable {
             });
             pool.submit(() -> {
                 electClient.start();
+            });
+
+            pool.submit(() -> {
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                logger.info("准备关闭服务器！");
+                serverShutDownHooker.shutdown();
             });
         } catch (InterruptedException e) {
             e.printStackTrace();
