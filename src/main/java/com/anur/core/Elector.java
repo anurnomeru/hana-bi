@@ -1,16 +1,14 @@
-package com.anur.io.elect;
+package com.anur.core;
 
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ch.qos.logback.core.net.server.Client;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiCluster;
 import com.anur.core.coder.Coder;
@@ -34,14 +32,29 @@ public class Elector implements Runnable {
 
     private Logger logger = LoggerFactory.getLogger(Elector.class);
 
+    /**
+     * 选举客户端，也就是发起投票者，要去连接其他节点的服务端，还没有进入选举阶段时，可以不连接。
+     */
     private ElectClient electClient;
 
+    /**
+     * 选举服务端，需要常驻
+     */
     private ElectServer electServer;
 
+    /**
+     * 投票控制器
+     */
     private Voter voter;
 
+    /**
+     * 启动latch
+     */
     private CountDownLatch countDownLatch = new CountDownLatch(1);
 
+    /**
+     * 启动池
+     */
     private ExecutorService pool = Executors.newFixedThreadPool(Integer.MAX_VALUE);
 
     public static void main(String[] args) {
