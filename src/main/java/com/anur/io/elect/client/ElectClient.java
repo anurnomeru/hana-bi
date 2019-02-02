@@ -40,8 +40,6 @@ public class ElectClient {
 
     private CountDownLatch reconnectLatch;
 
-    private CountDownLatch initLatch;
-
     private ShutDownHooker shutDownHooker;
 
     /**
@@ -54,7 +52,6 @@ public class ElectClient {
 
     public ElectClient(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
         this.reconnectLatch = new CountDownLatch(1);
-        this.initLatch = new CountDownLatch(1);
         this.serverName = serverName;
         this.host = host;
         this.port = port;
@@ -89,12 +86,10 @@ public class ElectClient {
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
                              socketChannel.pipeline()
-                                          .addLast("ClientChannelHandler", new ClientChannelHandler(ChannelType.ELECT, serverName))
+                                          .addLast("IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
                                           .addLast("LineBasedFrameDecoder", new LineBasedFrameDecoder(Integer.MAX_VALUE))
-                                          .addLast(
-                                              // 这个 handler 用于开启心跳检测
-                                              "IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
-                                          .addLast("ClientHeartbeatHandler", new ClientReconnectHandler(serverName, reconnectLatch))
+                                          .addLast("ClientChannelHandler", new ClientChannelHandler(ChannelType.ELECT, serverName))
+                                          .addLast("ClientReconnectHandler", new ClientReconnectHandler(serverName, reconnectLatch))
                                           .addLast("ClientElectHandler", new ClientElectHandler(msgConsumer));
                          }
                      });
@@ -124,19 +119,6 @@ public class ElectClient {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-        }
-    }
-
-    public static class ContextHolder {
-
-        private ChannelHandlerContext channelHandlerContext;
-
-        public ChannelHandlerContext getChannelHandlerContext() {
-            return channelHandlerContext;
-        }
-
-        public void setChannelHandlerContext(ChannelHandlerContext channelHandlerContext) {
-            this.channelHandlerContext = channelHandlerContext;
         }
     }
 }

@@ -3,7 +3,6 @@ package com.anur.io.elect.client;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.io.elect.client.ElectClient.ContextHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
@@ -22,6 +21,11 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 
     private Logger logger = LoggerFactory.getLogger(ClientReconnectHandler.class);
 
+    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch) {
+        this.serverName = serverName;
+        this.reconnectLatch = reconnectLatch;
+    }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
@@ -29,14 +33,10 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
                                                       .remoteAddress());
     }
 
-    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch) {
-        this.serverName = serverName;
-        this.reconnectLatch = reconnectLatch;
-    }
-
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         super.userEventTriggered(ctx, evt);
+
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent event = (IdleStateEvent) evt;
             if (event.state()
@@ -66,7 +66,6 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
             logger.info("与节点 {} [{}] 的连接断开，准备进行重连 ...", serverName, ctx.channel()
                                                                        .remoteAddress());
         }
-
         ctx.close();
         reconnectLatch.countDown();
     }

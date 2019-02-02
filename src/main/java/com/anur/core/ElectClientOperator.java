@@ -1,5 +1,6 @@
 package com.anur.core;
 
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,8 +23,8 @@ import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.client.ElectClient;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -41,21 +42,6 @@ public class ElectClientOperator {
      * 关闭本服务的钩子
      */
     private ShutDownHooker clientShutDownHooker;
-
-    /**
-     * 启动latch
-     */
-    private CountDownLatch initialLatch = new CountDownLatch(2);
-
-    /**
-     * 是否正处于选举之中
-     */
-    private Semaphore electState;
-
-    /**
-     * 所有节点的连接
-     */
-    private Map<String, ElectClient> clusterMap;
 
     /**
      * 如何消费消息
@@ -92,26 +78,21 @@ public class ElectClientOperator {
             ElectClient electClient = new ElectClient(hanabiCluster.getServerName(), hanabiCluster.getHost(), hanabiCluster.getElectionPort(),
                 this.clientMsgConsumer, this.clientShutDownHooker);
 
-            // 启动服务
+            // 建立连接
+            HanabiExecutors.submit(electClient::start);
+
             HanabiExecutors.submit(() -> {
                 Channel channel;
-                // 开始投票
                 while ((channel = ChannelManager.getInstance(ChannelType.ELECT)
                                                 .getChannel(hanabiCluster.getServerName())) == null) {
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(100);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
-                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
-                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
-                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
+                channel.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
             });
-
-            // 建立连接
-            HanabiExecutors.submit(electClient::start);
 
             //            }
         });

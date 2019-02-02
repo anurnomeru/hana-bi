@@ -123,7 +123,7 @@ public abstract class VoteController extends ReentrantLocker {
             List<HanabiCluster> hanabiClusterList = this.clusters;
             int clusterSize = hanabiClusterList.size();
             int votesNeed = clusterSize / 2 + 1;
-            logger.info("本节点当前投票箱进度 {}/{}", box.size(), votesNeed);
+            logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiClusterList.size(), box.size(), votesNeed);
 
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.size() >= votesNeed) {

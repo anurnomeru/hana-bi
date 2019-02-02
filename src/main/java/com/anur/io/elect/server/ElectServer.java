@@ -3,7 +3,6 @@ package com.anur.io.elect.server;
 import java.net.InetSocketAddress;
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.common.ShutDownHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -49,8 +48,7 @@ public class ElectServer {
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    socketChannel.pipeline()
-                                                .addLast(new ShutDownHandler(shutDownHooker))
-                                                .addLast(new LineBasedFrameDecoder(100))
+                                                .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
                                                 .addLast(new ServerElectHandler(msgConsumer));
                                }
                            });
@@ -59,9 +57,9 @@ public class ElectServer {
                                              .sync();
 
             shutDownHooker.shutDownRegister(aVoid -> group.shutdownGracefully());
-
             f.channel()
-             .closeFuture().sync();
+             .closeFuture()
+             .sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
