@@ -106,15 +106,18 @@ public class ElectClientOperator implements Runnable {
         initialLatch.countDown();
     }
 
-    public void ShutDown() {
+    public synchronized void ShutDown() {
         this.serverShutDownHooker.shutdown();
     }
 
     /**
-     * 重新连接
+     * 重新启动连接
      */
-    public void restart() {
-
+    public synchronized void restart() {
+        if (this.serverShutDownHooker.isShutDown()) {
+            this.serverShutDownHooker.reset();
+            HanabiExecutors.submit(this);
+        }
     }
 
     @Override

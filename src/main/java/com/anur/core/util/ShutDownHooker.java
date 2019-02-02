@@ -26,6 +26,12 @@ public class ShutDownHooker {
         };
     }
 
+    public synchronized void reset() {
+        this.shutDown = false;
+        this.shutDownConsumer = aVoid -> {
+        };
+    }
+
     public synchronized void shutdown() {
         logger.info(shutDownMsg);
         shutDown = true;
