@@ -1,4 +1,4 @@
-package com.anur.core;
+package com.anur.core.elect;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.CountDownLatch;

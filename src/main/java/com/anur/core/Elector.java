@@ -2,6 +2,8 @@ package com.anur.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.elect.ElectServerOperator;
+import com.anur.core.elect.VoteOperator;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/21
