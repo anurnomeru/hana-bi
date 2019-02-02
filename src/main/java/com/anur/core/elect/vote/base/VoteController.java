@@ -38,6 +38,11 @@ public abstract class VoteController extends ReentrantLocker {
      */
     protected int generation;
 
+    /**
+     * 缓存一份集群信息，因为集群信息是可能变化的，我们要保证在一次选举中，集群信息是不变的
+     */
+    protected List<HanabiCluster> clusters;
+
     public VoteController() {
         this.generation = 0;
         this.box = new HashSet<>();
@@ -60,9 +65,14 @@ public abstract class VoteController extends ReentrantLocker {
      */
     public void updateGeneration() {
         this.lockSupplier(() -> {
-            generation = generation++;
-            logger.info("强制更新当前世代 =====> " + generation);
-            if (!this.initVotesBox(generation)) {
+
+            this.generation = this.generation++;
+            logger.info("强制更新当前世代 =====> " + this.generation);
+
+            this.clusters = InetSocketAddressConfigHelper.getCluster();
+            logger.info("更新节点信息     =====> " + this.generation);
+
+            if (!this.initVotesBox(this.generation)) {
                 updateGeneration();
             }
             return null;
@@ -88,7 +98,7 @@ public abstract class VoteController extends ReentrantLocker {
             this.voteRecord = votes;
 
             // 让其他节点给自己投一票
-            this.askForVote(InetSocketAddressConfigHelper.getCluster());
+            this.askForVote(this.clusters);
             return null;
         });
     }
@@ -111,7 +121,7 @@ public abstract class VoteController extends ReentrantLocker {
             logger.info("来自节点 {} 的选票有效，投票箱 + 1", votes.getServerName());
             box.add(votes.getServerName());
 
-            List<HanabiCluster> hanabiClusterList = InetSocketAddressConfigHelper.getCluster();
+            List<HanabiCluster> hanabiClusterList = this.clusters;
             int clusterSize = hanabiClusterList.size();
             int votesNeed = clusterSize / 2 + 1;
             logger.info("本节点当前投票箱进度 {}/{}", box.size(), votesNeed);
@@ -119,7 +129,7 @@ public abstract class VoteController extends ReentrantLocker {
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.size() >= votesNeed) {
                 logger.info("====================== 选票过半 ====================== ，准备上位成为 leader", votes.getServerName());
-                this.becomeLeader(hanabiClusterList);
+                this.becomeLeader(this.clusters);
             }
 
             return null;
