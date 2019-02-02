@@ -3,6 +3,7 @@ package com.anur.config;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import com.anur.core.util.ConfigHelper;
 
 /**
@@ -24,19 +25,27 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
     }
 
-    public static List<HanabiCluster> getCluster() {
+    public static List<HanabiNode> getCluster() {
         return getConfigSimilar(ConfigEnum.CLIENT_ADDR, pair -> {
             String serverName = pair.getKey();
             String[] split = pair.getValue()
                                  .split(":");
-            return new HanabiCluster(serverName, split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]));
+            return new HanabiNode(serverName, split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]));
         });
+    }
+
+    public static HanabiNode getNode(String serverName) {
+        return getCluster().stream()
+                           .collect(Collectors.toMap(o -> o.serverName, Function.identity()))
+                           .getOrDefault(serverName, HanabiNode.NOT_EXIST);
     }
 
     /**
      * 保存了初始化连接另一个客户端需要哪个地址、哪些端口
      */
-    public static class HanabiCluster {
+    public static class HanabiNode {
+
+        public static final HanabiNode NOT_EXIST = new HanabiNode("", "", 0, 0);
 
         private String serverName;
 
@@ -46,7 +55,7 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
 
         private int businessPort;
 
-        public HanabiCluster(String serverName, String host, int electionPort, int businessPort) {
+        public HanabiNode(String serverName, String host, int electionPort, int businessPort) {
             this.serverName = serverName;
             this.host = host;
             this.electionPort = electionPort;
@@ -68,7 +77,7 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            HanabiCluster that = (HanabiCluster) o;
+            HanabiNode that = (HanabiNode) o;
             return Objects.equals(serverName, that.serverName);
         }
 

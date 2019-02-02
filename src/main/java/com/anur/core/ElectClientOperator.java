@@ -1,46 +1,64 @@
 package com.anur.core;
 
-import java.nio.charset.Charset;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper.HanabiCluster;
+import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
-import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.elect.vote.model.VotesResponse;
-import com.anur.core.util.ChannelManager;
-import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.exception.HanabiException;
 import com.anur.io.elect.client.ElectClient;
-import io.netty.buffer.Unpooled;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Created by Anur IjuoKaruKas on 2/1/2019
+ * Created by Anur IjuoKaruKas on 2/2/2019
  *
- * 选举客户端操作类，负责选举相关的业务
+ * 选举服务器操作类客户端，负责选举相关的业务
  */
-public class ElectClientOperator {
+public class ElectClientOperator implements Runnable {
 
-    private static Logger logger = LoggerFactory.getLogger(ElectClientOperator.class);
+    private static Logger logger = LoggerFactory.getLogger(ElectServerOperator.class);
 
-    private volatile static ElectClientOperator INSTANCE;
+    private volatile static Map<String, ElectClientOperator> SERVER_INSTANCE_MAPPER = new HashMap<>();
 
     /**
      * 关闭本服务的钩子
      */
-    private ShutDownHooker clientShutDownHooker;
+    private ShutDownHooker serverShutDownHooker;
+
+    /**
+     * 启动latch
+     */
+    private CountDownLatch initialLatch = new CountDownLatch(2);
+
+    /**
+     * 选举客户端
+     */
+    private ElectClient electClient;
+
+    /**
+     * 要连接服务
+     */
+    private String serverName;
+
+    /**
+     * 要连接的节点的信息
+     */
+    private HanabiNode hanabiNode;
 
     /**
      * 如何消费消息
      */
-    private BiConsumer<ChannelHandlerContext, String> clientMsgConsumer = (ctx, msg) -> {
+    private static BiConsumer<ChannelHandlerContext, String> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
 
         VotesResponse votesResponse = (VotesResponse) decodeWrapper.object;
@@ -49,47 +67,64 @@ public class ElectClientOperator {
                             .orElse("没拿到正确的选票"));
     };
 
-    public static ElectClientOperator getInstance() {
-        if (INSTANCE == null) {
-            synchronized (ElectServerOperator.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new ElectClientOperator();
+    public static ElectClientOperator getInstance(String serverName) {
+        ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(serverName);
+
+        if (electClientOperator == null) {
+            synchronized (ElectClientOperator.class) {
+                electClientOperator = SERVER_INSTANCE_MAPPER.get(serverName);
+                if (electClientOperator == null) {
+                    electClientOperator = new ElectClientOperator(serverName);
+                    electClientOperator.init();
+                    HanabiExecutors.submit(electClientOperator);
                 }
             }
         }
-        return INSTANCE;
+        return SERVER_INSTANCE_MAPPER.get(serverName);
+    }
+
+    public ElectClientOperator(String serverName) {
+        this.serverName = serverName;
     }
 
     /**
-     * 开始一场选举
+     * 初始化Elector
      */
-    public void beginSelection(List<HanabiCluster> hanabiClusterList, Votes votes) {
-        this.clientShutDownHooker = new ShutDownHooker(" ----------------- 终止连接其他选举节点！ ----------------- ");
+    private void init() {
+        this.hanabiNode = InetSocketAddressConfigHelper.getNode(serverName);
 
-        /** 1、移除上个世代的所有定时任务 */
+        if (hanabiNode.equals(HanabiNode.NOT_EXIST)) {
+            throw new HanabiException("节点初始化失败，无法从集群配置中找到这个节点的信息。");
+        }
 
-        /** 2、建立与其他节点的连接，如果连接还未建立，则建立连接，如果已经建立，则不必再建立连接 */
-        hanabiClusterList.forEach(hanabiCluster -> {
-            //            if (!hanabiCluster.isLocalNode()) {
-            ElectClient electClient = new ElectClient(hanabiCluster.getServerName(), hanabiCluster.getHost(), hanabiCluster.getElectionPort(),
-                this.clientMsgConsumer, this.clientShutDownHooker);
+        this.serverShutDownHooker = new ShutDownHooker(String.format(" ----------------- 终止选举服务器的套接字接口 %s 的监听！ ----------------- ", InetSocketAddressConfigHelper.getServerPort()));
+        this.electClient = new ElectClient(this.serverName, hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
+        initialLatch.countDown();
+    }
 
-            // 建立连接
-            HanabiExecutors.submit(electClient::start);
+    public void start() {
+        initialLatch.countDown();
+    }
 
-            HanabiExecutors.submit(() -> {
-                Channel channel;
-                while ((channel = ChannelManager.getInstance(ChannelType.ELECT)
-                                                .getChannel(hanabiCluster.getServerName())) == null) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
-                channel.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
-            });
-            //            }
-        });
+    public void ShutDown() {
+        this.serverShutDownHooker.shutdown();
+    }
+
+    /**
+     * 重新连接
+     */
+    public void restart() {
+
+    }
+
+    @Override
+    public void run() {
+        try {
+            initialLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        logger.info("正在建立与节点 {} [{}] 的连接...", serverName, hanabiNode.getHost(), hanabiNode.getElectionPort());
+        electClient.start();
     }
 }

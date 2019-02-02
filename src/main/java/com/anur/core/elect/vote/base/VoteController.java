@@ -7,7 +7,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.config.InetSocketAddressConfigHelper.HanabiCluster;
+import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.elect.vote.model.Canvass;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
@@ -41,7 +41,7 @@ public abstract class VoteController extends ReentrantLocker {
     /**
      * 缓存一份集群信息，因为集群信息是可能变化的，我们要保证在一次选举中，集群信息是不变的
      */
-    protected List<HanabiCluster> clusters;
+    protected List<HanabiNode> clusters;
 
     public VoteController() {
         this.generation = 0;
@@ -53,12 +53,12 @@ public abstract class VoteController extends ReentrantLocker {
     /**
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
-    protected abstract void becomeLeader(List<HanabiCluster> hanabiClusterList);
+    protected abstract void becomeLeader(List<HanabiNode> HanabiNodeList);
 
     /**
      * 如何向其他节点发起拉票请求
      */
-    protected abstract void askForVote(List<HanabiCluster> hanabiClusterList);
+    protected abstract void askForVote(List<HanabiNode> HanabiNodeList);
 
     /**
      * 强制更新世代信息
@@ -120,10 +120,10 @@ public abstract class VoteController extends ReentrantLocker {
             logger.info("来自节点 {} 的选票有效，投票箱 + 1", votes.getServerName());
             box.add(votes.getServerName());
 
-            List<HanabiCluster> hanabiClusterList = this.clusters;
-            int clusterSize = hanabiClusterList.size();
+            List<HanabiNode> HanabiNodeList = this.clusters;
+            int clusterSize = HanabiNodeList.size();
             int votesNeed = clusterSize / 2 + 1;
-            logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiClusterList.size(), box.size(), votesNeed);
+            logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", HanabiNodeList.size(), box.size(), votesNeed);
 
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.size() >= votesNeed) {
