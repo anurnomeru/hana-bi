@@ -16,7 +16,7 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
  *
- * 供其他端连接的套接字服务端入口
+ * 供其他端连接的套接字服务端入口，ElectServer与选举逻辑无关，它只控制socket服务的开启和关闭
  */
 public class ElectServer {
 

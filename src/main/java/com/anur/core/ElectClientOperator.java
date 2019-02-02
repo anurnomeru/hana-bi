@@ -2,16 +2,10 @@ package com.anur.core;
 
 import java.nio.charset.Charset;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiCluster;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
@@ -30,7 +24,7 @@ import io.netty.channel.ChannelHandlerContext;
 /**
  * Created by Anur IjuoKaruKas on 2/1/2019
  *
- * 选举客户端操作类
+ * 选举客户端操作类，负责选举相关的业务
  */
 public class ElectClientOperator {
 
@@ -63,7 +57,6 @@ public class ElectClientOperator {
                 }
             }
         }
-
         return INSTANCE;
     }
 
@@ -73,6 +66,9 @@ public class ElectClientOperator {
     public void beginSelection(List<HanabiCluster> hanabiClusterList, Votes votes) {
         this.clientShutDownHooker = new ShutDownHooker(" ----------------- 终止连接其他选举节点！ ----------------- ");
 
+        /** 1、移除上个世代的所有定时任务 */
+
+        /** 2、建立与其他节点的连接，如果连接还未建立，则建立连接，如果已经建立，则不必再建立连接 */
         hanabiClusterList.forEach(hanabiCluster -> {
             //            if (!hanabiCluster.isLocalNode()) {
             ElectClient electClient = new ElectClient(hanabiCluster.getServerName(), hanabiCluster.getHost(), hanabiCluster.getElectionPort(),
@@ -93,7 +89,6 @@ public class ElectClientOperator {
                 }
                 channel.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
             });
-
             //            }
         });
     }
