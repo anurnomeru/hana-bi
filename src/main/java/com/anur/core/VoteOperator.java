@@ -26,8 +26,10 @@ public class VoteOperator extends VoteController {
 
     @Override
     protected void askForVote(List<HanabiNode> HanabiNodeList) {
-//        ElectClientOperator.getInstance()
-//                           .beginSelection(HanabiNodeList, new Votes(this.generation, InetSocketAddressConfigHelper.getServerName()));
+        HanabiNodeList.forEach(
+            hanabiNode -> ElectClientOperator.getInstance(hanabiNode)
+                                             .start()
+        );
     }
 
     @Override

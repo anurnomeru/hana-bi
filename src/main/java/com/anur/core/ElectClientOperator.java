@@ -15,7 +15,6 @@ import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.elect.vote.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.exception.HanabiException;
 import com.anur.io.elect.client.ElectClient;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -28,7 +27,7 @@ public class ElectClientOperator implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(ElectServerOperator.class);
 
-    private volatile static Map<String, ElectClientOperator> SERVER_INSTANCE_MAPPER = new HashMap<>();
+    private volatile static Map<HanabiNode, ElectClientOperator> SERVER_INSTANCE_MAPPER = new HashMap<>();
 
     /**
      * 关闭本服务的钩子
@@ -44,11 +43,6 @@ public class ElectClientOperator implements Runnable {
      * 选举客户端
      */
     private ElectClient electClient;
-
-    /**
-     * 要连接服务
-     */
-    private String serverName;
 
     /**
      * 要连接的节点的信息
@@ -67,57 +61,50 @@ public class ElectClientOperator implements Runnable {
                             .orElse("没拿到正确的选票"));
     };
 
-    public static ElectClientOperator getInstance(String serverName) {
-        ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(serverName);
+    public static ElectClientOperator getInstance(HanabiNode hanabiNode) {
+        ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
 
         if (electClientOperator == null) {
             synchronized (ElectClientOperator.class) {
-                electClientOperator = SERVER_INSTANCE_MAPPER.get(serverName);
+                electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
                 if (electClientOperator == null) {
-                    electClientOperator = new ElectClientOperator(serverName);
+                    electClientOperator = new ElectClientOperator(hanabiNode);
                     electClientOperator.init();
                     HanabiExecutors.submit(electClientOperator);
+                    SERVER_INSTANCE_MAPPER.put(hanabiNode, electClientOperator);
                 }
             }
         }
-        return SERVER_INSTANCE_MAPPER.get(serverName);
+        return SERVER_INSTANCE_MAPPER.get(hanabiNode);
     }
 
-    public ElectClientOperator(String serverName) {
-        this.serverName = serverName;
+    public ElectClientOperator(HanabiNode hanabiNode) {
+        this.hanabiNode = hanabiNode;
     }
 
     /**
      * 初始化Elector
      */
     private void init() {
-        this.hanabiNode = InetSocketAddressConfigHelper.getNode(serverName);
-
-        if (hanabiNode.equals(HanabiNode.NOT_EXIST)) {
-            throw new HanabiException("节点初始化失败，无法从集群配置中找到这个节点的信息。");
-        }
-
         this.serverShutDownHooker = new ShutDownHooker(String.format(" ----------------- 终止选举服务器的套接字接口 %s 的监听！ ----------------- ", InetSocketAddressConfigHelper.getServerPort()));
-        this.electClient = new ElectClient(this.serverName, hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
+        this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
         initialLatch.countDown();
     }
 
+    /**
+     * 启动client，没事可以多调用，并不会启动多个连接
+     */
     public void start() {
-        initialLatch.countDown();
+        if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
+            this.serverShutDownHooker.reset();
+            HanabiExecutors.submit(this);
+        } else {
+            initialLatch.countDown();// 如果没创建过，则直接将其启动
+        }
     }
 
     public synchronized void ShutDown() {
         this.serverShutDownHooker.shutdown();
-    }
-
-    /**
-     * 重新启动连接
-     */
-    public synchronized void restart() {
-        if (this.serverShutDownHooker.isShutDown()) {
-            this.serverShutDownHooker.reset();
-            HanabiExecutors.submit(this);
-        }
     }
 
     @Override
@@ -127,7 +114,7 @@ public class ElectClientOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.info("正在建立与节点 {} [{}] 的连接...", serverName, hanabiNode.getHost(), hanabiNode.getElectionPort());
+        logger.info("正在建立与节点 {} [{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         electClient.start();
     }
 }
