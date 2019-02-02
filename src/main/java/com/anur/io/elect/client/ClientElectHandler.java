@@ -38,21 +38,6 @@ public class ClientElectHandler extends SimpleChannelInboundHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Votes votes = new Votes();
-        votes.setGeneration(2);
-        votes.setServerName(InetSocketAddressConfigHelper.getServerName());
-
-        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
-
-        votes.setServerName("hanabi.2");
-        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
-
-        votes.setGeneration(1);
-        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
-
-        votes.setGeneration(2);
-        votes.setServerName("hanabi.2");
-        ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED, votes), Charset.defaultCharset()));
         super.channelActive(ctx);
     }
 

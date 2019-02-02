@@ -66,13 +66,12 @@ public abstract class VoteController extends ReentrantLocker {
     public void updateGeneration() {
         this.lockSupplier(() -> {
 
-            this.generation = this.generation++;
             logger.info("强制更新当前世代 =====> " + this.generation);
 
             this.clusters = InetSocketAddressConfigHelper.getCluster();
             logger.info("更新节点信息     =====> " + this.generation);
 
-            if (!this.initVotesBox(this.generation)) {
+            if (!this.initVotesBox(this.generation + 1)) {
                 updateGeneration();
             }
             return null;

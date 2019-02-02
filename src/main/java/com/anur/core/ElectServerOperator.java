@@ -49,6 +49,7 @@ public class ElectServerOperator implements Runnable {
             synchronized (ElectServerOperator.class) {
                 if (INSTANCE == null) {
                     INSTANCE = new ElectServerOperator();
+                    INSTANCE.init();
                     HanabiExecutors.submit(INSTANCE);
                 }
             }
@@ -59,7 +60,7 @@ public class ElectServerOperator implements Runnable {
     /**
      * 初始化Elector
      */
-    private void init() {
+    public void init() {
         BiConsumer<ChannelHandlerContext, String> serverMsgConsumer = (ctx, msg) -> {
             DecodeWrapper decodeWrapper = Coder.decode(msg);
             switch (decodeWrapper.protocolEnum) {
@@ -113,6 +114,7 @@ public class ElectServerOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        logger.info("选举服务器正在启动...");
         HanabiExecutors.submit(() ->
             electServer.start()
         );

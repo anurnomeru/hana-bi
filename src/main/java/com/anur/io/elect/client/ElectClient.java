@@ -8,12 +8,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.Coder.DecodeWrapper;
-import com.anur.core.elect.vote.model.Votes;
-import com.anur.core.elect.vote.model.VotesResponse;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.common.ShutDownHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -43,7 +38,14 @@ public class ElectClient {
 
     private CountDownLatch reconnectLatch;
 
+    private CountDownLatch initLatch;
+
     private ShutDownHooker shutDownHooker;
+
+    /**
+     * 该连接的 channelHandlerContext
+     */
+    private ContextHolder contextHolder;
 
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
@@ -55,6 +57,8 @@ public class ElectClient {
 
     public ElectClient(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
         this.reconnectLatch = new CountDownLatch(1);
+        this.initLatch = new CountDownLatch(1);
+        this.contextHolder = new ContextHolder();
         this.serverName = serverName;
         this.host = host;
         this.port = port;
@@ -62,7 +66,17 @@ public class ElectClient {
         this.shutDownHooker = shutDownHooker;
     }
 
+    public ChannelHandlerContext getContext() {
+        try {
+            initLatch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return contextHolder.getChannelHandlerContext();
+    }
+
     public void start() {
+
         RECONNECT_MANAGER.submit(() -> {
             try {
                 reconnectLatch.await();
@@ -92,7 +106,7 @@ public class ElectClient {
                                           .addLast(
                                               // 这个 handler 用于开启心跳检测
                                               "IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
-                                          .addLast("ClientHeartbeatHandler", new ClientReconnectHandler(serverName, reconnectLatch))
+                                          .addLast("ClientHeartbeatHandler", new ClientReconnectHandler(serverName, reconnectLatch, initLatch, contextHolder))
                                           .addLast("ClientElectHandler", new ClientElectHandler(msgConsumer));
                          }
                      });
@@ -111,7 +125,8 @@ public class ElectClient {
             shutDownHooker.shutDownRegister(aVoid -> group.shutdownGracefully());
 
             channelFuture.channel()
-                         .closeFuture().sync();
+                         .closeFuture()
+                         .sync();
         } catch (InterruptedException e) {
             e.printStackTrace();
         } finally {
@@ -121,6 +136,19 @@ public class ElectClient {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+    public static class ContextHolder {
+
+        private ChannelHandlerContext channelHandlerContext;
+
+        public ChannelHandlerContext getChannelHandlerContext() {
+            return channelHandlerContext;
+        }
+
+        public void setChannelHandlerContext(ChannelHandlerContext channelHandlerContext) {
+            this.channelHandlerContext = channelHandlerContext;
         }
     }
 }

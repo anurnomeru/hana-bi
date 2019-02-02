@@ -3,6 +3,7 @@ package com.anur.io.elect.client;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.io.elect.client.ElectClient.ContextHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.timeout.IdleState;
@@ -19,18 +20,26 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 
     private CountDownLatch reconnectLatch;
 
+    private CountDownLatch initLatch;
+
+    private ContextHolder contextHolder;
+
     private Logger logger = LoggerFactory.getLogger(ClientReconnectHandler.class);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
+        contextHolder.setChannelHandlerContext(ctx);
+        initLatch.countDown();
         logger.info("连接节点 {} [{}] 成功", serverName, ctx.channel()
                                                       .remoteAddress());
     }
 
-    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch) {
+    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch, CountDownLatch initLatch, ContextHolder contextHolder) {
         this.serverName = serverName;
         this.reconnectLatch = reconnectLatch;
+        this.initLatch = initLatch;
+        this.contextHolder = contextHolder;
     }
 
     @Override
@@ -43,7 +52,7 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 
                 if (reconnectLatch.getCount() == 1) {
                     logger.info("长时间没有收到节点 {} [{}] 的消息，准备进行重连 ...", serverName, ctx.channel()
-                                                                                 .remoteAddress());
+                                                                                   .remoteAddress());
                 }
 
                 ctx.close();
@@ -63,7 +72,7 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 
         if (reconnectLatch.getCount() == 1) {
             logger.info("与节点 {} [{}] 的连接断开，准备进行重连 ...", serverName, ctx.channel()
-                                                                     .remoteAddress());
+                                                                       .remoteAddress());
         }
 
         ctx.close();

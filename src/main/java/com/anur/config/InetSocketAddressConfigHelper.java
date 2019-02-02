@@ -3,7 +3,7 @@ package com.anur.config;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import com.anur.util.ConfigHelper;
+import com.anur.core.util.ConfigHelper;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -42,15 +42,22 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
 
         private String host;
 
-        private int serverPort;
+        private int electionPort;
 
-        private int clientPort;
+        private int businessPort;
 
-        public HanabiCluster(String serverName, String host, int serverPort, int clientPort) {
+        public HanabiCluster(String serverName, String host, int electionPort, int businessPort) {
             this.serverName = serverName;
             this.host = host;
-            this.serverPort = serverPort;
-            this.clientPort = clientPort;
+            this.electionPort = electionPort;
+            this.businessPort = businessPort;
+        }
+
+        /**
+         * 是否是本地节点
+         */
+        public boolean isLocalNode() {
+            return this.serverName.equals(InetSocketAddressConfigHelper.getServerName());
         }
 
         @Override
@@ -78,12 +85,12 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
             return host;
         }
 
-        public int getServerPort() {
-            return serverPort;
+        public int getElectionPort() {
+            return electionPort;
         }
 
-        public int getClientPort() {
-            return clientPort;
+        public int getBusinessPort() {
+            return businessPort;
         }
     }
 }
