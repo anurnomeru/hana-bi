@@ -20,26 +20,18 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 
     private CountDownLatch reconnectLatch;
 
-    private CountDownLatch initLatch;
-
-    private ContextHolder contextHolder;
-
     private Logger logger = LoggerFactory.getLogger(ClientReconnectHandler.class);
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        contextHolder.setChannelHandlerContext(ctx);
-        initLatch.countDown();
         logger.info("连接节点 {} [{}] 成功", serverName, ctx.channel()
                                                       .remoteAddress());
     }
 
-    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch, CountDownLatch initLatch, ContextHolder contextHolder) {
+    public ClientReconnectHandler(String serverName, CountDownLatch reconnectLatch) {
         this.serverName = serverName;
         this.reconnectLatch = reconnectLatch;
-        this.initLatch = initLatch;
-        this.contextHolder = contextHolder;
     }
 
     @Override

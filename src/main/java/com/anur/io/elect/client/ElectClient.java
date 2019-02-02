@@ -8,9 +8,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -43,11 +45,6 @@ public class ElectClient {
     private ShutDownHooker shutDownHooker;
 
     /**
-     * 该连接的 channelHandlerContext
-     */
-    private ContextHolder contextHolder;
-
-    /**
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
      */
     private BiConsumer<ChannelHandlerContext, String> msgConsumer;
@@ -58,21 +55,11 @@ public class ElectClient {
     public ElectClient(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
         this.reconnectLatch = new CountDownLatch(1);
         this.initLatch = new CountDownLatch(1);
-        this.contextHolder = new ContextHolder();
         this.serverName = serverName;
         this.host = host;
         this.port = port;
         this.msgConsumer = msgConsumer;
         this.shutDownHooker = shutDownHooker;
-    }
-
-    public ChannelHandlerContext getContext() {
-        try {
-            initLatch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return contextHolder.getChannelHandlerContext();
     }
 
     public void start() {
@@ -102,11 +89,12 @@ public class ElectClient {
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
                              socketChannel.pipeline()
+                                          .addLast("ClientChannelHandler", new ClientChannelHandler(ChannelType.ELECT, serverName))
                                           .addLast("LineBasedFrameDecoder", new LineBasedFrameDecoder(Integer.MAX_VALUE))
                                           .addLast(
                                               // 这个 handler 用于开启心跳检测
                                               "IdleStateHandler", new IdleStateHandler(10, 10, 10, TimeUnit.SECONDS))
-                                          .addLast("ClientHeartbeatHandler", new ClientReconnectHandler(serverName, reconnectLatch, initLatch, contextHolder))
+                                          .addLast("ClientHeartbeatHandler", new ClientReconnectHandler(serverName, reconnectLatch))
                                           .addLast("ClientElectHandler", new ClientElectHandler(msgConsumer));
                          }
                      });
