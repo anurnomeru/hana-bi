@@ -10,7 +10,8 @@ import io.netty.channel.Channel;
 
 /**
  * Created by Anur IjuoKaruKas on 2/2/2019
- * 管理channel
+ *
+ * 管理channel，如果可以根据某个serverName获取到这个channel，代表是能连上服务端的
  */
 public class ChannelManager {
 

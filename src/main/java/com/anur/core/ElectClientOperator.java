@@ -17,9 +17,12 @@ import com.anur.core.coder.Coder.DecodeWrapper;
 import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.vote.model.Votes;
 import com.anur.core.elect.vote.model.VotesResponse;
+import com.anur.core.util.ChannelManager;
+import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.client.ElectClient;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 
@@ -89,17 +92,27 @@ public class ElectClientOperator {
             ElectClient electClient = new ElectClient(hanabiCluster.getServerName(), hanabiCluster.getHost(), hanabiCluster.getElectionPort(),
                 this.clientMsgConsumer, this.clientShutDownHooker);
 
-            // 建立连接
+            // 启动服务
             HanabiExecutors.submit(() -> {
-                // 启动服务
-                electClient.start();
-
+                Channel channel;
                 // 开始投票
-                electClient.getContext()
-                           .writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
+                while ((channel = ChannelManager.getInstance(ChannelType.ELECT)
+                                                .getChannel(hanabiCluster.getServerName())) == null) {
+                    try {
+                        Thread.sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
+                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
+                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
+                channel.writeAndFlush(Coder.encode(ProtocolEnum.CANVASSED, votes));
             });
 
-            System.out.println();
+            // 建立连接
+            HanabiExecutors.submit(electClient::start);
+
             //            }
         });
     }
