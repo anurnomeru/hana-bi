@@ -5,11 +5,15 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
 import com.anur.core.elect.model.Canvass;
 import com.anur.core.elect.model.Votes;
@@ -23,22 +27,29 @@ import io.netty.util.internal.StringUtil;
  *
  * 投票控制器
  */
-public class VoteOperator extends ReentrantLocker {
+public class ElectOperator extends ReentrantLocker {
 
-    private volatile static VoteOperator INSTANCE;
+    private volatile static ElectOperator INSTANCE;
 
-    public static VoteOperator getInstance() {
+    private static Random RANDOM = new Random();
+
+    public static ElectOperator getInstance() {
         if (INSTANCE == null) {
-            synchronized (VoteOperator.class) {
+            synchronized (ElectOperator.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new VoteOperator();
+                    INSTANCE = new ElectOperator();
                 }
             }
         }
         return INSTANCE;
     }
 
-    private Logger logger = LoggerFactory.getLogger(VoteOperator.class);
+    private Logger logger = LoggerFactory.getLogger(ElectOperator.class);
+
+    /**
+     * 当前节点的角色
+     */
+    private NodeRole nodeRole;
 
     /**
      * 所有正在跑的任务
@@ -65,40 +76,12 @@ public class VoteOperator extends ReentrantLocker {
      */
     private List<HanabiNode> clusters;
 
-    private VoteOperator() {
+    private ElectOperator() {
         this.generation = 0;
-        this.taskMap = new HashMap<>();
+        this.taskMap = new ConcurrentHashMap<>();
         this.box = new HashSet<>();
+        this.nodeRole = NodeRole.Follower;
         logger.info("初始化 投票控制器 VoteController");
-    }
-
-    /**
-     * 当选票大于一半以上时调用这个方法，如何去成为一个leader
-     */
-    private void becomeLeader() {
-        // TODO 取消定时任务
-    }
-
-    /**
-     * 真正的执行方法，并提供续约功能
-     */
-    private void askForVote(Votes votes, long delayMs) {
-        this.lockSupplier(() -> {
-            TimedTask timedTask = new TimedTask(delayMs, () -> {
-
-                this.clusters.forEach(
-                    hanabiNode -> {
-                        if (!this.box.contains(hanabiNode.getServerName())) {
-                            ElectClientOperatorFacade.askForVote(hanabiNode, generation, votes);
-                        }
-                    });
-
-                // 拉票续约
-                this.askForVote(votes, 200);
-            });
-            taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
-            return null;
-        });
     }
 
     /**
@@ -126,7 +109,7 @@ public class VoteOperator extends ReentrantLocker {
      * 2、首先给自己投一票
      * 3、请求其他节点，要求其他节点给自己投票（需要子类去实现）
      */
-    public void beginElect() {
+    private void beginElect() {
         this.lockSupplier(() -> {
             logger.info("本节点开始发起选举 =====> ");
             updateGeneration();
@@ -138,7 +121,7 @@ public class VoteOperator extends ReentrantLocker {
             this.voteRecord = votes;
 
             // 让其他节点给自己投一票
-            this.askForVote(new Votes(this.generation, InetSocketAddressConfigHelper.getServerName()), 0);
+            this.askForVoteTask(new Votes(this.generation, InetSocketAddressConfigHelper.getServerName()), 0);
             return null;
         });
     }
@@ -174,6 +157,13 @@ public class VoteOperator extends ReentrantLocker {
 
             return null;
         });
+    }
+
+    /**
+     * 当选票大于一半以上时调用这个方法，如何去成为一个leader
+     */
+    private void becomeLeader() {
+        // TODO 取消定时任务
     }
 
     /**
@@ -220,20 +210,70 @@ public class VoteOperator extends ReentrantLocker {
     private boolean initVotesBox(int generation) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
+
+                // 1、先取消所有的定时任务
+                logger.info("取消本节点在上个世代的所有定时任务");
+                taskMap.values()
+                       .forEach(TimedTask::cancel);
+
+                // 2、重置本地变量
                 logger.info("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
                 this.voteRecord = null;
                 this.box = new HashSet<>();
-                logger.info("清空本节点投票箱，清空本节点投票记录", this.generation, generation);
 
-                // 先取消之前的拉票任务
-                Optional.ofNullable(taskMap.get(TaskEnum.ASK_FOR_VOTES))
-                        .ifPresent(TimedTask::cancel);
-                logger.info("取消本节点在上个世代的拉票任务");
+                logger.info("清空本节点投票箱，清空本节点投票记录，本节点角色由 {} 变更为 {}", this.generation, generation, this.nodeRole, NodeRole.Follower);
+                this.nodeRole = NodeRole.Follower;
+
+                // 3、新增成为Candidate的定时任务
+                this.becomeCandidateTask();
+
                 return true;
             }
             return false;
         });
+    }
+
+    /**
+     * 成为候选者的任务，（重复调用则会取消之前的任务）
+     *
+     * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
+     */
+    private void becomeCandidateTask() {
+        taskMap.get(TaskEnum.BECOME_CANDIDATE)
+               .cancel();
+
+        // The election timeout is randomized to be between 150ms and 300ms.
+        long electionTimeout = 150 + (int) (150 * RANDOM.nextFloat());
+        TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
+        taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
+    }
+
+    /**
+     * 拉票请求的任务
+     */
+    private void askForVoteTask(Votes votes, long delayMs) {
+        this.lockSupplier(() -> {
+            TimedTask timedTask = new TimedTask(delayMs, () -> {
+
+                this.clusters.forEach(
+                    hanabiNode -> {
+                        if (!this.box.contains(hanabiNode.getServerName())) {
+                            ElectClientOperatorFacade.askForVote(hanabiNode, votes);
+                        }
+                    });
+
+                // 拉票续约
+                this.askForVoteTask(votes, 200);
+            });
+            taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
+            return null;
+        });
+    }
+
+    public void updateGenWhileReceiveHigherGen(String serverName, int generation) {
+        logger.info("收到来自节点 {} 世代 -> {} 的消息，如果消息世代大于当前节点世代，将触发投票控制器初始化。", serverName, generation);
+        this.initVotesBox(generation);
     }
 
     /**

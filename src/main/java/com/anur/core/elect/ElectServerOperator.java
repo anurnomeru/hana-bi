@@ -52,8 +52,8 @@ public class ElectServerOperator implements Runnable {
         switch (decodeWrapper.protocolEnum) {
         case CANVASSED:
             Votes votes = (Votes) decodeWrapper.object;
-            Canvass canvass = VoteOperator.getInstance()
-                                          .vote(votes);
+            Canvass canvass = ElectOperator.getInstance()
+                                           .vote(votes);
 
             VotesResponse myVote;
 
@@ -70,8 +70,7 @@ public class ElectServerOperator implements Runnable {
                 myVote = new VotesResponse(canvass.getGeneration(), InetSocketAddressConfigHelper.getServerName(), false);
             }
 
-            ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED_RESPONSE, VoteOperator.getInstance()
-                                                                                                              .getGeneration(), myVote), Charset.defaultCharset()));
+            ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.CANVASSED_RESPONSE, myVote), Charset.defaultCharset()));
             break;
         default:
             break;

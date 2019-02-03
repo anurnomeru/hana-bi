@@ -14,7 +14,7 @@ import com.anur.core.util.ChannelManager.ChannelType;
  */
 public class ElectClientOperatorFacade {
 
-    public static void askForVote(HanabiNode hanabiNode, int generation, Votes votes) {
+    public static void askForVote(HanabiNode hanabiNode, Votes votes) {
 
         // 确保客户端正在运行，如果不在运行，则重启一下
         ElectClientOperator.getInstance(hanabiNode)
@@ -22,7 +22,7 @@ public class ElectClientOperatorFacade {
 
         ChannelManager.getInstance(ChannelType.ELECT)
                       .getChannel(hanabiNode.getServerName())
-                      .writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.CANVASSED, generation, votes));
+                      .writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.CANVASSED, votes));
     }
 
     //    public static void becomeLeader(HanabiNode hanabiNode, int generation) {
