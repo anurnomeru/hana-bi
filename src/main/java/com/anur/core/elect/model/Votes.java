@@ -1,4 +1,4 @@
-package com.anur.core.elect.vote.model;
+package com.anur.core.elect.model;
 
 import java.util.Objects;
 

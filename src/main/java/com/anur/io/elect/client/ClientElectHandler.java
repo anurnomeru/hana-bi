@@ -1,21 +1,11 @@
 package com.anur.io.elect.client;
 
 import java.nio.charset.Charset;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.alibaba.fastjson.JSON;
-import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.Coder.DecodeWrapper;
-import com.anur.core.coder.ProtocolEnum;
-import com.anur.core.elect.vote.model.Votes;
-import com.anur.core.elect.vote.model.VotesResponse;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.SimpleChannelInboundHandler;
 
 /**

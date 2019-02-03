@@ -4,7 +4,7 @@ import java.nio.charset.Charset;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.ProtocolEnum;
-import com.anur.core.elect.vote.model.Votes;
+import com.anur.core.elect.model.Votes;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import io.netty.buffer.Unpooled;

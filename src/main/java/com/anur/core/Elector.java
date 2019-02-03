@@ -3,7 +3,6 @@ package com.anur.core;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.elect.ElectServerOperator;
-import com.anur.core.elect.VoteOperator;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/21
@@ -17,7 +16,7 @@ public class Elector {
     public static void main(String[] args) {
         ElectServerOperator.getInstance()
                            .start();
-        VoteOperator.getInstance()
-                    .beginElect();
+        //        VoteOperator.getInstance()
+        //                    .beginElect();
     }
 }

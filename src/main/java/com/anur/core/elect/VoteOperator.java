@@ -1,17 +1,21 @@
 package com.anur.core.elect;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.elect.vote.model.Canvass;
-import com.anur.core.elect.vote.model.Votes;
+import com.anur.core.elect.constant.TaskEnum;
+import com.anur.core.elect.model.Canvass;
+import com.anur.core.elect.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.exception.HanabiException;
+import com.anur.timewheel.TimedTask;
 import io.netty.util.internal.StringUtil;
 
 /**
@@ -37,27 +41,33 @@ public class VoteOperator extends ReentrantLocker {
     private Logger logger = LoggerFactory.getLogger(VoteOperator.class);
 
     /**
+     * 所有正在跑的任务
+     */
+    private Map<TaskEnum, TimedTask> taskMap;
+
+    /**
      * 投票箱
      */
-    protected Set<String/* serverName */> box;
+    private Set<String/* serverName */> box;
 
     /**
      * 投票给了谁的投票记录
      */
-    protected Votes voteRecord;
+    private Votes voteRecord;
 
     /**
      * 该投票箱的世代信息
      */
-    protected int generation;
+    private int generation;
 
     /**
      * 缓存一份集群信息，因为集群信息是可能变化的，我们要保证在一次选举中，集群信息是不变的
      */
-    protected List<HanabiNode> clusters;
+    private List<HanabiNode> clusters;
 
-    public VoteOperator() {
+    private VoteOperator() {
         this.generation = 0;
+        this.taskMap = new HashMap<>();
         this.box = new HashSet<>();
         logger.info("初始化 投票控制器 VoteController");
     }
@@ -65,24 +75,42 @@ public class VoteOperator extends ReentrantLocker {
     /**
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
-    protected void becomeLeader(List<HanabiNode> HanabiNodeList) {
+    private void becomeLeader(List<HanabiNode> hanabiNodeList) {
 
     }
 
     /**
-     * 向其他节点发起拉票请求，
+     * 向其他节点发起拉票请求
      */
-    protected void askForVote(List<HanabiNode> HanabiNodeList) {
-        Votes votes = new Votes(this.generation, InetSocketAddressConfigHelper.getServerName());
-        HanabiNodeList.forEach(
-            hanabiNode -> ElectClientOperatorFacade.askForVote(hanabiNode, votes)
-        );
+    private void askForVote() {
+        this.lockSupplier(() -> {
+            TimedTask timedTask = new TimedTask(0, () -> {
+                Votes votes = new Votes(this.generation, InetSocketAddressConfigHelper.getServerName());
+                this.clusters.forEach(
+                    hanabiNode -> {
+                        if (!this.box.contains(hanabiNode.getServerName())) {
+                            ElectClientOperatorFacade.askForVote(hanabiNode, votes);
+                        }
+                    });
+
+                // 需要不断重新发起拉票请求，直到拉票请求被取消
+                this.leaseAskForVote(200);
+            });
+            return null;
+        });
+    }
+
+    /**
+     * 拉票续约，和上面的有一点不同，如果上一个任务被取消了，这里就不再续约了
+     */
+    private void leaseAskForVote(long delayMs) {
+
     }
 
     /**
      * 强制更新世代信息
      */
-    public void updateGeneration() {
+    private void updateGeneration() {
         this.lockSupplier(() -> {
 
             logger.info("强制更新当前世代 =====> " + this.generation);
@@ -104,7 +132,7 @@ public class VoteOperator extends ReentrantLocker {
      * 2、首先给自己投一票
      * 3、请求其他节点，要求其他节点给自己投票（需要子类去实现）
      */
-    public void beginElect() {
+    private void beginElect() {
         this.lockSupplier(() -> {
             logger.info("本节点开始发起选举 =====> ");
             updateGeneration();
@@ -116,7 +144,7 @@ public class VoteOperator extends ReentrantLocker {
             this.voteRecord = votes;
 
             // 让其他节点给自己投一票
-            this.askForVote(this.clusters);
+            this.askForVote(0);
             return null;
         });
     }
@@ -124,7 +152,7 @@ public class VoteOperator extends ReentrantLocker {
     /**
      * 给当前节点的投票箱投票
      */
-    public void receiveVotes(Votes votes) {
+    private void receiveVotes(Votes votes) {
         this.lockSupplier(() -> {
             logger.info("收到来自节点 {} 的选票，其世代为 {}", votes.getServerName(), votes.getGeneration());
 
@@ -139,10 +167,10 @@ public class VoteOperator extends ReentrantLocker {
             logger.info("来自节点 {} 的选票有效，投票箱 + 1", votes.getServerName());
             box.add(votes.getServerName());
 
-            List<HanabiNode> HanabiNodeList = this.clusters;
-            int clusterSize = HanabiNodeList.size();
+            List<HanabiNode> hanabiNodeList = this.clusters;
+            int clusterSize = hanabiNodeList.size();
             int votesNeed = clusterSize / 2 + 1;
-            logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", HanabiNodeList.size(), box.size(), votesNeed);
+            logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), box.size(), votesNeed);
 
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.size() >= votesNeed) {

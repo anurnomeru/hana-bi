@@ -16,7 +16,7 @@ public class TimedTask {
     /** 任务 */
     private Runnable task;
 
-    /** 是否取消 */
+    /** 是否被取消 */
     private volatile boolean cancel;
 
     protected Bucket bucket;

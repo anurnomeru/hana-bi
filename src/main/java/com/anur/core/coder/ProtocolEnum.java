@@ -1,7 +1,7 @@
 package com.anur.core.coder;
 
-import com.anur.core.elect.vote.model.Votes;
-import com.anur.core.elect.vote.model.VotesResponse;
+import com.anur.core.elect.model.Votes;
+import com.anur.core.elect.model.VotesResponse;
 
 /**
  * Created by Anur IjuoKaruKas on 1/24/2019
