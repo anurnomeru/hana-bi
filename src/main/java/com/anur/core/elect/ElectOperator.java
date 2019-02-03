@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,8 +19,10 @@ import com.anur.core.elect.constant.TaskEnum;
 import com.anur.core.elect.model.Canvass;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
 import com.anur.timewheel.TimedTask;
+import com.anur.timewheel.Timer;
 import io.netty.util.internal.StringUtil;
 
 /**
@@ -27,7 +30,7 @@ import io.netty.util.internal.StringUtil;
  *
  * 投票控制器
  */
-public class ElectOperator extends ReentrantLocker {
+public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private volatile static ElectOperator INSTANCE;
 
@@ -38,11 +41,14 @@ public class ElectOperator extends ReentrantLocker {
             synchronized (ElectOperator.class) {
                 if (INSTANCE == null) {
                     INSTANCE = new ElectOperator();
+                    HanabiExecutors.submit(INSTANCE);
                 }
             }
         }
         return INSTANCE;
     }
+
+    private CountDownLatch startLatch;
 
     private Logger logger = LoggerFactory.getLogger(ElectOperator.class);
 
@@ -77,11 +83,12 @@ public class ElectOperator extends ReentrantLocker {
     private List<HanabiNode> clusters;
 
     private ElectOperator() {
-        this.generation = 0;
+        this.generation = -1;
         this.taskMap = new ConcurrentHashMap<>();
         this.box = new HashSet<>();
         this.nodeRole = NodeRole.Follower;
-        logger.info("初始化 投票控制器 VoteController");
+        this.startLatch = new CountDownLatch(1);
+        logger.info("初始化选举控制器 ElectOperator");
     }
 
     /**
@@ -222,15 +229,15 @@ public class ElectOperator extends ReentrantLocker {
                 this.voteRecord = null;
                 this.box = new HashSet<>();
 
-                logger.info("清空本节点投票箱，清空本节点投票记录，本节点角色由 {} 变更为 {}", this.generation, generation, this.nodeRole, NodeRole.Follower);
+                logger.info("清空本节点投票箱，清空本节点投票记录，本节点角色由 {} 变更为 {}", this.generation, generation, this.nodeRole.name(), NodeRole.Follower.name());
                 this.nodeRole = NodeRole.Follower;
 
                 // 3、新增成为Candidate的定时任务
                 this.becomeCandidateTask();
-
                 return true;
+            } else {
+                return false;
             }
-            return false;
         });
     }
 
@@ -240,12 +247,13 @@ public class ElectOperator extends ReentrantLocker {
      * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
      */
     private void becomeCandidateTask() {
-        taskMap.get(TaskEnum.BECOME_CANDIDATE)
-               .cancel();
-
+        Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
+                .ifPresent(TimedTask::cancel);
         // The election timeout is randomized to be between 150ms and 300ms.
         long electionTimeout = 150 + (int) (150 * RANDOM.nextFloat());
         TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
+        Timer.getInstance()
+             .addTask(timedTask);
         taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
     }
 
@@ -266,6 +274,8 @@ public class ElectOperator extends ReentrantLocker {
                 // 拉票续约
                 this.askForVoteTask(votes, 200);
             });
+            Timer.getInstance()
+                 .addTask(timedTask);
             taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
             return null;
         });
@@ -281,6 +291,25 @@ public class ElectOperator extends ReentrantLocker {
      */
     public int getGeneration() {
         return generation;
+    }
+
+    public void start() {
+        startLatch.countDown();
+    }
+
+    @Override
+    public void run() {
+        this.lockSupplier(() -> {
+            logger.info("初始化选举控制器 待启动");
+            try {
+                startLatch.await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            logger.info("初始化选举控制器 启动中");
+            this.initVotesBox(0);
+            return null;
+        });
     }
 
     private static class UnbelievableException extends HanabiException {

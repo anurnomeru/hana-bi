@@ -2,6 +2,7 @@ package com.anur.core;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
 
 /**
@@ -11,12 +12,10 @@ import com.anur.core.elect.ElectServerOperator;
  */
 public class Elector {
 
-    static Logger logger = LoggerFactory.getLogger(Elector.class);
-
     public static void main(String[] args) {
         ElectServerOperator.getInstance()
                            .start();
-        //        VoteOperator.getInstance()
-        //                    .beginElect();
+        ElectOperator.getInstance()
+                     .start();
     }
 }
