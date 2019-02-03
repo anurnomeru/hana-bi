@@ -22,30 +22,39 @@ public class Coder {
             throw new DecodeException("解码失败，从其他节点收到的请求为空：" + str);
         }
 
-        int regexIndex = str.indexOf(REGEX);
+        String[] strs = str.split(REGEX);
 
-        ProtocolEnum protocolEnum = Optional.of(str)
-                                            .map(s -> s.substring(0, regexIndex))
+        ProtocolEnum protocolEnum = Optional.of(strs[0])
                                             .map(ProtocolEnum::valueOf)
                                             .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
 
-        return new DecodeWrapper(protocolEnum, Optional.of(str)
-                                                       .map(s -> s.substring(regexIndex + 1))
-                                                       .map(s -> JSON.parseObject(s, protocolEnum.clazz))
-                                                       .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
+        int generation = Optional.of(strs[1])
+                                 .map(Integer::valueOf)
+                                 .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
+
+        return new DecodeWrapper(protocolEnum, generation, Optional.of(strs[2])
+                                                                   .map(s -> JSON.parseObject(s, protocolEnum.clazz))
+                                                                   .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
     }
 
-    public static String encode(ProtocolEnum protocolEnum, Object obj) {
-        return protocolEnum.name() + REGEX + JSON.toJSONString(obj) + SUFFIX;
+    public static String encode(ProtocolEnum protocolEnum, int generation, Object obj) {
+        return protocolEnum.name() + REGEX + generation + REGEX + JSON.toJSONString(obj) + SUFFIX;
+    }
+
+    public static ByteBuf encodeToByteBuf(ProtocolEnum protocolEnum, int generation, Object obj) {
+        return Unpooled.copiedBuffer(encode(protocolEnum, generation, obj), Charset.defaultCharset());
     }
 
     public static class DecodeWrapper {
 
         public ProtocolEnum protocolEnum;
 
+        public int generation;
+
         public Object object;
 
-        public DecodeWrapper(ProtocolEnum protocolEnum, Object object) {
+        public DecodeWrapper(ProtocolEnum protocolEnum, int generation, Object object) {
+            this.generation = generation;
             this.protocolEnum = protocolEnum;
             this.object = object;
         }

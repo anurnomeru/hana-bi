@@ -75,36 +75,30 @@ public class VoteOperator extends ReentrantLocker {
     /**
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
-    private void becomeLeader(List<HanabiNode> hanabiNodeList) {
-
+    private void becomeLeader() {
+        // TODO 取消定时任务
     }
 
     /**
-     * 向其他节点发起拉票请求
+     * 真正的执行方法，并提供续约功能
      */
-    private void askForVote() {
+    private void askForVote(Votes votes, long delayMs) {
         this.lockSupplier(() -> {
-            TimedTask timedTask = new TimedTask(0, () -> {
-                Votes votes = new Votes(this.generation, InetSocketAddressConfigHelper.getServerName());
+            TimedTask timedTask = new TimedTask(delayMs, () -> {
+
                 this.clusters.forEach(
                     hanabiNode -> {
                         if (!this.box.contains(hanabiNode.getServerName())) {
-                            ElectClientOperatorFacade.askForVote(hanabiNode, votes);
+                            ElectClientOperatorFacade.askForVote(hanabiNode, generation, votes);
                         }
                     });
 
-                // 需要不断重新发起拉票请求，直到拉票请求被取消
-                this.leaseAskForVote(200);
+                // 拉票续约
+                this.askForVote(votes, 200);
             });
+            taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
             return null;
         });
-    }
-
-    /**
-     * 拉票续约，和上面的有一点不同，如果上一个任务被取消了，这里就不再续约了
-     */
-    private void leaseAskForVote(long delayMs) {
-
     }
 
     /**
@@ -132,7 +126,7 @@ public class VoteOperator extends ReentrantLocker {
      * 2、首先给自己投一票
      * 3、请求其他节点，要求其他节点给自己投票（需要子类去实现）
      */
-    private void beginElect() {
+    public void beginElect() {
         this.lockSupplier(() -> {
             logger.info("本节点开始发起选举 =====> ");
             updateGeneration();
@@ -144,7 +138,7 @@ public class VoteOperator extends ReentrantLocker {
             this.voteRecord = votes;
 
             // 让其他节点给自己投一票
-            this.askForVote(0);
+            this.askForVote(new Votes(this.generation, InetSocketAddressConfigHelper.getServerName()), 0);
             return null;
         });
     }
@@ -175,7 +169,7 @@ public class VoteOperator extends ReentrantLocker {
             // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
             if (box.size() >= votesNeed) {
                 logger.info("====================== 选票过半 ====================== ，准备上位成为 leader", votes.getServerName());
-                this.becomeLeader(this.clusters);
+                this.becomeLeader();
             }
 
             return null;
@@ -231,10 +225,22 @@ public class VoteOperator extends ReentrantLocker {
                 this.voteRecord = null;
                 this.box = new HashSet<>();
                 logger.info("清空本节点投票箱，清空本节点投票记录", this.generation, generation);
+
+                // 先取消之前的拉票任务
+                Optional.ofNullable(taskMap.get(TaskEnum.ASK_FOR_VOTES))
+                        .ifPresent(TimedTask::cancel);
+                logger.info("取消本节点在上个世代的拉票任务");
                 return true;
             }
             return false;
         });
+    }
+
+    /**
+     * 不要乱用这个来做本地的判断，因为它并不可靠！！！
+     */
+    public int getGeneration() {
+        return generation;
     }
 
     private static class UnbelievableException extends HanabiException {
