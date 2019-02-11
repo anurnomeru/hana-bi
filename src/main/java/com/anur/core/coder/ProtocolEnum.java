@@ -11,12 +11,12 @@ public enum ProtocolEnum {
     /**
      * 候选者发往其他节点的拉票请求
      */
-    CANVASSED(Votes.class),
+    VOTES_REQUEST(Votes.class),
 
     /**
      * 收到拉票请求后的回包
      */
-    CANVASSED_RESPONSE(VotesResponse.class),
+    VOTES_RESPONSE(VotesResponse.class),
     ;
 
     ProtocolEnum(Class clazz) {

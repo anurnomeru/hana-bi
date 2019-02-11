@@ -1,5 +1,6 @@
 package com.anur.core.elect;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,7 @@ import com.anur.core.coder.Coder;
 import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
-import com.anur.core.elect.model.Canvass;
+import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager;
@@ -68,7 +69,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 投票箱
      */
-    private Set<String/* serverName */> box;
+    private Map<String/* serverName */, Boolean> box;
 
     /**
      * 投票给了谁的投票记录
@@ -88,7 +89,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private ElectOperator() {
         this.generation = -1;
         this.taskMap = new ConcurrentHashMap<>();
-        this.box = new HashSet<>();
+        this.box = new HashMap<>();
         this.nodeRole = NodeRole.Follower;
         this.startLatch = new CountDownLatch(1);
         logger.info("初始化选举控制器 ElectOperator");
@@ -126,7 +127,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
             // 成为候选者
             if (this.becomeCandidate()) {
-                Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
+                VotesResponse votes = new VotesResponse(generation, InetSocketAddressConfigHelper.getServerName(), true);
 
                 // 给自己投票箱投票
                 this.receiveVotes(votes);
@@ -144,30 +145,45 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 给当前节点的投票箱投票
      */
-    private void receiveVotes(Votes votes) {
+    public void receiveVotes(VotesResponse votesResponse) {
         this.lockSupplier(() -> {
-            logger.info("收到来自节点 {} 的选票，其世代为 {}", votes.getServerName(), votes.getGeneration());
+            if (votesResponse.isAgreed()) {
+                logger.info("收到来自节点 {} 的选票，其世代为 {}", votesResponse.getServerName(), votesResponse.getGeneration());
 
-            if (votes.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
-                logger.info("来自节点 {} 的选票世代大于当前世代", votes.getServerName());
-                throw new UnbelievableException("出现了不可能出现的情况！选票大于了当前的世代");
-            } else if (this.generation > votes.getGeneration()) {// 如果选票的世代小于当前世代，投票无效
-                logger.info("来自节点 {} 的选票世代小于当前世代，选票无效", votes.getServerName());
-                return null;
-            }
+                if (votesResponse.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
+                    logger.info("来自节点 {} 的选票世代大于当前世代", votesResponse.getServerName());
+                    throw new UnbelievableException("出现了不可能出现的情况！选票大于了当前的世代");
+                } else if (this.generation > votesResponse.getGeneration()) {// 如果选票的世代小于当前世代，投票无效
+                    logger.info("来自节点 {} 的选票世代小于当前世代，选票无效", votesResponse.getServerName());
+                    return null;
+                }
 
-            logger.info("来自节点 {} 的选票有效，投票箱 + 1", votes.getServerName());
-            box.add(votes.getServerName());
+                logger.info("来自节点 {} 的选票有效，投票箱 + 1", votesResponse.getServerName());
 
-            List<HanabiNode> hanabiNodeList = this.clusters;
-            int clusterSize = hanabiNodeList.size();
-            int votesNeed = clusterSize / 2 + 1;
-            logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), box.size(), votesNeed);
+                // 记录一下投票结果
+                box.put(votesResponse.getServerName(), votesResponse.isAgreed());
 
-            // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
-            if (box.size() >= votesNeed) {
-                logger.info("====================== 选票过半 ====================== ，准备上位成为 leader", votes.getServerName());
-                this.becomeLeader();
+                List<HanabiNode> hanabiNodeList = this.clusters;
+                int clusterSize = hanabiNodeList.size();
+                int votesNeed = clusterSize / 2 + 1;
+
+                long voteCount = box.values()
+                                    .stream()
+                                    .filter(aBoolean -> aBoolean)
+                                    .count();
+
+                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, votesNeed);
+
+                // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
+                if (voteCount >= votesNeed) {
+                    logger.info("====================== 选票过半 ====================== ，准备上位成为 leader", votesResponse.getServerName());
+                    this.becomeLeader();
+                }
+            } else {
+                logger.info("节点 {} 其世代为 {}，拒绝给本节点投票。", votesResponse.getServerName(), votesResponse.getGeneration());
+
+                // 记录一下投票结果
+                box.put(votesResponse.getServerName(), votesResponse.isAgreed());
             }
 
             return null;
@@ -175,14 +191,14 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     /**
-     * 某个节点来拉票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
+     * 某个节点来请求本节点给他投票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
      *
      * 返回结果
      *
      * 为true代表接受投票成功。
      * 为false代表已经给其他节点投过票了，
      */
-    public Canvass receiveCanvass(Votes votes) {
+    public VotesResponse requestForVotes(Votes votes) {
         return this.lockSupplier(() -> {
             logger.info("收到节点 {} 的拉票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
 
@@ -199,19 +215,14 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (result) {
                 logger.info("投票记录更新成功，在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                try {
-                    cause = Optional.of(cause)
-                                    .filter(StringUtil::isNullOrEmpty)
-                                    .map(s -> String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName()))
-                                    .orElse(cause);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    System.out.println();
-                }
+                cause = Optional.of(cause)
+                                .filter(StringUtil::isNullOrEmpty)
+                                .map(s -> String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName()))
+                                .orElse(cause);
                 logger.info("投票记录更新失败，原因：{}", cause);
             }
 
-            return new Canvass(this.generation, result);
+            return new VotesResponse(this.generation, InetSocketAddressConfigHelper.getServerName(), result);
         });
     }
 
@@ -250,7 +261,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 logger.info("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
                 this.voteRecord = null;
-                this.box = new HashSet<>();
+                this.box = new HashMap<>();
 
                 // 4、新增成为Candidate的定时任务
                 this.becomeCandidateTask();
@@ -340,7 +351,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 this.clusters.forEach(
                     hanabiNode -> {
                         // 如果还没收到这个节点的选票，就继续发
-                        if (!this.box.contains(hanabiNode.getServerName())) {
+                        if (!this.box.containsKey(hanabiNode.getServerName())) {
                             // 确保和其他选举服务器保持连接
                             ElectClientOperator.getInstance(hanabiNode)
                                                .start();
@@ -350,7 +361,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                                               .getChannel(hanabiNode.getServerName()))
                                     .ifPresent(channel -> {
                                         logger.info("正向节点 {} [{}:{}] 发送世代 {} 的拉票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
-                                        channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.CANVASSED, votes));
+                                        channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.VOTES_REQUEST, votes));
                                     });
                         }
                     });

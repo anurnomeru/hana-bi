@@ -1,24 +1,27 @@
 package com.anur.core.elect.model;
 
 /**
- * Created by Anur IjuoKaruKas on 1/30/2019
+ * Created by Anur IjuoKaruKas on 1/25/2019
  *
- * 收到拉票请求后的回复
+ * 拉票结果
  */
 public class VotesResponse extends Votes {
 
-    private boolean active;
+    /**
+     * 拉票成功/失败
+     */
+    private boolean agreed;
 
-    public VotesResponse(long generation, String serverName, boolean active) {
+    public VotesResponse(boolean agreed) {
+        this.agreed = agreed;
+    }
+
+    public VotesResponse(long generation, String serverName, boolean agreed) {
         super(generation, serverName);
-        this.active = active;
+        this.agreed = agreed;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
-
-    public boolean isActive() {
-        return active;
+    public boolean isAgreed() {
+        return agreed;
     }
 }
