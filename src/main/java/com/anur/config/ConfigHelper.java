@@ -1,4 +1,4 @@
-package com.anur.core.util;
+package com.anur.config;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
