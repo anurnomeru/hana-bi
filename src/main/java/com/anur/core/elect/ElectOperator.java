@@ -97,15 +97,15 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 强制更新世代信息
      */
-    private void updateGeneration() {
+    private void updateGeneration(String reason) {
         this.lockSupplier(() -> {
             logger.info("强制更新当前世代 {} -> {}", this.generation, this.generation + 1);
 
             this.clusters = InetSocketAddressConfigHelper.getCluster();
             logger.info("更新集群节点信息     =====> " + JSON.toJSONString(this.clusters));
 
-            if (!this.initVotesBox(this.generation + 1)) {
-                updateGeneration();
+            if (!this.initVotesBox(this.generation + 1, reason)) {
+                updateGeneration(reason);
             }
             return null;
         });
@@ -122,7 +122,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private void beginElect() {
         this.lockSupplier(() -> {
             logger.info("本节点开始发起选举 ========================================> ");
-            updateGeneration();
+            updateGeneration("本节点发起了选举");
 
             // 成为候选者
             if (this.becomeCandidate()) {
@@ -188,12 +188,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
             String cause = "";
 
-            if (votes.getGeneration() > this.generation) {
-
-                this.initVotesBox(votes.getGeneration());
+            if (votes.getGeneration() >= this.generation && this.voteRecord == null) {
                 this.voteRecord = votes;
             } else {
-                cause = "选票世代小于当前世代";
+                cause = String.format("选票 %s 世代小于当前世代 %s", votes.getGeneration(), this.generation);
             }
 
             boolean result = votes.equals(this.voteRecord);
@@ -201,10 +199,15 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (result) {
                 logger.info("投票记录更新成功，在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                cause = Optional.of(cause)
-                                .filter(s -> !StringUtil.isNullOrEmpty(s))
-                                .map(s -> s = String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName()))
-                                .orElse(cause);
+                try {
+                    cause = Optional.of(cause)
+                                    .filter(StringUtil::isNullOrEmpty)
+                                    .map(s -> String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName()))
+                                    .orElse(cause);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    System.out.println();
+                }
                 logger.info("投票记录更新失败，原因：{}", cause);
             }
 
@@ -232,9 +235,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 3、重置本地变量
      * 4、新增成为Candidate的定时任务
      */
-    private boolean initVotesBox(long generation) {
+    private boolean initVotesBox(long generation, String reason) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
+                logger.info("初始化投票箱，原因：{}", reason);
 
                 // 1、成为follower
                 this.becomeFollower();
@@ -359,6 +363,17 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
             return null;
         });
+    }
+
+    public void updateGenWhileReceiveHigherGen(String serverName, long generation) {
+        this.initVotesBox(generation, String.format(String.format("收到了来自节点 %s 的请求，其世代 %s 大于当前世代 %s", serverName, generation, this.getGeneration()), this.getGeneration()));
+    }
+
+    /**
+     * 不要乱用这个来做本地的判断，因为它并不可靠！！！
+     */
+    public long getGeneration() {
+        return generation;
     }
 
     public void start() {

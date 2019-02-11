@@ -17,8 +17,8 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         ConfigHelper.refresh();
     }
 
-    public static Integer getServerPort() {
-        return getConfig(ConfigEnum.SERVER_PORT, Integer::valueOf);
+    public static Integer getServerElectionPort() {
+        return getNode(getServerName()).electionPort;
     }
 
     public static String getServerName() {

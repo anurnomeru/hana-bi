@@ -86,7 +86,7 @@ public class ElectClientOperator implements Runnable {
      * 初始化Elector
      */
     private void init() {
-        this.serverShutDownHooker = new ShutDownHooker(String.format(" ----------------- 终止选举服务器的套接字接口 %s 的监听！ ----------------- ", InetSocketAddressConfigHelper.getServerPort()));
+        this.serverShutDownHooker = new ShutDownHooker(String.format(" ----------------- 终止选举服务器的套接字接口 %s 的监听！ ----------------- ", InetSocketAddressConfigHelper.getServerElectionPort()));
         this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
         initialLatch.countDown();
     }
