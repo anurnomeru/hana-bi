@@ -2,7 +2,7 @@ package com.anur.io.elect.server;
 
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.core.Server;
+import com.anur.io.core.Server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LineBasedFrameDecoder;

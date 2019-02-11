@@ -1,10 +1,8 @@
-package com.anur.io.elect.core;
+package com.anur.io.core;
 
 import java.net.InetSocketAddress;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.server.ServerElectHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -14,7 +12,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18

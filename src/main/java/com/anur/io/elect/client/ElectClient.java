@@ -3,7 +3,7 @@ package com.anur.io.elect.client;
 import java.util.function.BiConsumer;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.core.Client;
+import com.anur.io.core.Client;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LineBasedFrameDecoder;

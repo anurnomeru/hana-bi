@@ -1,16 +1,12 @@
-package com.anur.io.elect.core;
+package com.anur.io.core;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.client.ClientChannelHandler;
-import com.anur.io.elect.client.ClientElectHandler;
 import com.anur.io.elect.client.ClientReconnectHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
@@ -22,8 +18,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
-import io.netty.handler.timeout.IdleStateHandler;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
