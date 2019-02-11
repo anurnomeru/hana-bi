@@ -64,11 +64,6 @@ public class ElectServerOperator implements Runnable {
 
             ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
             break;
-        case VOTES_RESPONSE:
-            votesResponse = (VotesResponse) decodeWrapper.object;
-            ElectOperator.getInstance()
-                         .receiveVotes(votesResponse);
-
         default:
             break;
         }

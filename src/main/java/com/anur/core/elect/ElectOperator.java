@@ -1,12 +1,10 @@
 package com.anur.core.elect;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
@@ -35,6 +33,10 @@ import io.netty.util.internal.StringUtil;
  * 投票控制器
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
+
+    private static final long ELECTION_TIMEOUT = 1500;
+
+    private static final long VOTES_BACK_OFF = 700;
 
     private volatile static ElectOperator INSTANCE;
 
@@ -281,7 +283,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.cancelCandidateTask();
 
         // The election timeout is randomized to be between 150ms and 300ms.
-        long electionTimeout = 150 + (int) (150 * RANDOM.nextFloat());
+        long electionTimeout = ELECTION_TIMEOUT + (int) (ELECTION_TIMEOUT * RANDOM.nextFloat());
         TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
         Timer.getInstance()
              .addTask(timedTask);
@@ -367,7 +369,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                     });
 
                 // 拉票续约（如果没有得到其他节点的回应，就继续发 voteTask）
-                this.askForVoteTask(votes, 70);
+                this.askForVoteTask(votes, VOTES_BACK_OFF);
             });
             Timer.getInstance()
                  .addTask(timedTask);

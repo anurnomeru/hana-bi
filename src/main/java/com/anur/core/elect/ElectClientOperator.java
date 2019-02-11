@@ -1,5 +1,6 @@
 package com.anur.core.elect;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -11,11 +12,13 @@ import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.client.ElectClient;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -54,11 +57,16 @@ public class ElectClientOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, String> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
+        VotesResponse votesResponse;
+        switch (decodeWrapper.protocolEnum) {
+        case VOTES_RESPONSE:
+            votesResponse = (VotesResponse) decodeWrapper.object;
+            ElectOperator.getInstance()
+                         .receiveVotes(votesResponse);
 
-        VotesResponse votesResponse = (VotesResponse) decodeWrapper.object;
-        logger.info(Optional.ofNullable(votesResponse)
-                            .map(Votes::toString)
-                            .orElse("没拿到正确的选票"));
+        default:
+            break;
+        }
     };
 
     public static ElectClientOperator getInstance(HanabiNode hanabiNode) {
