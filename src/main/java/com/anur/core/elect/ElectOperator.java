@@ -78,7 +78,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 该投票箱的世代信息
      */
-    private int generation;
+    private long generation;
 
     /**
      * 缓存一份集群信息，因为集群信息是可能变化的，我们要保证在一次选举中，集群信息是不变的
@@ -125,18 +125,18 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             updateGeneration();
 
             // 成为候选者
-            this.becomeCandidate();
+            if (this.becomeCandidate()) {
+                Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
 
-            Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
+                // 给自己投票箱投票
+                this.receiveVotes(votes);
 
-            // 给自己投票箱投票
-            this.receiveVotes(votes);
+                // 记录一下，自己给自己投了票
+                this.voteRecord = votes;
 
-            // 记录一下，自己给自己投了票
-            this.voteRecord = votes;
-
-            // 让其他节点给自己投一票
-            this.askForVoteTask(new Votes(this.generation, InetSocketAddressConfigHelper.getServerName()), 0);
+                // 让其他节点给自己投一票
+                this.askForVoteTask(new Votes(this.generation, InetSocketAddressConfigHelper.getServerName()), 0);
+            }
             return null;
         });
     }
@@ -182,7 +182,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 为true代表接受投票成功。
      * 为false代表已经给其他节点投过票了，
      */
-    public Canvass receiveVotes(Votes votes) {
+    public Canvass receiveCanvass(Votes votes) {
         return this.lockSupplier(() -> {
             logger.info("收到节点 {} 的拉票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
 
@@ -216,11 +216,12 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
     private void becomeLeader() {
-        logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
-        this.nodeRole = NodeRole.Leader;
-        this.cancelAllTask();
-
-        asdfasdfasdfasdf 给其他节点发送心跳包
+        this.lockSupplier(() -> {
+            logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
+            this.nodeRole = NodeRole.Leader;
+            this.cancelAllTask();
+            return null;
+        });
     }
 
     /**
@@ -231,7 +232,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 3、重置本地变量
      * 4、新增成为Candidate的定时任务
      */
-    private boolean initVotesBox(int generation) {
+    private boolean initVotesBox(long generation) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
 
@@ -301,18 +302,20 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 成为候选者
      */
-    private void becomeCandidate() {
-        if (this.nodeRole == NodeRole.Follower) {
-            this.lockSupplier(() -> {
+    private boolean becomeCandidate() {
+        return this.lockSupplier(() -> {
+            if (this.nodeRole != NodeRole.Leader) {
+
                 if (this.nodeRole == NodeRole.Follower) {
                     logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
                     this.nodeRole = NodeRole.Candidate;
                 }
-                return null;
-            });
-        } else {
-            logger.info("本节点的角色已经是 {} ，无法变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
-        }
+                return true;
+            } else {
+                logger.info("本节点的角色已经是 {} ，无法变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
+                return false;
+            }
+        });
     }
 
     private void becomeFollower() {
@@ -341,7 +344,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                             // 向其他节点发送拉票请求
                             Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
                                                               .getChannel(hanabiNode.getServerName()))
-                                    .ifPresent(channel -> channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.CANVASSED, votes)));
+                                    .ifPresent(channel -> {
+                                        logger.info("正向节点 {} [{}:{}] 发送世代 {} 的拉票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
+                                        channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.CANVASSED, votes));
+                                    });
                         }
                     });
 
@@ -353,18 +359,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
             return null;
         });
-    }
-
-    public void updateGenWhileReceiveHigherGen(String serverName, int generation) {
-        logger.info("收到来自节点 {} 世代 -> {} 的消息，如果消息世代大于当前节点世代，将触发投票控制器初始化。", serverName, generation);
-        this.initVotesBox(generation);
-    }
-
-    /**
-     * 不要乱用这个来做本地的判断，因为它并不可靠！！！
-     */
-    public int getGeneration() {
-        return generation;
     }
 
     public void start() {

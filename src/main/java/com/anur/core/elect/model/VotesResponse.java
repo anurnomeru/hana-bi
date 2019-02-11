@@ -9,7 +9,7 @@ public class VotesResponse extends Votes {
 
     private boolean active;
 
-    public VotesResponse(int generation, String serverName, boolean active) {
+    public VotesResponse(long generation, String serverName, boolean active) {
         super(generation, serverName);
         this.active = active;
     }

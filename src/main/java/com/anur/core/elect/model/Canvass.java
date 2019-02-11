@@ -10,7 +10,7 @@ public class Canvass {
     /**
      * 该选票的世代信息
      */
-    private int generation;
+    private long generation;
 
     /**
      * 拉票成功/失败
@@ -20,12 +20,12 @@ public class Canvass {
     public Canvass() {
     }
 
-    public Canvass(int generation, boolean agreed) {
+    public Canvass(long generation, boolean agreed) {
         this.generation = generation;
         this.agreed = agreed;
     }
 
-    public int getGeneration() {
+    public long getGeneration() {
         return generation;
     }
 

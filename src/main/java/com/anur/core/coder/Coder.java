@@ -3,8 +3,6 @@ package com.anur.core.coder;
 import java.nio.charset.Charset;
 import java.util.Optional;
 import com.alibaba.fastjson.JSON;
-import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.elect.ElectOperator;
 import com.anur.exception.HanabiException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -30,27 +28,13 @@ public class Coder {
                                             .map(ProtocolEnum::valueOf)
                                             .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
 
-        int generation = Optional.of(strs[1])
-                                 .map(Integer::valueOf)
-                                 .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
-
-        String serverName = Optional.of(strs[2])
-                                    .map(String::valueOf)
-                                    .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
-
-        ElectOperator.getInstance()
-                     .updateGenWhileReceiveHigherGen(serverName, generation);
-
-        return new DecodeWrapper(protocolEnum, generation, serverName, Optional.of(strs[3])
-                                                                               .map(s -> JSON.parseObject(s, protocolEnum.clazz))
-                                                                               .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
+        return new DecodeWrapper(protocolEnum, Optional.of(strs[1])
+                                                       .map(s -> JSON.parseObject(s, protocolEnum.clazz))
+                                                       .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
     }
 
     public static String encode(ProtocolEnum protocolEnum, Object obj) {
         return protocolEnum.name() + REGEX
-            + ElectOperator.getInstance()
-                           .getGeneration() + REGEX
-            + InetSocketAddressConfigHelper.getServerName() + REGEX
             + JSON.toJSONString(obj) + SUFFIX;
     }
 
@@ -62,16 +46,10 @@ public class Coder {
 
         public ProtocolEnum protocolEnum;
 
-        public int generation;
-
-        public String serverName;
-
         public Object object;
 
-        public DecodeWrapper(ProtocolEnum protocolEnum, int generation, String serverName, Object object) {
-            this.generation = generation;
+        public DecodeWrapper(ProtocolEnum protocolEnum, Object object) {
             this.protocolEnum = protocolEnum;
-            this.serverName = serverName;
             this.object = object;
         }
     }

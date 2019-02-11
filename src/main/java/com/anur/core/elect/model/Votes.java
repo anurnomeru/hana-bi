@@ -12,7 +12,7 @@ public class Votes {
     /**
      * 该选票的世代信息
      */
-    private int generation;
+    private long generation;
 
     /**
      * 投递该选票的节点名
@@ -22,12 +22,12 @@ public class Votes {
     public Votes() {
     }
 
-    public Votes(int generation, String serverName) {
+    public Votes(long generation, String serverName) {
         this.generation = generation;
         this.serverName = serverName;
     }
 
-    public int getGeneration() {
+    public long getGeneration() {
         return generation;
     }
 

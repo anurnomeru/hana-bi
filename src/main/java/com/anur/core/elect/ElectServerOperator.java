@@ -53,7 +53,7 @@ public class ElectServerOperator implements Runnable {
         case CANVASSED:
             Votes votes = (Votes) decodeWrapper.object;
             Canvass canvass = ElectOperator.getInstance()
-                                           .receiveVotes(votes);
+                                           .receiveCanvass(votes);
 
             VotesResponse myVote;
 
