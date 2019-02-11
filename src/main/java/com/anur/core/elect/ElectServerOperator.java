@@ -45,7 +45,7 @@ public class ElectServerOperator implements Runnable {
     private ElectServer electServer;
 
     /**
-     * 如何去消费消费
+     * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
@@ -53,7 +53,7 @@ public class ElectServerOperator implements Runnable {
         case CANVASSED:
             Votes votes = (Votes) decodeWrapper.object;
             Canvass canvass = ElectOperator.getInstance()
-                                           .vote(votes);
+                                           .receiveVotes(votes);
 
             VotesResponse myVote;
 

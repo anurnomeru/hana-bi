@@ -13,11 +13,15 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.coder.Coder;
+import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
 import com.anur.core.elect.model.Canvass;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
+import com.anur.core.util.ChannelManager;
+import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
 import com.anur.timewheel.TimedTask;
@@ -171,16 +175,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     /**
-     * 当选票大于一半以上时调用这个方法，如何去成为一个leader
-     */
-    private void becomeLeader() {
-        logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
-        this.nodeRole = NodeRole.Leader;
-        // TODO 取消定时任务
-        this.cancelCandidateTask();
-    }
-
-    /**
      * 某个节点来拉票了，只有当世代大于当前世代，才有投票一说，其他情况都是失败的
      *
      * 返回结果
@@ -188,7 +182,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 为true代表接受投票成功。
      * 为false代表已经给其他节点投过票了，
      */
-    public Canvass vote(Votes votes) {
+    public Canvass receiveVotes(Votes votes) {
         return this.lockSupplier(() -> {
             logger.info("收到节点 {} 的拉票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
 
@@ -219,6 +213,17 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     /**
+     * 当选票大于一半以上时调用这个方法，如何去成为一个leader
+     */
+    private void becomeLeader() {
+        logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
+        this.nodeRole = NodeRole.Leader;
+        this.cancelAllTask();
+
+        asdfasdfasdfasdf 给其他节点发送心跳包
+    }
+
+    /**
      * 初始化投票箱
      *
      * 1、成为follower
@@ -234,9 +239,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 this.becomeFollower();
 
                 // 2、先取消所有的定时任务
-                logger.info("取消本节点在上个世代的所有定时任务");
-                taskMap.values()
-                       .forEach(TimedTask::cancel);
+                this.cancelAllTask();
 
                 // 3、重置本地变量
                 logger.info("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
@@ -276,11 +279,23 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 时调用，也就是说如果没能成为leader，又会重新进行一次选主，直到成为leader，或者follower。
      */
     private void cancelCandidateTask() {
-        Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
-                .ifPresent(timedTask -> {
-                    logger.info("取消成为候选者的定时任务");
-                    timedTask.cancel();
-                });
+        this.lockSupplier(() -> {
+            Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
+                    .ifPresent(timedTask -> {
+                        logger.info("取消成为候选者的定时任务");
+                        timedTask.cancel();
+                    });
+            return null;
+        });
+    }
+
+    private void cancelAllTask() {
+        this.lockSupplier(() -> {
+            logger.info("取消本节点在上个世代的所有定时任务");
+            taskMap.values()
+                   .forEach(TimedTask::cancel);
+            return null;
+        });
     }
 
     /**
@@ -317,13 +332,21 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                 this.clusters.forEach(
                     hanabiNode -> {
+                        // 如果还没收到这个节点的选票，就继续发
                         if (!this.box.contains(hanabiNode.getServerName())) {
-                            ElectClientOperatorFacade.askForVote(hanabiNode, votes);
+                            // 确保和其他选举服务器保持连接
+                            ElectClientOperator.getInstance(hanabiNode)
+                                               .start();
+
+                            // 向其他节点发送拉票请求
+                            Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
+                                                              .getChannel(hanabiNode.getServerName()))
+                                    .ifPresent(channel -> channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.CANVASSED, votes)));
                         }
                     });
 
-                // 拉票续约
-                this.askForVoteTask(votes, 200);
+                // 拉票续约（如果没有得到其他节点的回应，就继续发 voteTask）
+                this.askForVoteTask(votes, 70);
             });
             Timer.getInstance()
                  .addTask(timedTask);
