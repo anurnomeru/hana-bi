@@ -271,6 +271,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
     }
 
+    /**
+     * 取消成为候选者的任务，成为leader，或者调用 {@link #becomeCandidateTask} （心跳）
+     * 时调用，也就是说如果没能成为leader，又会重新进行一次选主，直到成为leader，或者follower。
+     */
     private void cancelCandidateTask() {
         Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
                 .ifPresent(timedTask -> {
