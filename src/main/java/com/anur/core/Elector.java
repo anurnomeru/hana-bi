@@ -1,7 +1,5 @@
 package com.anur.core;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
 
@@ -13,8 +11,16 @@ import com.anur.core.elect.ElectServerOperator;
 public class Elector {
 
     public static void main(String[] args) {
+
+        /**
+         * 启动选举服务器，没什么主要的操作，这个服务器主要就是应答选票以及应答成为 Flower 用
+         */
         ElectServerOperator.getInstance()
                            .start();
+
+        /**
+         * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
+         */
         ElectOperator.getInstance()
                      .start();
     }

@@ -1,6 +1,5 @@
 package com.anur.core.elect;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -9,9 +8,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.alibaba.fastjson.JSON;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.elect.constant.NodeRole;
@@ -96,11 +95,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void updateGeneration() {
         this.lockSupplier(() -> {
-
-            logger.info("强制更新当前世代 =====> " + this.generation);
+            logger.info("强制更新当前世代 {} -> {}", this.generation, this.generation + 1);
 
             this.clusters = InetSocketAddressConfigHelper.getCluster();
-            logger.info("更新节点信息     =====> " + this.generation);
+            logger.info("更新集群节点信息     =====> " + JSON.toJSONString(this.clusters));
 
             if (!this.initVotesBox(this.generation + 1)) {
                 updateGeneration();
@@ -113,17 +111,23 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 开始进行选举
      *
      * 1、首先更新一下世代信息，重置投票箱和投票记录
-     * 2、首先给自己投一票
-     * 3、请求其他节点，要求其他节点给自己投票（需要子类去实现）
+     * 2、成为候选者
+     * 3、给自己投一票
+     * 4、请求其他节点，要求其他节点给自己投票
      */
     private void beginElect() {
         this.lockSupplier(() -> {
-            logger.info("本节点开始发起选举 =====> ");
+            logger.info("本节点开始发起选举 ========================================> ");
             updateGeneration();
 
+            // 成为候选者
+            this.becomeCandidate();
+
             Votes votes = new Votes(generation, InetSocketAddressConfigHelper.getServerName());
+
             // 给自己投票箱投票
             this.receiveVotes(votes);
+
             // 记录一下，自己给自己投了票
             this.voteRecord = votes;
 
@@ -170,7 +174,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
     private void becomeLeader() {
+        logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
+        this.nodeRole = NodeRole.Leader;
         // TODO 取消定时任务
+        this.cancelCandidateTask();
     }
 
     /**
@@ -213,26 +220,31 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     /**
      * 初始化投票箱
+     *
+     * 1、成为follower
+     * 2、先取消所有的定时任务
+     * 3、重置本地变量
+     * 4、新增成为Candidate的定时任务
      */
     private boolean initVotesBox(int generation) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
 
-                // 1、先取消所有的定时任务
+                // 1、成为follower
+                this.becomeFollower();
+
+                // 2、先取消所有的定时任务
                 logger.info("取消本节点在上个世代的所有定时任务");
                 taskMap.values()
                        .forEach(TimedTask::cancel);
 
-                // 2、重置本地变量
+                // 3、重置本地变量
                 logger.info("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
                 this.voteRecord = null;
                 this.box = new HashSet<>();
 
-                logger.info("清空本节点投票箱，清空本节点投票记录，本节点角色由 {} 变更为 {}", this.generation, generation, this.nodeRole.name(), NodeRole.Follower.name());
-                this.nodeRole = NodeRole.Follower;
-
-                // 3、新增成为Candidate的定时任务
+                // 4、新增成为Candidate的定时任务
                 this.becomeCandidateTask();
                 return true;
             } else {
@@ -242,19 +254,54 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     /**
-     * 成为候选者的任务，（重复调用则会取消之前的任务）
+     * 成为候选者的任务，（重复调用则会取消之前的任务，收到来自leader的心跳包，就可以重置一下这个任务）
      *
      * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
      */
     private void becomeCandidateTask() {
-        Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
-                .ifPresent(TimedTask::cancel);
+        this.cancelCandidateTask();
+
         // The election timeout is randomized to be between 150ms and 300ms.
         long electionTimeout = 150 + (int) (150 * RANDOM.nextFloat());
         TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
         Timer.getInstance()
              .addTask(timedTask);
+
+        logger.info("本节点将于 {} ms 后转变为候选者", electionTimeout);
         taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
+    }
+
+    private void cancelCandidateTask() {
+        Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
+                .ifPresent(timedTask -> {
+                    logger.info("取消成为候选者的定时任务");
+                    timedTask.cancel();
+                });
+    }
+
+    /**
+     * 成为候选者
+     */
+    private void becomeCandidate() {
+        if (this.nodeRole == NodeRole.Follower) {
+            this.lockSupplier(() -> {
+                if (this.nodeRole == NodeRole.Follower) {
+                    logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
+                    this.nodeRole = NodeRole.Candidate;
+                }
+                return null;
+            });
+        } else {
+            logger.info("本节点的角色已经是 {} ，无法变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
+        }
+    }
+
+    private void becomeFollower() {
+        this.lockSupplier(() -> {
+            logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Follower.name());
+            this.nodeRole = NodeRole.Follower;
+            return null;
+        });
     }
 
     /**
@@ -307,7 +354,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 e.printStackTrace();
             }
             logger.info("初始化选举控制器 启动中");
-            this.initVotesBox(0);
+            this.becomeCandidateTask();
             return null;
         });
     }
