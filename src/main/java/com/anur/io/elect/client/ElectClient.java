@@ -6,7 +6,6 @@ import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.Client;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -21,11 +20,8 @@ public class ElectClient extends Client {
     }
 
     @Override
-    public void channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        channelPipeline
-            .addLast("LineBasedFrameDecoder", new LineBasedFrameDecoder(Integer.MAX_VALUE))
-            .addLast("ClientChannelHandler", new ClientChannelHandler(ChannelType.ELECT, serverName))
-            .addLast("ClientElectHandler", new ClientElectHandler(msgConsumer));
+    public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
+        return channelPipeline.addFirst("ClientChannelHandler", new ClientChannelHandler(ChannelType.ELECT, serverName));// 将管道纳入统一管理
     }
 
     @Override

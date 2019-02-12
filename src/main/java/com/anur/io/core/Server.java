@@ -12,6 +12,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
@@ -35,7 +36,7 @@ public abstract class Server {
         this.shutDownHooker = shutDownHooker;
     }
 
-    public abstract void channelPipelineConsumer(ChannelPipeline channelPipeline);
+    public abstract ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline);
 
     public void start() {
         EventLoopGroup group = new NioEventLoopGroup();
@@ -49,7 +50,9 @@ public abstract class Server {
 
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
-                                   channelPipelineConsumer(socketChannel.pipeline());
+                                   channelPipelineConsumer(socketChannel.pipeline()
+                                                                        .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
+                                                                        .addLast(new ServerMsgConsumeHandler(msgConsumer)));
                                }
                            });
 

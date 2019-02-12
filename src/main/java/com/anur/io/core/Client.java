@@ -7,7 +7,6 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.client.ClientReconnectHandler;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
@@ -18,6 +17,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -44,9 +44,9 @@ public abstract class Client {
     protected BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
     protected static ExecutorService RECONNECT_MANAGER = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
-                                                                                                                 .build());
+                                                                                                                   .build());
 
-    public abstract void channelPipelineConsumer(ChannelPipeline channelPipeline);
+    public abstract ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline);
 
     public abstract void howToRestart();
 
@@ -85,8 +85,10 @@ public abstract class Client {
 
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
-                             channelPipelineConsumer( socketChannel.pipeline()
-                                                                   .addLast("ClientReconnectHandler", new ClientReconnectHandler(serverName, reconnectLatch)));
+                             channelPipelineConsumer(socketChannel.pipeline()
+                                                                  .addLast("LineBasedFrameDecoder", new LineBasedFrameDecoder(Integer.MAX_VALUE)) // 解决拆包粘包
+                                                                  .addLast("ClientReconnectHandler", new ClientReconnectHandler(serverName, reconnectLatch)) // 引入重连机制
+                                                                  .addLast("ClientMsgConsumeHandler", new ClientMsgConsumeHandler(msgConsumer)));// 业务处理逻辑处理器
                          }
                      });
 

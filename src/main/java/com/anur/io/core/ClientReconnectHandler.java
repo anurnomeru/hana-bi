@@ -1,4 +1,4 @@
-package com.anur.io.elect.client;
+package com.anur.io.core;
 
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;

@@ -5,7 +5,6 @@ import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.Server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
@@ -19,8 +18,7 @@ public class ElectServer extends Server {
     }
 
     @Override
-    public void channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        channelPipeline.addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
-                       .addLast(new ServerElectHandler(msgConsumer));
+    public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
+        return channelPipeline;
     }
 }

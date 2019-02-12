@@ -1,4 +1,4 @@
-package com.anur.io.elect.client;
+package com.anur.io.core;
 
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
@@ -13,16 +13,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
  *
  * 当要成为领导时，需要去连接其他的 ServerElectHandler，并去发送各种选举相关的消息
  */
-public class ClientElectHandler extends SimpleChannelInboundHandler {
-
-    private Logger logger = LoggerFactory.getLogger(ClientElectHandler.class);
+public class ClientMsgConsumeHandler extends SimpleChannelInboundHandler {
 
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
      */
     private BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
-    public ClientElectHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+    public ClientMsgConsumeHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
         this.msgConsumer = msgConsumer;
     }
 
