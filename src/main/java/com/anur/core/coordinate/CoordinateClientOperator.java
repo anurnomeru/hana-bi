@@ -7,9 +7,7 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
-import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
-import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
@@ -61,11 +59,12 @@ public class CoordinateClientOperator implements Runnable {
         if (INSTANCE == null || !hanabiNode.getServerName()
                                            .equals(INSTANCE.hanabiNode)) {
             synchronized (CoordinateClientOperator.class) {
+
                 if (INSTANCE == null || !hanabiNode.getServerName()
                                                    .equals(INSTANCE.hanabiNode)) {
 
-                    if (!hanabiNode.getServerName()
-                                   .equals(INSTANCE.hanabiNode)) {
+                    if (INSTANCE != null && !hanabiNode.getServerName()
+                                                       .equals(INSTANCE.hanabiNode)) {
                         INSTANCE.ShutDown();
                     }
 
@@ -97,7 +96,7 @@ public class CoordinateClientOperator implements Runnable {
      */
     public void start() {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
-            logger.debug("正在重新建立与节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+            logger.debug("正在重新建立与协调器节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
             this.serverShutDownHooker.reset();
             HanabiExecutors.submit(this);
         } else {
@@ -116,7 +115,7 @@ public class CoordinateClientOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.debug("正在建立与节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+        logger.debug("正在建立与协调器节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         coordinateClient.start();
     }
 }

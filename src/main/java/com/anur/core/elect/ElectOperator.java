@@ -136,10 +136,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 3、给自己投一票
      * 4、请求其他节点，要求其他节点给自己投票
      */
-    private void beginElect() {
+    private void beginElect(long generation) {
         this.lockSupplier(() -> {
 
-            if (this.leader_server_name != null) {// 存在这么一种情况，虽然取消了选举任务，但是选举任务还是被执行了，所以这里要多做一重处理
+            if (this.generation != generation) {// 存在这么一种情况，虽然取消了选举任务，但是选举任务还是被执行了，所以这里要多做一重处理，避免上个周期的任务被执行
                 return null;
             }
 
@@ -177,22 +177,20 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             logger.debug("收到节点 {} 的投票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
             String cause = "";
 
-            if (votes.getGeneration() >= this.generation && this.voteRecord == null) {
-                this.voteRecord = votes;
+            if (votes.getGeneration() < this.generation) {
+                cause = String.format("投票请求 %s 世代小于当前世代 %s", votes.getGeneration(), this.generation);
+            } else if (this.voteRecord != null) {
+                cause = String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                cause = String.format("投票请求你 %s 世代小于当前世代 %s", votes.getGeneration(), this.generation);
+                this.voteRecord = votes;
             }
 
             boolean result = votes.equals(this.voteRecord);
 
             if (result) {
-                logger.debug("投票记录更新成功，在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
+                logger.debug("投票记录更新成功：在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                cause = Optional.of(cause)
-                                .filter(StringUtil::isNullOrEmpty)
-                                .map(s -> String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName()))
-                                .orElse(cause);
-                logger.debug("投票记录更新失败，原因：{}", cause);
+                logger.debug("投票记录更新失败：原因：{}", cause);
             }
 
             String serverName = InetSocketAddressConfigHelper.getServerName();
@@ -303,7 +301,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 }
 
                 // 重置成为候选者任务
-                this.becomeCandidateAndBeginElectTask();
+                this.becomeCandidateAndBeginElectTask(this.generation);
             }
             return null;
         });
@@ -336,7 +334,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 this.leader_server_name = null;
 
                 // 4、新增成为Candidate的定时任务
-                this.becomeCandidateAndBeginElectTask();
+                this.becomeCandidateAndBeginElectTask(this.generation);
                 return true;
             } else {
                 return false;
@@ -450,13 +448,13 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      *
      * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
      */
-    private void becomeCandidateAndBeginElectTask() {
+    private void becomeCandidateAndBeginElectTask(long generation) {
         this.lockSupplier(() -> {
             this.cancelCandidateAndBeginElectTask("正在重置发起下一轮选举的退避时间");
 
             // The election timeout is randomized to be between 150ms and 300ms.
             long electionTimeout = ELECTION_TIMEOUT_MS + (int) (ELECTION_TIMEOUT_MS * RANDOM.nextFloat());
-            TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
+            TimedTask timedTask = new TimedTask(electionTimeout, () -> this.beginElect(generation));
             Timer.getInstance()
                  .addTask(timedTask);
 
@@ -518,7 +516,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 e.printStackTrace();
             }
             logger.debug("初始化选举控制器 启动中");
-            this.becomeCandidateAndBeginElectTask();
+            this.becomeCandidateAndBeginElectTask(this.generation);
             return null;
         });
     }
