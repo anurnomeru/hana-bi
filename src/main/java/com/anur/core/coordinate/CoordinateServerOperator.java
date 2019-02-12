@@ -47,6 +47,9 @@ public class CoordinateServerOperator implements Runnable {
         }
     };
 
+    /**
+     * 协调器的服务端是个纯单例，没什么特别的
+     */
     public static CoordinateServerOperator getInstance() {
         if (INSTANCE == null) {
             synchronized (CoordinateServerOperator.class) {

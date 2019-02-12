@@ -69,6 +69,9 @@ public class ElectServerOperator implements Runnable {
         }
     };
 
+    /**
+     * 选举服务端是个纯单例，没什么特别的
+     */
     public static ElectServerOperator getInstance() {
         if (INSTANCE == null) {
             synchronized (ElectServerOperator.class) {

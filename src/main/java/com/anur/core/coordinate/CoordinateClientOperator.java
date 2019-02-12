@@ -45,6 +45,8 @@ public class CoordinateClientOperator implements Runnable {
      */
     private HanabiNode hanabiNode;
 
+    private static volatile CoordinateClientOperator INSTANCE;
+
     /**
      * 如何消费消息
      */
@@ -62,22 +64,29 @@ public class CoordinateClientOperator implements Runnable {
         }
     };
 
-    //    public static ElectClientOperator getInstance(HanabiNode hanabiNode) {
-    //        ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
-    //
-    //        if (electClientOperator == null) {
-    //            synchronized (ElectClientOperator.class) {
-    //                electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
-    //                if (electClientOperator == null) {
-    //                    electClientOperator = new ElectClientOperator(hanabiNode);
-    //                    electClientOperator.init();
-    //                    HanabiExecutors.submit(electClientOperator);
-    //                    SERVER_INSTANCE_MAPPER.put(hanabiNode, electClientOperator);
-    //                }
-    //            }
-    //        }
-    //        return SERVER_INSTANCE_MAPPER.get(hanabiNode);
-    //    }
+    /**
+     * 连接Leader节点的协调器连接，只能同时存在一个，如果要连接新的Leader，则需要将旧节点的连接关闭
+     */
+    public static CoordinateClientOperator getInstance(HanabiNode hanabiNode) {
+        if (INSTANCE == null || !hanabiNode.getServerName()
+                                           .equals(INSTANCE.hanabiNode)) {
+            synchronized (CoordinateClientOperator.class) {
+                if (INSTANCE == null || !hanabiNode.getServerName()
+                                                   .equals(INSTANCE.hanabiNode)) {
+
+                    if (!hanabiNode.getServerName()
+                                   .equals(INSTANCE.hanabiNode)) {
+                        INSTANCE.ShutDown();
+                    }
+
+                    INSTANCE = new CoordinateClientOperator(hanabiNode);
+                    INSTANCE.init();
+                    HanabiExecutors.submit(INSTANCE);
+                }
+            }
+        }
+        return INSTANCE;
+    }
 
     public CoordinateClientOperator(HanabiNode hanabiNode) {
         this.hanabiNode = hanabiNode;

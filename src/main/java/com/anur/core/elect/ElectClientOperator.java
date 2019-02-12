@@ -64,6 +64,9 @@ public class ElectClientOperator implements Runnable {
         }
     };
 
+    /**
+     * 选举服务器的客户端需要连接多个服务端，所以这里使用map来管理
+     */
     public static ElectClientOperator getInstance(HanabiNode hanabiNode) {
         ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
 
