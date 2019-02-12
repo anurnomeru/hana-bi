@@ -20,6 +20,10 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         return getNode(getServerName()).electionPort;
     }
 
+    public static Integer getServerCoordinatePort() {
+        return getNode(getServerName()).coordinatePort;
+    }
+
     public static String getServerName() {
         return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
     }

@@ -1,31 +1,31 @@
-package com.anur.core.elect;
+package com.anur.core.coordinate;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.elect.ElectClientOperator;
+import com.anur.core.elect.ElectOperator;
+import com.anur.core.elect.ElectServerOperator;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.elect.client.ElectClient;
+import com.anur.io.coordinate.client.CoordinateClient;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
- * Created by Anur IjuoKaruKas on 2/2/2019
+ * Created by Anur IjuoKaruKas on 2/12/2019
  *
- * 选举服务器操作类客户端，负责选举相关的业务
+ * 集群内通讯、协调服务器操作类客户端，负责协调相关的业务
  */
 @SuppressWarnings("ALL")
-public class ElectClientOperator implements Runnable {
+public class CoordinateClientOperator implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(ElectServerOperator.class);
-
-    private volatile static Map<HanabiNode, ElectClientOperator> SERVER_INSTANCE_MAPPER = new HashMap<>();
 
     /**
      * 关闭本服务的钩子
@@ -38,9 +38,9 @@ public class ElectClientOperator implements Runnable {
     private CountDownLatch initialLatch = new CountDownLatch(2);
 
     /**
-     * 选举客户端
+     * 协调客户端
      */
-    private ElectClient electClient;
+    private CoordinateClient coordinateClient;
 
     /**
      * 要连接的节点的信息
@@ -64,24 +64,24 @@ public class ElectClientOperator implements Runnable {
         }
     };
 
-    public static ElectClientOperator getInstance(HanabiNode hanabiNode) {
-        ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
+    //    public static ElectClientOperator getInstance(HanabiNode hanabiNode) {
+    //        ElectClientOperator electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
+    //
+    //        if (electClientOperator == null) {
+    //            synchronized (ElectClientOperator.class) {
+    //                electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
+    //                if (electClientOperator == null) {
+    //                    electClientOperator = new ElectClientOperator(hanabiNode);
+    //                    electClientOperator.init();
+    //                    HanabiExecutors.submit(electClientOperator);
+    //                    SERVER_INSTANCE_MAPPER.put(hanabiNode, electClientOperator);
+    //                }
+    //            }
+    //        }
+    //        return SERVER_INSTANCE_MAPPER.get(hanabiNode);
+    //    }
 
-        if (electClientOperator == null) {
-            synchronized (ElectClientOperator.class) {
-                electClientOperator = SERVER_INSTANCE_MAPPER.get(hanabiNode);
-                if (electClientOperator == null) {
-                    electClientOperator = new ElectClientOperator(hanabiNode);
-                    electClientOperator.init();
-                    HanabiExecutors.submit(electClientOperator);
-                    SERVER_INSTANCE_MAPPER.put(hanabiNode, electClientOperator);
-                }
-            }
-        }
-        return SERVER_INSTANCE_MAPPER.get(hanabiNode);
-    }
-
-    public ElectClientOperator(HanabiNode hanabiNode) {
+    public CoordinateClientOperator(HanabiNode hanabiNode) {
         this.hanabiNode = hanabiNode;
     }
 
@@ -90,8 +90,8 @@ public class ElectClientOperator implements Runnable {
      */
     private void init() {
         this.serverShutDownHooker = new ShutDownHooker(
-            String.format(" ----------------- 终止与选举节点 %s [%s:%s] 的连接 ----------------- ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
-        this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
+            String.format(" ----------------- 终止与协调节点 %s [%s:%s] 的连接 ----------------- ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
+        this.coordinateClient = new CoordinateClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
         initialLatch.countDown();
     }
 
@@ -120,6 +120,6 @@ public class ElectClientOperator implements Runnable {
             e.printStackTrace();
         }
         logger.info("正在建立与节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
-        electClient.start();
+        coordinateClient.start();
     }
 }

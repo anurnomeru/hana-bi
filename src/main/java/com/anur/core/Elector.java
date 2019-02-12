@@ -1,5 +1,6 @@
 package com.anur.core;
 
+import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
 
@@ -23,5 +24,11 @@ public class Elector {
          */
         ElectOperator.getInstance()
                      .start();
+
+        /**
+         * 启动协调服务器
+         */
+        CoordinateServerOperator.getInstance()
+                                .start();
     }
 }

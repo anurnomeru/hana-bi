@@ -236,6 +236,17 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
+
+            this.clusters.forEach(
+                hanabiNode -> {
+                    // 如果还没收到这个节点的选票，就继续发
+                    if (!this.box.containsKey(hanabiNode.getServerName())) {
+                        ElectClientOperator.getInstance(hanabiNode)
+                                           .ShutDown();
+
+                    }
+                });
+
             return null;
         });
     }
