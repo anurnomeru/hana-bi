@@ -17,13 +17,25 @@ public class VotesResponse extends Votes {
      */
     private boolean fromLeaderNode;
 
+    /**
+     * 请求拉票时的世代信息
+     */
+    private long askVoteGeneration;
+
     public VotesResponse() {
     }
 
-    public VotesResponse(long generation, String serverName, boolean agreed, boolean fromLeaderNode) {
+    public VotesResponse(boolean agreed, boolean fromLeaderNode, long askVoteGeneration) {
+        this.agreed = agreed;
+        this.fromLeaderNode = fromLeaderNode;
+        this.askVoteGeneration = askVoteGeneration;
+    }
+
+    public VotesResponse(long generation, String serverName, boolean agreed, boolean fromLeaderNode, long askVoteGeneration) {
         super(generation, serverName);
         this.agreed = agreed;
         this.fromLeaderNode = fromLeaderNode;
+        this.askVoteGeneration = askVoteGeneration;
     }
 
     public boolean isAgreed() {
@@ -40,5 +52,13 @@ public class VotesResponse extends Votes {
 
     public void setFromLeaderNode(boolean fromLeaderNode) {
         this.fromLeaderNode = fromLeaderNode;
+    }
+
+    public long getAskVoteGeneration() {
+        return askVoteGeneration;
+    }
+
+    public void setAskVoteGeneration(long askVoteGeneration) {
+        this.askVoteGeneration = askVoteGeneration;
     }
 }
