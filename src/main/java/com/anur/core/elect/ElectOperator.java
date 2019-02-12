@@ -94,7 +94,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.box = new HashMap<>();
         this.nodeRole = NodeRole.Follower;
         this.startLatch = new CountDownLatch(1);
-        logger.info("初始化选举控制器 ElectOperator");
+        logger.debug("初始化选举控制器 ElectOperator");
     }
 
     /**
@@ -102,10 +102,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void updateGeneration(String reason) {
         this.lockSupplier(() -> {
-            logger.info("强制更新当前世代 {} -> {}", this.generation, this.generation + 1);
+            logger.debug("强制更新当前世代 {} -> {}", this.generation, this.generation + 1);
 
             this.clusters = InetSocketAddressConfigHelper.getCluster();
-            logger.info("更新集群节点信息     =====> " + JSON.toJSONString(this.clusters));
+            logger.debug("更新集群节点信息     =====> " + JSON.toJSONString(this.clusters));
 
             if (!this.initVotesBox(this.generation + 1, reason)) {
                 updateGeneration(reason);
@@ -124,7 +124,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void beginElect() {
         this.lockSupplier(() -> {
-            logger.info("本节点开始发起选举 ========================================> ");
+            logger.debug("本节点开始发起选举 ========================================> ");
             updateGeneration("本节点发起了选举");
 
             // 成为候选者
@@ -150,17 +150,17 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     public void receiveVotes(VotesResponse votesResponse) {
         this.lockSupplier(() -> {
             if (votesResponse.isAgreed()) {
-                logger.info("收到来自节点 {} 的选票，其世代为 {}", votesResponse.getServerName(), votesResponse.getGeneration());
+                logger.debug("收到来自节点 {} 的选票，其世代为 {}", votesResponse.getServerName(), votesResponse.getGeneration());
 
                 if (votesResponse.getGeneration() > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
-                    logger.info("来自节点 {} 的选票世代大于当前世代", votesResponse.getServerName());
+                    logger.debug("来自节点 {} 的选票世代大于当前世代", votesResponse.getServerName());
                     throw new UnbelievableException("出现了不可能出现的情况！选票大于了当前的世代");
                 } else if (this.generation > votesResponse.getGeneration()) {// 如果选票的世代小于当前世代，投票无效
-                    logger.info("来自节点 {} 的选票世代小于当前世代，选票无效", votesResponse.getServerName());
+                    logger.debug("来自节点 {} 的选票世代小于当前世代，选票无效", votesResponse.getServerName());
                     return null;
                 }
 
-                logger.info("来自节点 {} 的选票有效，投票箱 + 1", votesResponse.getServerName());
+                logger.debug("来自节点 {} 的选票有效，投票箱 + 1", votesResponse.getServerName());
 
                 // 记录一下投票结果
                 box.put(votesResponse.getServerName(), votesResponse.isAgreed());
@@ -174,15 +174,15 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                     .filter(aBoolean -> aBoolean)
                                     .count();
 
-                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, votesNeed);
+                logger.debug("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, votesNeed);
 
                 // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
                 if (voteCount >= votesNeed) {
-                    logger.info("====================== 选票过半 ====================== ，准备上位成为 leader", votesResponse.getServerName());
+                    logger.debug("====================== 选票过半 ====================== ，准备上位成为 leader", votesResponse.getServerName());
                     this.becomeLeader();
                 }
             } else {
-                logger.info("节点 {} 其世代为 {}，拒绝给本节点投票。", votesResponse.getServerName(), votesResponse.getGeneration());
+                logger.debug("节点 {} 其世代为 {}，拒绝给本节点投票。", votesResponse.getServerName(), votesResponse.getGeneration());
 
                 // 记录一下投票结果
                 box.put(votesResponse.getServerName(), votesResponse.isAgreed());
@@ -202,7 +202,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     public VotesResponse requestForVotes(Votes votes) {
         return this.lockSupplier(() -> {
-            logger.info("收到节点 {} 的拉票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
+            logger.debug("收到节点 {} 的拉票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
 
             String cause = "";
 
@@ -215,13 +215,13 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             boolean result = votes.equals(this.voteRecord);
 
             if (result) {
-                logger.info("投票记录更新成功，在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
+                logger.debug("投票记录更新成功，在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
             } else {
                 cause = Optional.of(cause)
                                 .filter(StringUtil::isNullOrEmpty)
                                 .map(s -> String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName()))
                                 .orElse(cause);
-                logger.info("投票记录更新失败，原因：{}", cause);
+                logger.debug("投票记录更新失败，原因：{}", cause);
             }
 
             return new VotesResponse(this.generation, InetSocketAddressConfigHelper.getServerName(), result);
@@ -233,19 +233,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void becomeLeader() {
         this.lockSupplier(() -> {
-            logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
+            logger.debug("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
-
-            this.clusters.forEach(
-                hanabiNode -> {
-                    // 如果还没收到这个节点的选票，就继续发
-                    if (!this.box.containsKey(hanabiNode.getServerName())) {
-                        ElectClientOperator.getInstance(hanabiNode)
-                                           .ShutDown();
-
-                    }
-                });
 
             return null;
         });
@@ -262,7 +252,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private boolean initVotesBox(long generation, String reason) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
-                logger.info("初始化投票箱，原因：{}", reason);
+                logger.debug("初始化投票箱，原因：{}", reason);
 
                 // 1、成为follower
                 this.becomeFollower();
@@ -271,7 +261,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 this.cancelAllTask();
 
                 // 3、重置本地变量
-                logger.info("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
+                logger.debug("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
                 this.voteRecord = null;
                 this.box = new HashMap<>();
@@ -299,7 +289,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         Timer.getInstance()
              .addTask(timedTask);
 
-        logger.info("本节点将于 {} ms 后转变为候选者", electionTimeout);
+        logger.debug("本节点将于 {} ms 后转变为候选者", electionTimeout);
         taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
     }
 
@@ -311,7 +301,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
             Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
                     .ifPresent(timedTask -> {
-                        logger.info("取消成为候选者的定时任务");
+                        logger.debug("取消成为候选者的定时任务");
                         timedTask.cancel();
                     });
             return null;
@@ -320,7 +310,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private void cancelAllTask() {
         this.lockSupplier(() -> {
-            logger.info("取消本节点在上个世代的所有定时任务");
+            logger.debug("取消本节点在上个世代的所有定时任务");
             taskMap.values()
                    .forEach(TimedTask::cancel);
             return null;
@@ -335,12 +325,12 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (this.nodeRole != NodeRole.Leader) {
 
                 if (this.nodeRole == NodeRole.Follower) {
-                    logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
+                    logger.debug("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
                     this.nodeRole = NodeRole.Candidate;
                 }
                 return true;
             } else {
-                logger.info("本节点的角色已经是 {} ，无法变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
+                logger.debug("本节点的角色已经是 {} ，无法变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
                 return false;
             }
         });
@@ -348,7 +338,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private void becomeFollower() {
         this.lockSupplier(() -> {
-            logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Follower.name());
+            logger.debug("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Follower.name());
             this.nodeRole = NodeRole.Follower;
             return null;
         });
@@ -373,7 +363,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                             Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
                                                               .getChannel(hanabiNode.getServerName()))
                                     .ifPresent(channel -> {
-                                        logger.info("正向节点 {} [{}:{}] 发送世代 {} 的拉票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
+                                        logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的拉票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
                                         channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.VOTES_REQUEST, votes));
                                     });
                         }
@@ -407,13 +397,13 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     @Override
     public void run() {
         this.lockSupplier(() -> {
-            logger.info("初始化选举控制器 待启动");
+            logger.debug("初始化选举控制器 待启动");
             try {
                 startLatch.await();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
-            logger.info("初始化选举控制器 启动中");
+            logger.debug("初始化选举控制器 启动中");
             this.becomeCandidateTask();
             return null;
         });

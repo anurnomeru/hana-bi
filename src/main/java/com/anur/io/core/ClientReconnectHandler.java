@@ -29,7 +29,7 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
-        logger.info("连接节点 {} [{}] 成功", serverName, ctx.channel()
+        logger.debug("连接节点 {} [{}] 成功", serverName, ctx.channel()
                                                       .remoteAddress());
     }
 
@@ -43,7 +43,7 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
                      .equals(IdleState.READER_IDLE)) {// 长期没收到服务器推送数据
 
                 if (reconnectLatch.getCount() == 1) {
-                    logger.info("长时间没有收到节点 {} [{}] 的消息，准备进行重连 ...", serverName, ctx.channel()
+                    logger.debug("长时间没有收到节点 {} [{}] 的消息，准备进行重连 ...", serverName, ctx.channel()
                                                                                    .remoteAddress());
                 }
 
@@ -63,7 +63,7 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
         super.channelInactive(ctx);
 
         if (reconnectLatch.getCount() == 1) {
-            logger.info("与节点 {} [{}] 的连接断开，准备进行重连 ...", serverName, ctx.channel()
+            logger.debug("与节点 {} [{}] 的连接断开，准备进行重连 ...", serverName, ctx.channel()
                                                                        .remoteAddress());
         }
         ctx.close();

@@ -57,9 +57,9 @@ public class ElectServerOperator implements Runnable {
 
             // 返回true代表同意某个节点来的投票
             if (votesResponse.isAgreed()) {
-                logger.info("来自节点 {}，世代 {}，的选票请求有效，返回选票", votes.getServerName(), votes.getGeneration());
+                logger.debug("来自节点 {}，世代 {}，的选票请求有效，返回选票", votes.getServerName(), votes.getGeneration());
             } else {
-                logger.info("来自节点 {}，世代 {}，的选票请求无效", votes.getServerName(), votes.getGeneration());
+                logger.debug("来自节点 {}，世代 {}，的选票请求无效", votes.getServerName(), votes.getGeneration());
             }
 
             ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
@@ -109,7 +109,7 @@ public class ElectServerOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.info("选举服务器正在启动...");
+        logger.debug("选举服务器正在启动...");
         electServer.start();
     }
 }

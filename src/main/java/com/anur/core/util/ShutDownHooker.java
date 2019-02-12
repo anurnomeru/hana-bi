@@ -33,7 +33,7 @@ public class ShutDownHooker {
     }
 
     public synchronized void shutdown() {
-        logger.info(shutDownMsg);
+        logger.debug(shutDownMsg);
         shutDown = true;
         shutDownConsumer.accept(null);
     }
