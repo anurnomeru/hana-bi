@@ -60,7 +60,7 @@ public class ElectClientOperator implements Runnable {
         case VOTES_RESPONSE:
             votesResponse = (VotesResponse) decodeWrapper.getObject();
             ElectOperator.getInstance()
-                         .receiveVotes(votesResponse);
+                         .receiveVotesResponse(votesResponse);
 
         default:
             break;
@@ -106,7 +106,7 @@ public class ElectClientOperator implements Runnable {
      */
     public void start() {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
-            logger.debug("正在重新建立与节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+            logger.debug("正在重新建立与选举节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
             this.serverShutDownHooker.reset();
             HanabiExecutors.submit(this);
         } else {
@@ -115,7 +115,12 @@ public class ElectClientOperator implements Runnable {
     }
 
     public synchronized void ShutDown() {
+        logger.debug("正在断开与选举节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         this.serverShutDownHooker.shutdown();
+    }
+
+    public synchronized boolean isShutDown() {
+        return this.serverShutDownHooker.isShutDown();
     }
 
     @Override
@@ -125,7 +130,7 @@ public class ElectClientOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.debug("正在建立与节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+        logger.debug("正在建立与选举节点 {} [{}:{}] 的连接...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         electClient.start();
     }
 }

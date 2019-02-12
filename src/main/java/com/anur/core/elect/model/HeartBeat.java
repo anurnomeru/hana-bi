@@ -7,7 +7,18 @@ public class HeartBeat {
 
     private String serverName;
 
+    public HeartBeat() {
+    }
+
     public HeartBeat(String serverName) {
+        this.serverName = serverName;
+    }
+
+    public String getServerName() {
+        return serverName;
+    }
+
+    public void setServerName(String serverName) {
         this.serverName = serverName;
     }
 }

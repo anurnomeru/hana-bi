@@ -9,6 +9,7 @@ import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
 import com.anur.core.coder.ProtocolEnum;
+import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.util.HanabiExecutors;
@@ -55,7 +56,7 @@ public class ElectServerOperator implements Runnable {
         case VOTES_REQUEST:
             Votes votes = (Votes) decodeWrapper.getObject();
             votesResponse = ElectOperator.getInstance()
-                                         .requestForVotes(votes);
+                                         .receiveVotes(votes);
 
             // 返回true代表同意某个节点来的投票
             if (votesResponse.isAgreed()) {
@@ -66,6 +67,11 @@ public class ElectServerOperator implements Runnable {
 
             ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
             break;
+
+        case HEART_BEAT:
+            HeartBeat heartBeat = (HeartBeat) decodeWrapper.getObject();
+            ElectOperator.getInstance()
+                         .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration());
         default:
             break;
         }

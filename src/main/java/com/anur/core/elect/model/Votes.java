@@ -68,4 +68,8 @@ public class Votes {
             ", serverName='" + serverName + '\'' +
             '}';
     }
+
+    public void setGeneration(long generation) {
+        this.generation = generation;
+    }
 }

@@ -12,16 +12,33 @@ public class VotesResponse extends Votes {
      */
     private boolean agreed;
 
-    public VotesResponse(boolean agreed) {
-        this.agreed = agreed;
+    /**
+     * 去拉票，结果拉到了leader节点，则无需继续拉票了，直接成为follower。
+     */
+    private boolean fromLeaderNode;
+
+    public VotesResponse() {
     }
 
-    public VotesResponse(long generation, String serverName, boolean agreed) {
+    public VotesResponse(long generation, String serverName, boolean agreed, boolean fromLeaderNode) {
         super(generation, serverName);
         this.agreed = agreed;
+        this.fromLeaderNode = fromLeaderNode;
     }
 
     public boolean isAgreed() {
         return agreed;
+    }
+
+    public boolean isFromLeaderNode() {
+        return fromLeaderNode;
+    }
+
+    public void setAgreed(boolean agreed) {
+        this.agreed = agreed;
+    }
+
+    public void setFromLeaderNode(boolean fromLeaderNode) {
+        this.fromLeaderNode = fromLeaderNode;
     }
 }
