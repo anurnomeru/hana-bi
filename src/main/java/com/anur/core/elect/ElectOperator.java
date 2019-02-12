@@ -14,16 +14,16 @@ import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.ProtocolEnum;
+import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
 import com.anur.core.elect.model.HeartBeat;
-import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.elect.model.Votes;
+import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
-import com.anur.exception.HanabiException;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
 import io.netty.util.internal.StringUtil;
@@ -35,7 +35,7 @@ import io.netty.util.internal.StringUtil;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
-    private static final long ELECTION_TIMEOUT_MS = 1500;
+    private static final long ELECTION_TIMEOUT_MS = 1500;// 为了测试方便，所以这里将时间扩大10倍
 
     private static final long VOTES_BACK_OFF_MS = 700;
 
@@ -140,7 +140,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
 
             if (this.leader_server_name != null) {// 存在这么一种情况，虽然取消了选举任务，但是选举任务还是被执行了，所以这里要多做一重处理
-                logger.debug("asdfasdfasdfasdfasdf????????????????????????????");
                 return null;
             }
 
@@ -287,17 +286,22 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                             .ifPresent(hanabiNodes -> hanabiNodes.forEach(hanabiNode -> {
                                 if (!hanabiNode.isLocalNode()) {
                                     Optional.ofNullable(ElectClientOperator.getInstance(hanabiNode))
-                                            .filter(ElectClientOperator::isShutDown)
+                                            .filter(electClientOperator -> !electClientOperator.isShutDown())
                                             .ifPresent(ElectClientOperator::ShutDown);
                                 }
                             }));
                     this.cancelAllTask();
+
+                    // 成为follower
+                    this.becomeFollower();
+
+                    // 将那个节点设为leader节点
+                    this.leader_server_name = leader_server_name;
+
+                    CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(leader_server_name))
+                                            .start();
                 }
 
-                // 将那个节点设为leader节点
-                this.leader_server_name = leader_server_name;
-                // 成为follower
-                this.becomeFollower();
                 // 重置成为候选者任务
                 this.becomeCandidateAndBeginElectTask();
             }
@@ -372,9 +376,11 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void askForVoteTask(Votes votes, long delayMs) {
         this.lockSupplier(() -> {
-            TimedTask timedTask = new TimedTask(delayMs, () -> {
+
+            if (this.nodeRole == NodeRole.Candidate) {// 只有节点为候选者才可以投票
                 if (this.clusters.size() == this.box.size()) {
                     logger.debug("所有的节点都已经应答了本世代 {} 的投票请求，拉票定时任务执行完成", this.generation);
+                    return null;
                 } else {
                     this.clusters.forEach(
                         hanabiNode -> {
@@ -393,14 +399,18 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                         });
                             }
                         });
+                }
 
+                TimedTask timedTask = new TimedTask(delayMs, () -> {
                     // 拉票续约（如果没有得到其他节点的回应，就继续发 voteTask）
                     this.askForVoteTask(votes, VOTES_BACK_OFF_MS);
-                }
-            });
-            Timer.getInstance()
-                 .addTask(timedTask);
-            taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
+                });
+                Timer.getInstance()
+                     .addTask(timedTask);
+                taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
+            } else {
+                // do nothing
+            }
             return null;
         });
     }

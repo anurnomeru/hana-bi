@@ -12,6 +12,11 @@ import com.anur.core.elect.ElectServerOperator;
 public class Elector {
 
     public static void main(String[] args) {
+        /**
+         * 启动协调服务器
+         */
+        CoordinateServerOperator.getInstance()
+                                .start();
 
         /**
          * 启动选举服务器，没什么主要的操作，这个服务器主要就是应答选票以及应答成为 Flower 用
@@ -24,11 +29,5 @@ public class Elector {
          */
         ElectOperator.getInstance()
                      .start();
-
-        /**
-         * 启动协调服务器
-         */
-        CoordinateServerOperator.getInstance()
-                                .start();
     }
 }
