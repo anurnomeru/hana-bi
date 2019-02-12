@@ -1,5 +1,6 @@
 package com.anur.core.coder;
 
+import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.elect.model.VotesResponse;
 
@@ -17,7 +18,11 @@ public enum ProtocolEnum {
      * 收到拉票请求后的回包
      */
     VOTES_RESPONSE(VotesResponse.class),
-    ;
+
+    /**
+     * 心跳包
+     */
+    HEART_BEAT(HeartBeat.class);
 
     ProtocolEnum(Class clazz) {
         this.clazz = clazz;

@@ -49,9 +49,11 @@ public class ElectServerOperator implements Runnable {
     private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
         VotesResponse votesResponse;
-        switch (decodeWrapper.protocolEnum) {
+        ElectOperator.getInstance()
+                     .updateGenWhileReceiveHigherGen(decodeWrapper.getServerName(), decodeWrapper.getGeneration());
+        switch (decodeWrapper.getProtocolEnum()) {
         case VOTES_REQUEST:
-            Votes votes = (Votes) decodeWrapper.object;
+            Votes votes = (Votes) decodeWrapper.getObject();
             votesResponse = ElectOperator.getInstance()
                                          .requestForVotes(votes);
 

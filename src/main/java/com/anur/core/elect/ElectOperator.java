@@ -16,6 +16,7 @@ import com.anur.core.coder.Coder;
 import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
+import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.lock.ReentrantLocker;
@@ -34,9 +35,11 @@ import io.netty.util.internal.StringUtil;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
-    private static final long ELECTION_TIMEOUT = 1500;
+    private static final long ELECTION_TIMEOUT_MS = 1500;
 
-    private static final long VOTES_BACK_OFF = 700;
+    private static final long VOTES_BACK_OFF_MS = 700;
+
+    private static final long HEART_BEAT_MS = 700;
 
     private volatile static ElectOperator INSTANCE;
 
@@ -88,12 +91,23 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private List<HanabiNode> clusters;
 
+    /**
+     * 心跳内容
+     */
+    private HeartBeat heartBeat;
+
+    /**
+     * 现在集群的leader是哪个节点
+     */
+    private String leader_server_name;
+
     private ElectOperator() {
         this.generation = -1;
         this.taskMap = new ConcurrentHashMap<>();
         this.box = new HashMap<>();
         this.nodeRole = NodeRole.Follower;
         this.startLatch = new CountDownLatch(1);
+        this.heartBeat = new HeartBeat(InetSocketAddressConfigHelper.getServerName());
         logger.debug("初始化选举控制器 ElectOperator");
     }
 
@@ -237,6 +251,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
 
+            logger.debug("本节点开始向其他节点发送心跳包");
+            this.heartBeatTask();
+            this.leader_server_name = InetSocketAddressConfigHelper.getServerName();
             return null;
         });
     }
@@ -265,6 +282,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 this.generation = generation;
                 this.voteRecord = null;
                 this.box = new HashMap<>();
+                this.leader_server_name = null;
 
                 // 4、新增成为Candidate的定时任务
                 this.becomeCandidateTask();
@@ -272,48 +290,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             } else {
                 return false;
             }
-        });
-    }
-
-    /**
-     * 成为候选者的任务，（重复调用则会取消之前的任务，收到来自leader的心跳包，就可以重置一下这个任务）
-     *
-     * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
-     */
-    private void becomeCandidateTask() {
-        this.cancelCandidateTask();
-
-        // The election timeout is randomized to be between 150ms and 300ms.
-        long electionTimeout = ELECTION_TIMEOUT + (int) (ELECTION_TIMEOUT * RANDOM.nextFloat());
-        TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
-        Timer.getInstance()
-             .addTask(timedTask);
-
-        logger.debug("本节点将于 {} ms 后转变为候选者", electionTimeout);
-        taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
-    }
-
-    /**
-     * 取消成为候选者的任务，成为leader，或者调用 {@link #becomeCandidateTask} （心跳）
-     * 时调用，也就是说如果没能成为leader，又会重新进行一次选主，直到成为leader，或者follower。
-     */
-    private void cancelCandidateTask() {
-        this.lockSupplier(() -> {
-            Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
-                    .ifPresent(timedTask -> {
-                        logger.debug("取消成为候选者的定时任务");
-                        timedTask.cancel();
-                    });
-            return null;
-        });
-    }
-
-    private void cancelAllTask() {
-        this.lockSupplier(() -> {
-            logger.debug("取消本节点在上个世代的所有定时任务");
-            taskMap.values()
-                   .forEach(TimedTask::cancel);
-            return null;
         });
     }
 
@@ -350,31 +326,109 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private void askForVoteTask(Votes votes, long delayMs) {
         this.lockSupplier(() -> {
             TimedTask timedTask = new TimedTask(delayMs, () -> {
+                if (this.clusters.size() == this.box.size()) {
+                    logger.debug("所有的节点都已经回复了本世代 {} 的拉票请求，拉票定时任务执行完成", this.generation);
+                } else {
+                    this.clusters.forEach(
+                        hanabiNode -> {
+                            // 如果还没收到这个节点的选票，就继续发
+                            if (!this.box.containsKey(hanabiNode.getServerName())) {
+                                // 确保和其他选举服务器保持连接
+                                ElectClientOperator.getInstance(hanabiNode)
+                                                   .start();
 
-                this.clusters.forEach(
-                    hanabiNode -> {
-                        // 如果还没收到这个节点的选票，就继续发
-                        if (!this.box.containsKey(hanabiNode.getServerName())) {
-                            // 确保和其他选举服务器保持连接
-                            ElectClientOperator.getInstance(hanabiNode)
-                                               .start();
+                                // 向其他节点发送拉票请求
+                                Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
+                                                                  .getChannel(hanabiNode.getServerName()))
+                                        .ifPresent(channel -> {
+                                            logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的拉票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
+                                            channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.VOTES_REQUEST, votes));
+                                        });
+                            }
+                        });
 
-                            // 向其他节点发送拉票请求
-                            Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
-                                                              .getChannel(hanabiNode.getServerName()))
-                                    .ifPresent(channel -> {
-                                        logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的拉票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
-                                        channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.VOTES_REQUEST, votes));
-                                    });
-                        }
-                    });
-
-                // 拉票续约（如果没有得到其他节点的回应，就继续发 voteTask）
-                this.askForVoteTask(votes, VOTES_BACK_OFF);
+                    // 拉票续约（如果没有得到其他节点的回应，就继续发 voteTask）
+                    this.askForVoteTask(votes, VOTES_BACK_OFF_MS);
+                }
             });
             Timer.getInstance()
                  .addTask(timedTask);
             taskMap.put(TaskEnum.ASK_FOR_VOTES, timedTask);
+            return null;
+        });
+    }
+
+    /**
+     * 心跳任务
+     */
+    private void heartBeatTask() {
+        this.lockSupplier(() -> {
+            this.clusters.forEach(hanabiNode -> {
+                if (!hanabiNode.isLocalNode()) {
+
+                    // 确保和其他选举服务器保持连接
+                    ElectClientOperator.getInstance(hanabiNode)
+                                       .start();
+
+                    // 向其他节点发送拉票请求
+                    Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
+                                                      .getChannel(hanabiNode.getServerName()))
+                            .ifPresent(channel -> {
+                                logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的心跳...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
+                                channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.HEART_BEAT, heartBeat));
+                            });
+                }
+            });
+
+            TimedTask timedTask = new TimedTask(HEART_BEAT_MS, this::heartBeatTask);
+            Timer.getInstance()
+                 .addTask(timedTask);
+            taskMap.put(TaskEnum.HEART_BEAT, timedTask);
+            return null;
+        });
+    }
+
+    /**
+     * 成为候选者的任务，（重复调用则会取消之前的任务，收到来自leader的心跳包，就可以重置一下这个任务）
+     *
+     * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
+     */
+    private void becomeCandidateTask() {
+        this.cancelCandidateTask();
+
+        // The election timeout is randomized to be between 150ms and 300ms.
+        long electionTimeout = ELECTION_TIMEOUT_MS + (int) (ELECTION_TIMEOUT_MS * RANDOM.nextFloat());
+        TimedTask timedTask = new TimedTask(electionTimeout, this::beginElect);
+        Timer.getInstance()
+             .addTask(timedTask);
+
+        logger.debug("本节点将于 {} ms 后转变为候选者", electionTimeout);
+        taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
+    }
+
+    /**
+     * 取消成为候选者的任务，成为leader，或者调用 {@link #becomeCandidateTask} （心跳）
+     * 时调用，也就是说如果没能成为leader，又会重新进行一次选主，直到成为leader，或者follower。
+     */
+    private void cancelCandidateTask() {
+        this.lockSupplier(() -> {
+            Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
+                    .ifPresent(timedTask -> {
+                        logger.debug("取消本节点成为候选者的定时任务");
+                        timedTask.cancel();
+                    });
+            return null;
+        });
+    }
+
+    /**
+     * 取消所有的定时任务
+     */
+    private void cancelAllTask() {
+        this.lockSupplier(() -> {
+            logger.debug("取消本节点在上个世代的所有定时任务");
+            taskMap.values()
+                   .forEach(TimedTask::cancel);
             return null;
         });
     }

@@ -5,5 +5,6 @@ package com.anur.core.elect.constant;
  */
 public enum TaskEnum {
     ASK_FOR_VOTES,
-    BECOME_CANDIDATE
+    BECOME_CANDIDATE,
+    HEART_BEAT,
 }

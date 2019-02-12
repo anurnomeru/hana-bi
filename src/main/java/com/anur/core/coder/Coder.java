@@ -38,9 +38,6 @@ public class Coder {
                                     .map(String::valueOf)
                                     .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
 
-        ElectOperator.getInstance()
-                     .updateGenWhileReceiveHigherGen(serverName, generation);
-
         return new DecodeWrapper(protocolEnum, generation, serverName, Optional.of(strs[3])
                                                                                .map(s -> JSON.parseObject(s, protocolEnum.clazz))
                                                                                .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
@@ -60,19 +57,35 @@ public class Coder {
 
     public static class DecodeWrapper {
 
-        public ProtocolEnum protocolEnum;
+        private ProtocolEnum protocolEnum;
 
-        public int generation;
+        private int generation;
 
-        public String serverName;
+        private String serverName;
 
-        public Object object;
+        private Object object;
 
         public DecodeWrapper(ProtocolEnum protocolEnum, int generation, String serverName, Object object) {
             this.generation = generation;
             this.protocolEnum = protocolEnum;
             this.serverName = serverName;
             this.object = object;
+        }
+
+        public ProtocolEnum getProtocolEnum() {
+            return protocolEnum;
+        }
+
+        public int getGeneration() {
+            return generation;
+        }
+
+        public String getServerName() {
+            return serverName;
+        }
+
+        public Object getObject() {
+            return object;
         }
     }
 

@@ -52,16 +52,6 @@ public class CoordinateClientOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, String> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
-        VotesResponse votesResponse;
-        switch (decodeWrapper.protocolEnum) {
-        case VOTES_RESPONSE:
-            votesResponse = (VotesResponse) decodeWrapper.object;
-            ElectOperator.getInstance()
-                         .receiveVotes(votesResponse);
-
-        default:
-            break;
-        }
     };
 
     /**

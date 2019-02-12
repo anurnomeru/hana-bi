@@ -43,8 +43,6 @@ public class CoordinateServerOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
-        switch (decodeWrapper.protocolEnum) {
-        }
     };
 
     /**
