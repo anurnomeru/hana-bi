@@ -54,10 +54,12 @@ public class ElectClientOperator implements Runnable {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
         VotesResponse votesResponse;
 
-        ElectOperator.getInstance()
-                     .updateGenWhileReceiveHigherGen(decodeWrapper.getServerName(), decodeWrapper.getGeneration());
         switch (decodeWrapper.getProtocolEnum()) {
         case VOTES_RESPONSE:
+            ElectOperator.getInstance()
+                         .updateGenWhileReceiveHigherGen( decodeWrapper.getGeneration(),
+                             String.format("收到了来自节点 %s 的投票应答，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
+
             votesResponse = (VotesResponse) decodeWrapper.getObject();
             ElectOperator.getInstance()
                          .receiveVotesResponse(votesResponse);

@@ -50,10 +50,12 @@ public class ElectServerOperator implements Runnable {
     private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
         DecodeWrapper decodeWrapper = Coder.decode(msg);
         VotesResponse votesResponse;
-        ElectOperator.getInstance()
-                     .updateGenWhileReceiveHigherGen(decodeWrapper.getServerName(), decodeWrapper.getGeneration());
         switch (decodeWrapper.getProtocolEnum()) {
         case VOTES_REQUEST:
+            ElectOperator.getInstance()
+                         .updateGenWhileReceiveHigherGen(decodeWrapper.getGeneration(),
+                             String.format("收到了来自节点 %s 的投票请求，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
+
             Votes votes = (Votes) decodeWrapper.getObject();
             votesResponse = ElectOperator.getInstance()
                                          .receiveVotes(votes);
@@ -67,8 +69,11 @@ public class ElectServerOperator implements Runnable {
 
             ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
             break;
-
         case HEART_BEAT:
+            ElectOperator.getInstance()
+                         .updateGenWhileReceiveHigherGen(decodeWrapper.getGeneration(),
+                             String.format("收到了来自节点 %s 的心跳请求，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
+
             HeartBeat heartBeat = (HeartBeat) decodeWrapper.getObject();
             ElectOperator.getInstance()
                          .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration());

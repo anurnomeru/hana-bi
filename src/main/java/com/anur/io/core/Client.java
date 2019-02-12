@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
@@ -34,7 +35,7 @@ public abstract class Client {
 
     protected Logger logger = LoggerFactory.getLogger(Client.class);
 
-    protected CountDownLatch reconnectLatch;
+    private CountDownLatch reconnectLatch;
 
     protected ShutDownHooker shutDownHooker;
 
@@ -42,9 +43,6 @@ public abstract class Client {
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
      */
     protected BiConsumer<ChannelHandlerContext, String> msgConsumer;
-
-    protected static ExecutorService RECONNECT_MANAGER = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setNameFormat("ReConnector")
-                                                                                                                   .build());
 
     public abstract ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline);
 
@@ -61,7 +59,7 @@ public abstract class Client {
 
     public void start() {
 
-        RECONNECT_MANAGER.submit(() -> {
+        HanabiExecutors.submit(() -> {
             try {
                 reconnectLatch.await();
             } catch (InterruptedException e) {
