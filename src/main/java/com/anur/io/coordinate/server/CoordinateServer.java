@@ -1,4 +1,4 @@
-package com.anur.io.elect.server;
+package com.anur.io.coordinate.server;
 
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
@@ -7,13 +7,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
 /**
- * Created by Anur IjuoKaruKas on 2019/1/18
+ * Created by Anur IjuoKaruKas on 2/12/2019
  *
- * 供其他端连接的套接字服务端入口，此端口负责集群内选举
+ * 供其他端连接的套接字服务端入口，此端口负责集群内协调
  */
-public class ElectServer extends Server {
+public class CoordinateServer extends Server {
 
-    public ElectServer(int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
+    public CoordinateServer(int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
         super(port, msgConsumer, shutDownHooker);
     }
 

@@ -52,13 +52,13 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
 
         private int electionPort;
 
-        private int businessPort;
+        private int coordinatePort;
 
-        public HanabiNode(String serverName, String host, int electionPort, int businessPort) {
+        public HanabiNode(String serverName, String host, int electionPort, int coordinatePort) {
             this.serverName = serverName;
             this.host = host;
             this.electionPort = electionPort;
-            this.businessPort = businessPort;
+            this.coordinatePort = coordinatePort;
         }
 
         /**
@@ -97,8 +97,8 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
             return electionPort;
         }
 
-        public int getBusinessPort() {
-            return businessPort;
+        public int getCoordinatePort() {
+            return coordinatePort;
         }
     }
 }
