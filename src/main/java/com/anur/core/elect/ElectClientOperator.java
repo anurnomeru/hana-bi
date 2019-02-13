@@ -1,5 +1,6 @@
 package com.anur.core.elect;
 
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -9,10 +10,13 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.coder.ProtocolEnum;
+import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.client.ElectClient;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -57,13 +61,23 @@ public class ElectClientOperator implements Runnable {
         switch (decodeWrapper.getProtocolEnum()) {
         case VOTES_RESPONSE:
             ElectOperator.getInstance()
-                         .updateGenWhileReceiveHigherGen( decodeWrapper.getGeneration(),
+                         .updateGenWhileReceiveHigherGen(decodeWrapper.getGeneration(),
                              String.format("收到了来自节点 %s 的投票应答，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
 
             votesResponse = (VotesResponse) decodeWrapper.getObject();
             ElectOperator.getInstance()
                          .receiveVotesResponse(votesResponse);
+            break;
+        case HEART_BEAT_INFECTION:
+            ElectOperator.getInstance()
+                         .updateGenWhileReceiveHigherGen(decodeWrapper.getGeneration(),
+                             String.format("收到了来自节点 %s 的心跳回包，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
 
+            HeartBeat heartBeat = (HeartBeat) decodeWrapper.getObject();
+            ElectOperator.getInstance()
+                         .receiveHeatBeatInfection(heartBeat.getServerName(), decodeWrapper.getGeneration(),
+                             String.format("收到来自 Follower 节点的心跳回包，此节点的 Leader 是 %s 世代 %s ", heartBeat.getServerName(), decodeWrapper.getGeneration()));
+            break;
         default:
             break;
         }

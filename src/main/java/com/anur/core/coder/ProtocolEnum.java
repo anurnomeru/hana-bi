@@ -22,7 +22,12 @@ public enum ProtocolEnum {
     /**
      * 心跳包
      */
-    HEART_BEAT(HeartBeat.class);
+    HEART_BEAT(HeartBeat.class),
+
+    /**
+     * 心跳感染，心跳的回包，会告诉发送心跳方，现在的leader是哪个，以及其世代
+     */
+    HEART_BEAT_INFECTION(HeartBeat.class) ;
 
     ProtocolEnum(Class clazz) {
         this.clazz = clazz;

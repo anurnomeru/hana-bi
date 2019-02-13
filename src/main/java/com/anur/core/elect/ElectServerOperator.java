@@ -72,11 +72,16 @@ public class ElectServerOperator implements Runnable {
         case HEART_BEAT:
             ElectOperator.getInstance()
                          .updateGenWhileReceiveHigherGen(decodeWrapper.getGeneration(),
-                             String.format("收到了来自节点 %s 的心跳请求，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
+                             String.format("收到了来自节点 %s 的心跳包，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
 
             HeartBeat heartBeat = (HeartBeat) decodeWrapper.getObject();
             ElectOperator.getInstance()
-                         .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration());
+                         .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration(),
+                             String.format("收到了来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), decodeWrapper.getGeneration()));
+
+            heartBeat = new HeartBeat(ElectOperator.getInstance()
+                                                   .getLeaderServerName());
+            ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.HEART_BEAT_INFECTION, heartBeat), Charset.defaultCharset()));
         default:
             break;
         }
