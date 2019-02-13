@@ -1,19 +1,17 @@
 package com.anur.io.core.server;
 
-import java.net.InetSocketAddress;
-import java.util.function.BiConsumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.core.handle.MsgConsumeHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/18
@@ -22,9 +20,11 @@ import io.netty.handler.codec.LineBasedFrameDecoder;
  */
 public abstract class Server {
 
-    protected final int port;
+    private static Logger LOGGER = LoggerFactory.getLogger(Server.class);
 
-    protected ShutDownHooker shutDownHooker;
+    private final int port;
+
+    private ShutDownHooker shutDownHooker;
 
     public Server(int port, ShutDownHooker shutDownHooker) {
         this.port = port;
@@ -40,19 +40,27 @@ public abstract class Server {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(group)
                            .channel(NioServerSocketChannel.class)
-                           .localAddress(new InetSocketAddress(port))
                            .childHandler(new ChannelInitializer<SocketChannel>() {
 
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
                                    channelPipelineConsumer(socketChannel.pipeline());
                                }
-                           });
+                           })
+                           // 保持连接
+                           .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-            ChannelFuture f = serverBootstrap.bind()
-                                             .sync();
+            ChannelFuture f = serverBootstrap.bind(port);
+
+            f.addListener(future -> {
+                if (!future.isSuccess()) {
+                    LOGGER.error("监听端口 {} 失败！项目启动失败！", port);
+                    System.exit(1);
+                }
+            });
 
             shutDownHooker.shutDownRegister(aVoid -> group.shutdownGracefully());
+
             f.channel()
              .closeFuture()
              .sync();

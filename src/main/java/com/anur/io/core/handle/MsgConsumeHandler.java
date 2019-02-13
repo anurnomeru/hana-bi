@@ -21,6 +21,11 @@ public class MsgConsumeHandler extends SimpleChannelInboundHandler {
      */
     private BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+    }
+
     public MsgConsumeHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
         this.msgConsumer = msgConsumer;
     }
