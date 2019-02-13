@@ -1,14 +1,11 @@
 package com.anur.io.core;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -84,9 +81,9 @@ public abstract class Client {
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
                              channelPipelineConsumer(socketChannel.pipeline()
-                                                                  .addLast("LineBasedFrameDecoder", new LineBasedFrameDecoder(Integer.MAX_VALUE)) // 解决拆包粘包
-                                                                  .addLast("ClientReconnectHandler", new ClientReconnectHandler(serverName, reconnectLatch)) // 引入重连机制
-                                                                  .addLast("ClientMsgConsumeHandler", new ClientMsgConsumeHandler(msgConsumer)));// 业务处理逻辑处理器
+                                                                  .addLast(new ClientReconnectHandler(serverName, reconnectLatch)) // 引入重连机制
+                                                                  .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE)) // 解决拆包粘包
+                                                                  .addLast(new MsgConsumeHandler(msgConsumer)));// 业务处理逻辑处理器
                          }
                      });
 

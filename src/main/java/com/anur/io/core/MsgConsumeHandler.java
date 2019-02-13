@@ -2,6 +2,7 @@ package com.anur.io.core;
 
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBuf;
@@ -13,20 +14,15 @@ import io.netty.channel.SimpleChannelInboundHandler;
  *
  * 当要成为候选者时，需要去连接其他的 ServerElectHandler，并去发送各种选举相关的消息
  */
-public class ClientMsgConsumeHandler extends SimpleChannelInboundHandler {
+public class MsgConsumeHandler extends SimpleChannelInboundHandler {
 
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
      */
     private BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
-    public ClientMsgConsumeHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+    public MsgConsumeHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
         this.msgConsumer = msgConsumer;
-    }
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
     }
 
     @Override

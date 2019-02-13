@@ -52,7 +52,7 @@ public abstract class Server {
                                protected void initChannel(SocketChannel socketChannel) {
                                    channelPipelineConsumer(socketChannel.pipeline()
                                                                         .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
-                                                                        .addLast(new ServerMsgConsumeHandler(msgConsumer)));
+                                                                        .addLast(new MsgConsumeHandler(msgConsumer)));
                                }
                            });
 
