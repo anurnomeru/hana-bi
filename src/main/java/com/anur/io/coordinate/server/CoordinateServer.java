@@ -1,7 +1,6 @@
 package com.anur.io.coordinate.server;
 
 import java.util.function.BiConsumer;
-import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.Server;
 import io.netty.channel.ChannelHandlerContext;
@@ -20,6 +19,6 @@ public class CoordinateServer extends Server {
 
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        return channelPipeline.addFirst("CoordinateServerChannelManagerHandler", new CoordinateServerChannelManagerHandler(ChannelType.COORDINATE));// 将管道纳入统一管理
+        return channelPipeline;
     }
 }
