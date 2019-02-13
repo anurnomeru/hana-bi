@@ -11,7 +11,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
  *
- * 当要成为领导时，需要去连接其他的 ServerElectHandler，并去发送各种选举相关的消息
+ * 当要成为候选者时，需要去连接其他的 ServerElectHandler，并去发送各种选举相关的消息
  */
 public class ClientMsgConsumeHandler extends SimpleChannelInboundHandler {
 

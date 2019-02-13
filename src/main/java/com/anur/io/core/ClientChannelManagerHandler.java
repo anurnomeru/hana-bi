@@ -8,7 +8,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by Anur IjuoKaruKas on 2/2/2019
  *
- * 关闭channel下各个连接
+ * 管理channel下各个连接
  */
 public class ClientChannelManagerHandler extends ChannelInboundHandlerAdapter {
 
