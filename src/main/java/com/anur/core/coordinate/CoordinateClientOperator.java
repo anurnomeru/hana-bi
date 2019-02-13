@@ -86,7 +86,7 @@ public class CoordinateClientOperator implements Runnable {
      */
     private void init() {
         this.serverShutDownHooker = new ShutDownHooker(
-            String.format("  终止与协调节点 %s [%s:%s] 的连接  ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
+            String.format("终止与协调节点 %s [%s:%s] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
         this.coordinateClient = new CoordinateClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
         initialLatch.countDown();
     }
@@ -96,7 +96,7 @@ public class CoordinateClientOperator implements Runnable {
      */
     public void start() {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
-            logger.debug("  正在重新建立与协调器节点 {} [{}:{}] 的连接  ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+            logger.debug("正在重新建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
             this.serverShutDownHooker.reset();
             HanabiExecutors.submit(this);
         } else {
@@ -115,7 +115,7 @@ public class CoordinateClientOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.debug("  正在建立与协调器节点 {} [{}:{}] 的连接   ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+        logger.debug("正在建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         coordinateClient.start();
     }
 }

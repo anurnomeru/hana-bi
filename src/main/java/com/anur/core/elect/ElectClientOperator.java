@@ -1,6 +1,5 @@
 package com.anur.core.elect;
 
-import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -10,13 +9,11 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coder.Coder;
 import com.anur.core.coder.Coder.DecodeWrapper;
-import com.anur.core.coder.ProtocolEnum;
 import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.client.ElectClient;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -112,7 +109,7 @@ public class ElectClientOperator implements Runnable {
      */
     private void init() {
         this.serverShutDownHooker = new ShutDownHooker(
-            String.format("  终止与选举节点 %s [%s:%s] 的连接  ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
+            String.format("终止与选举节点 %s [%s:%s] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
         this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
         initialLatch.countDown();
     }
@@ -122,7 +119,7 @@ public class ElectClientOperator implements Runnable {
      */
     public void start() {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
-            logger.debug("  正在重新建立与选举节点 {} [{}:{}] 的连接  ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+            logger.debug("正在重新建立与选举节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
             this.serverShutDownHooker.reset();
             HanabiExecutors.submit(this);
         } else {
@@ -131,7 +128,7 @@ public class ElectClientOperator implements Runnable {
     }
 
     public synchronized void ShutDown() {
-        logger.debug("  正在断开与选举节点 {} [{}:{}] 的连接  ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+        logger.debug("正在断开与选举节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         this.serverShutDownHooker.shutdown();
     }
 
@@ -146,7 +143,7 @@ public class ElectClientOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.debug("  正在建立与选举节点 {} [{}:{}] 的连接  ", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
+        logger.debug("正在建立与选举节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
         electClient.start();
     }
 }
