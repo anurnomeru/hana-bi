@@ -1,4 +1,4 @@
-package com.anur.io.elect.client;
+package com.anur.io.core;
 
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -10,13 +10,13 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
  *
  * 关闭channel下各个连接
  */
-public class ClientChannelHandler extends ChannelInboundHandlerAdapter {
+public class ClientChannelManagerHandler extends ChannelInboundHandlerAdapter {
 
     private ChannelType channelType;
 
     private String serverName;
 
-    public ClientChannelHandler(ChannelType channelType, String serverName) {
+    public ClientChannelManagerHandler(ChannelType channelType, String serverName) {
         this.channelType = channelType;
         this.serverName = serverName;
     }

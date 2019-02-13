@@ -82,6 +82,6 @@ public class ChannelManager {
      * 连接类型
      */
     public enum ChannelType {
-        ELECT;
+        ELECT,COORDINATE;
     }
 }

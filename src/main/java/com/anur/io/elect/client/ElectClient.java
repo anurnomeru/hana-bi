@@ -3,6 +3,7 @@ package com.anur.io.elect.client;
 import java.util.function.BiConsumer;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.ClientChannelManagerHandler;
 import com.anur.io.core.Client;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -21,7 +22,7 @@ public class ElectClient extends Client {
 
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        return channelPipeline.addFirst("ClientChannelHandler", new ClientChannelHandler(ChannelType.ELECT, serverName));// 将管道纳入统一管理
+        return channelPipeline.addFirst("ElectClientChannelManagerHandler", new ClientChannelManagerHandler(ChannelType.ELECT, serverName));// 将管道纳入统一管理
     }
 
     @Override
