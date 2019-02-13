@@ -107,7 +107,7 @@ public class ElectServerOperator implements Runnable {
      * 初始化Elector
      */
     public void init() {
-        this.serverShutDownHooker = new ShutDownHooker(String.format(" ----------------- 终止选举服务器的套接字接口 %s 的监听！ ----------------- ", InetSocketAddressConfigHelper.getServerElectionPort()));
+        this.serverShutDownHooker = new ShutDownHooker(String.format("  终止选举服务器的套接字接口 %s 的监听！  ", InetSocketAddressConfigHelper.getServerElectionPort()));
         this.electServer = new ElectServer(InetSocketAddressConfigHelper.getServerElectionPort(), SERVER_MSG_CONSUMER, serverShutDownHooker);
         initialLatch.countDown();
     }
