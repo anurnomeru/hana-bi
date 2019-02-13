@@ -1,4 +1,4 @@
-package com.anur.io.core;
+package com.anur.io.core.client;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.handle.ClientReconnectHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -15,14 +16,13 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.codec.LineBasedFrameDecoder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
  *
- * 负责连接其他的服务器
+ * 可重连的客户端
  */
-public abstract class Client {
+public abstract class ReconnectableClient {
 
     protected final String serverName;
 
@@ -30,7 +30,7 @@ public abstract class Client {
 
     protected final int port;
 
-    protected Logger logger = LoggerFactory.getLogger(Client.class);
+    protected Logger logger = LoggerFactory.getLogger(ReconnectableClient.class);
 
     private CountDownLatch reconnectLatch;
 
@@ -45,12 +45,11 @@ public abstract class Client {
 
     public abstract void howToRestart();
 
-    public Client(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
+    public ReconnectableClient(String serverName, String host, int port, ShutDownHooker shutDownHooker) {
         this.reconnectLatch = new CountDownLatch(1);
         this.serverName = serverName;
         this.host = host;
         this.port = port;
-        this.msgConsumer = msgConsumer;
         this.shutDownHooker = shutDownHooker;
     }
 
@@ -80,10 +79,9 @@ public abstract class Client {
 
                          @Override
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
-                             channelPipelineConsumer(socketChannel.pipeline()
-                                                                  .addLast(new ClientReconnectHandler(serverName, reconnectLatch)) // 引入重连机制
-                                                                  .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE)) // 解决拆包粘包
-                                                                  .addLast(new MsgConsumeHandler(msgConsumer)));// 业务处理逻辑处理器
+                             channelPipelineConsumer(
+                                 socketChannel.pipeline()
+                                              .addLast(new ClientReconnectHandler(serverName, reconnectLatch))); // 引入重连机制
                          }
                      });
 

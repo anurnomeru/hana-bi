@@ -1,4 +1,4 @@
-package com.anur.io.core;
+package com.anur.io.core.handle;
 
 import java.util.concurrent.CountDownLatch;
 import org.slf4j.Logger;
@@ -9,7 +9,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 /**
  * Created by Anur IjuoKaruKas on 1/29/2019
  *
- * 与客户端的心跳机制以及断线重连~~
+ * 客户端断线重连~~
  */
 public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
 

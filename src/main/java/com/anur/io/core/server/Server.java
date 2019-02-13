@@ -1,8 +1,9 @@
-package com.anur.io.core;
+package com.anur.io.core.server;
 
 import java.net.InetSocketAddress;
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.handle.MsgConsumeHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,16 +24,10 @@ public abstract class Server {
 
     protected final int port;
 
-    /**
-     * 将如何消费消息的权利交给上级，将业务处理从Server中剥离
-     */
-    protected BiConsumer<ChannelHandlerContext, String> msgConsumer;
-
     protected ShutDownHooker shutDownHooker;
 
-    public Server(int port, BiConsumer<ChannelHandlerContext, String> msgConsumer, ShutDownHooker shutDownHooker) {
+    public Server(int port, ShutDownHooker shutDownHooker) {
         this.port = port;
-        this.msgConsumer = msgConsumer;
         this.shutDownHooker = shutDownHooker;
     }
 
@@ -50,9 +45,7 @@ public abstract class Server {
 
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
-                                   channelPipelineConsumer(socketChannel.pipeline()
-                                                                        .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
-                                                                        .addLast(new MsgConsumeHandler(msgConsumer)));
+                                   channelPipelineConsumer(socketChannel.pipeline());
                                }
                            });
 

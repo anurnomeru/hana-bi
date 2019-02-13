@@ -1,4 +1,4 @@
-package com.anur.io.core;
+package com.anur.io.core.handle;
 
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;

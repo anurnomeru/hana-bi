@@ -2,7 +2,7 @@ package com.anur.io.coordinate.client;
 
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
-import com.anur.io.core.Client;
+import com.anur.io.core.client.ReconnectableClient;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 
@@ -11,11 +11,17 @@ import io.netty.channel.ChannelPipeline;
  *
  * 负责连接leader，来进行集群内协调
  */
-public class CoordinateClient extends Client {
+public class CoordinateClient extends ReconnectableClient {
 
-    public CoordinateClient(String serverName, String host, int port, BiConsumer<ChannelHandlerContext, String> msgConsumer,
-        ShutDownHooker shutDownHooker) {
-        super(serverName, host, port, msgConsumer, shutDownHooker);
+    /**
+     * 将如何消费消息的权利交给上级，将业务处理从Client中剥离
+     */
+    private BiConsumer<ChannelHandlerContext, String> msgConsumer;
+
+    public CoordinateClient(String serverName, String host, int port, ShutDownHooker shutDownHooker,
+        BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+        super(serverName, host, port, shutDownHooker);
+        this.msgConsumer = msgConsumer;
     }
 
     @Override
@@ -25,6 +31,6 @@ public class CoordinateClient extends Client {
 
     @Override
     public void howToRestart() {
-        new CoordinateClient(this.serverName, this.host, this.port, this.msgConsumer, this.shutDownHooker).start();
+        new CoordinateClient(this.serverName, this.host, this.port, this.shutDownHooker, this.msgConsumer).start();
     }
 }

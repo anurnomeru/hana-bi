@@ -86,7 +86,7 @@ public class CoordinateClientOperator implements Runnable {
     private void init() {
         this.serverShutDownHooker = new ShutDownHooker(
             String.format("终止与协调节点 %s [%s:%s] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort()));
-        this.coordinateClient = new CoordinateClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
+        this.coordinateClient = new CoordinateClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort(), this.serverShutDownHooker, CLIENT_MSG_CONSUMER);
         initialLatch.countDown();
     }
 

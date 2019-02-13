@@ -1,4 +1,4 @@
-package com.anur.io.core;
+package com.anur.io.core.handle;
 
 import java.nio.charset.Charset;
 import java.util.function.BiConsumer;

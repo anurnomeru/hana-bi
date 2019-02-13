@@ -66,7 +66,7 @@ public class CoordinateServerOperator implements Runnable {
      */
     public void init() {
         this.serverShutDownHooker = new ShutDownHooker(String.format("终止协调服务器的套接字接口 %s 的监听！", InetSocketAddressConfigHelper.getServerCoordinatePort()));
-        this.coordinateServer = new CoordinateServer(InetSocketAddressConfigHelper.getServerCoordinatePort(), SERVER_MSG_CONSUMER, serverShutDownHooker);
+        this.coordinateServer = new CoordinateServer(InetSocketAddressConfigHelper.getServerCoordinatePort(), serverShutDownHooker, SERVER_MSG_CONSUMER);
         initialLatch.countDown();
     }
 

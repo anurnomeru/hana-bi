@@ -1,21 +1,19 @@
-package com.anur.io.core;
+package com.anur.io.core.handle;
 
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
  * Created by Anur IjuoKaruKas on 2/13/2019
  */
-public class MsgConsumeHandlerExtra extends MsgConsumeHandler {
+public class ChannelStatusHandlerExtra extends ChannelInboundHandlerAdapter {
 
     private Consumer<ChannelHandlerContext> channelActiveConsumer;
 
     private Consumer<ChannelHandlerContext> channelInactiveConsumer;
 
-    public MsgConsumeHandlerExtra(BiConsumer<ChannelHandlerContext, String> msgConsumer, Consumer<ChannelHandlerContext> channelActiveConsumer,
-        Consumer<ChannelHandlerContext> channelInactiveConsumer) {
-        super(msgConsumer);
+    public ChannelStatusHandlerExtra(Consumer<ChannelHandlerContext> channelActiveConsumer, Consumer<ChannelHandlerContext> channelInactiveConsumer) {
         this.channelActiveConsumer = channelActiveConsumer;
         this.channelInactiveConsumer = channelInactiveConsumer;
     }

@@ -110,7 +110,7 @@ public class ElectClientOperator implements Runnable {
     private void init() {
         this.serverShutDownHooker = new ShutDownHooker(
             String.format("终止与选举节点 %s [%s:%s] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
-        this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), CLIENT_MSG_CONSUMER, this.serverShutDownHooker);
+        this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.serverShutDownHooker, CLIENT_MSG_CONSUMER);
         initialLatch.countDown();
     }
 
