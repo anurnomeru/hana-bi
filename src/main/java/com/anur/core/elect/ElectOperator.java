@@ -108,7 +108,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.nodeRole = NodeRole.Follower;
         this.startLatch = new CountDownLatch(1);
         this.heartBeat = new HeartBeat(InetSocketAddressConfigHelper.getServerName());
-        logger.debug("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfigHelper.getServerName());
+        logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfigHelper.getServerName());
     }
 
     /**
@@ -140,15 +140,14 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
 
             if (this.generation != generation) {// 存在这么一种情况，虽然取消了选举任务，但是选举任务还是被执行了，所以这里要多做一重处理，避免上个周期的任务被执行
-                logger.info("asdfasdfasdfasdfasdfasdfasdf");
                 return null;
             }
 
-            logger.debug("====================== 本节点准备发起世代 {} 的选举 ======================", this.generation + 1);
+            logger.info("本节点即将发起选举");
             updateGeneration("本节点发起了选举");// this.generation ++
 
             // 成为候选者
-            logger.debug("====================== 本节点正式开始世代 {} 的选举 ======================", this.generation);
+            logger.info("本节点正式开始世代 {} 的选举", this.generation);
             if (this.becomeCandidate()) {
                 VotesResponse votes = new VotesResponse(this.generation, InetSocketAddressConfigHelper.getServerName(), true, false, this.generation);
 
@@ -175,7 +174,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     public VotesResponse receiveVotes(Votes votes) {
         return this.lockSupplier(() -> {
-            logger.debug("收到节点 {} 的投票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
+            logger.info("收到节点 {} 的投票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
             String cause = "";
 
             if (votes.getGeneration() < this.generation) {
@@ -189,9 +188,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             boolean result = votes.equals(this.voteRecord);
 
             if (result) {
-                logger.debug("投票记录更新成功：在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
+                logger.info("投票记录更新成功：在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                logger.debug("投票记录更新失败：原因：{}", cause);
+                logger.info("投票记录更新失败：原因：{}", cause);
             }
 
             String serverName = InetSocketAddressConfigHelper.getServerName();
@@ -213,25 +212,25 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             boolean voteSelf = votesResponse.getServerName()
                                             .equals(InetSocketAddressConfigHelper.getServerName());
             if (voteSelf) {
-                logger.debug("本节点在世代 {} 转变为候选者，给自己先投一票", this.generation);
+                logger.info("本节点在世代 {} 转变为候选者，给自己先投一票", this.generation);
             } else {
-                logger.debug("收到来自节点 {} 的投票应答，其世代为 {}", votesResponse.getServerName(), votesResponse.getGeneration());
+                logger.info("收到来自节点 {} 的投票应答，其世代为 {}", votesResponse.getServerName(), votesResponse.getGeneration());
             }
 
             if (votesResponse.isFromLeaderNode()) {
-                logger.debug("来自节点 {} 的投票应答表明其身份为 Leader，本轮拉票结束。", votesResponse.getServerName());
+                logger.info("来自节点 {} 的投票应答表明其身份为 Leader，本轮拉票结束。", votesResponse.getServerName());
                 this.receiveHeatBeat(votesResponse.getServerName(), votesResponse.getGeneration(),
                     String.format("收到来自 Leader 节点的投票应答，自动将其视为来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), votesResponse.getGeneration()));
             }
 
             if (this.generation > votesResponse.getAskVoteGeneration()) {// 如果选票的世代小于当前世代，投票无效
-                logger.debug("来自节点 {} 的投票应答世代是以前世代 {} 的选票，选票无效", votesResponse.getServerName(), votesResponse.getAskVoteGeneration());
+                logger.info("来自节点 {} 的投票应答世代是以前世代 {} 的选票，选票无效", votesResponse.getServerName(), votesResponse.getAskVoteGeneration());
                 return null;
             }
 
             if (votesResponse.isAgreed()) {
                 if (!voteSelf) {
-                    logger.debug("来自节点 {} 的投票应答有效，投票箱 + 1", votesResponse.getServerName());
+                    logger.info("来自节点 {} 的投票应答有效，投票箱 + 1", votesResponse.getServerName());
                 }
 
                 // 记录一下投票结果
@@ -246,15 +245,15 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                     .filter(aBoolean -> aBoolean)
                                     .count();
 
-                logger.debug("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, votesNeed);
+                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, votesNeed);
 
                 // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
                 if (voteCount == votesNeed) {
-                    logger.debug("====================== 选票过半 ====================== ，准备上位成为 leader", votesResponse.getServerName());
+                    logger.info("选票过半，准备上位成为 leader 节点", votesResponse.getServerName());
                     this.becomeLeader();
                 }
             } else {
-                logger.debug("节点 {} 在世代 {} 的投票应答为：拒绝给本节点在世代 {} 的选举投票（当前世代 {}）", votesResponse.getServerName(), votesResponse.getGeneration(), votesResponse.getAskVoteGeneration(), this.generation);
+                logger.info("节点 {} 在世代 {} 的投票应答为：拒绝给本节点在世代 {} 的选举投票（当前世代 {}）", votesResponse.getServerName(), votesResponse.getGeneration(), votesResponse.getAskVoteGeneration(), this.generation);
 
                 // 记录一下投票结果
                 box.put(votesResponse.getServerName(), votesResponse.isAgreed());
@@ -269,11 +268,11 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void becomeLeader() {
         this.lockSupplier(() -> {
-            logger.debug("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
+            logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
 
-            logger.debug("本节点开始向其他节点发送心跳包");
+            logger.info("本节点开始向其他节点发送心跳包");
             this.heartBeatTask();
             this.leaderServerName = InetSocketAddressConfigHelper.getServerName();
             return null;
@@ -292,9 +291,11 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
             // 世代大于当前世代
             if (generation >= this.generation) {
-                logger.info(msg);
+                logger.debug(msg);
 
                 if (this.leaderServerName == null) {
+                    logger.info("集群中，节点 {} 已经成功在世代 {} 上位成为 Leader，本节点将成为 Follower，直到与 Leader 的网络通讯出现问题。", leaderServerName, generation);
+
                     Optional.ofNullable(this.clusters)
                             .ifPresent(hanabiNodes -> hanabiNodes.forEach(hanabiNode -> {
                                 if (!hanabiNode.isLocalNode()) {
@@ -363,7 +364,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private boolean becomeCandidate() {
         return this.lockSupplier(() -> {
             if (this.nodeRole == NodeRole.Follower) {
-                logger.debug("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
+                logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
                 this.nodeRole = NodeRole.Candidate;
                 return true;
             } else {
@@ -375,8 +376,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private void becomeFollower() {
         this.lockSupplier(() -> {
-            logger.debug("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Follower.name());
-            this.nodeRole = NodeRole.Follower;
+            if (this.nodeRole != NodeRole.Follower) {
+                logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Follower.name());
+                this.nodeRole = NodeRole.Follower;
+            }
             return null;
         });
     }

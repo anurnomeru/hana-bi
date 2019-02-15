@@ -130,7 +130,7 @@ public class ElectServerOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.debug("选举服务器正在启动...");
+        logger.info("选举服务器正在启动...");
         electServer.start();
     }
 }

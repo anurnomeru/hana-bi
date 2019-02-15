@@ -88,7 +88,7 @@ public class CoordinateServerOperator implements Runnable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        logger.debug("协调服务器正在启动...");
+        logger.info("协调服务器正在启动...");
         coordinateServer.start();
     }
 }
