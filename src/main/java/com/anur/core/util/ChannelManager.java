@@ -3,9 +3,7 @@ package com.anur.core.util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import com.anur.core.lock.ReentrantReadWriteLocker;
 import io.netty.channel.Channel;
 
 /**
@@ -13,19 +11,12 @@ import io.netty.channel.Channel;
  *
  * 管理channel，如果可以根据某个serverName获取到这个channel，代表是能连上服务端的
  */
-public class ChannelManager {
+public class ChannelManager extends ReentrantReadWriteLocker {
 
     private Map<String/* serverName */, Channel> serverChannelMap;
 
-    private Lock readLock;
-
-    private Lock writeLock;
-
     public ChannelManager() {
         this.serverChannelMap = new HashMap<>();
-        ReadWriteLock readWriteLock = new ReentrantReadWriteLock();
-        readLock = readWriteLock.readLock();
-        writeLock = readWriteLock.writeLock();
     }
 
     private static Map<ChannelType, ChannelManager> MANAGER_MAP = new ConcurrentHashMap<>();
@@ -50,38 +41,22 @@ public class ChannelManager {
      * 如果还没连接上服务，是会返回空的
      */
     public Channel getChannel(String serverName) {
-        Channel channel;
-        try {
-            readLock.lock();
-            channel = serverChannelMap.get(serverName);
-        } finally {
-            readLock.unlock();
-        }
-        return channel;
+        return this.readLockSupplier(() -> serverChannelMap.get(serverName));
     }
 
     public void register(String serverName, Channel channel) {
-        try {
-            writeLock.lock();
-            serverChannelMap.put(serverName, channel);
-        } finally {
-            writeLock.unlock();
-        }
+        this.writeLockSupplier(() -> serverChannelMap.put(serverName, channel));
     }
 
     public void unRegister(String serverName) {
-        try {
-            writeLock.lock();
-            serverChannelMap.remove(serverName);
-        } finally {
-            writeLock.unlock();
-        }
+        this.writeLockSupplier(() -> serverChannelMap.remove(serverName));
     }
 
     /**
      * 连接类型
      */
     public enum ChannelType {
-        ELECT,COORDINATE;
+        ELECT,
+        COORDINATE;
     }
 }

@@ -143,7 +143,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 return null;
             }
 
-            logger.info("本节点即将发起选举");
+            logger.info("长久未收到 Leader 节点的心跳包，故本节点即将发起选举");
             updateGeneration("本节点发起了选举");// this.generation ++
 
             // 成为候选者

@@ -42,4 +42,16 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
         ctx.close();
         reconnectLatch.countDown();
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.channelInactive(ctx);
+        if (reconnectLatch.getCount() == 1) {
+            logger.debug("与节点 {} [{}] 的连接断开，准备进行重连 ...", serverName, ctx.channel()
+                                                                        .remoteAddress());
+        }
+        ctx.close();
+        logger.debug("与节点 {} [{}] 的连接断开，原因：{}", serverName, ctx.channel()
+                                                               .remoteAddress(), cause);
+    }
 }
