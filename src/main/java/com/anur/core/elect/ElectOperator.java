@@ -26,7 +26,6 @@ import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
-import io.netty.util.internal.StringUtil;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22
@@ -313,7 +312,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                     this.leaderServerName = leaderServerName;
 
                     CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(leaderServerName))
-                                            .start();
+                                            .tryStartWhileDisconnected();
                 }
 
                 // 重置成为候选者任务
@@ -401,7 +400,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                             if (!this.box.containsKey(hanabiNode.getServerName())) {
                                 // 确保和其他选举服务器保持连接
                                 ElectClientOperator.getInstance(hanabiNode)
-                                                   .start();
+                                                   .tryStartWhileDisconnected();
 
                                 // 向其他节点发送拉票请求
                                 Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
@@ -438,7 +437,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                     // 确保和其他选举服务器保持连接
                     ElectClientOperator.getInstance(hanabiNode)
-                                       .start();
+                                       .tryStartWhileDisconnected();
 
                     // 向其他节点发送拉票请求
                     Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)

@@ -93,7 +93,7 @@ public class CoordinateClientOperator implements Runnable {
     /**
      * 启动client，没事可以多调用，并不会启动多个连接
      */
-    public void start() {
+    public void tryStartWhileDisconnected() {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
             logger.debug("正在重新建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort());
             this.serverShutDownHooker.reset();
