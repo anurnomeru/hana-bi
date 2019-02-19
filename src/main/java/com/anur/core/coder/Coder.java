@@ -15,7 +15,7 @@ import io.netty.util.internal.StringUtil;
  */
 public class Coder {
 
-    private static final String REGEX = "-";
+    private static final String REGEX = "★-★";
 
     private static final String SUFFIX = "\n";
 
@@ -30,8 +30,8 @@ public class Coder {
                                             .map(ProtocolEnum::valueOf)
                                             .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
 
-        int generation = Optional.of(strs[1])
-                                 .map(Integer::valueOf)
+        long generation = Optional.of(strs[1])
+                                 .map(Long::valueOf)
                                  .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
 
         String serverName = Optional.of(strs[2])
@@ -59,13 +59,13 @@ public class Coder {
 
         private ProtocolEnum protocolEnum;
 
-        private int generation;
+        private long generation;
 
         private String serverName;
 
         private Object object;
 
-        public DecodeWrapper(ProtocolEnum protocolEnum, int generation, String serverName, Object object) {
+        public DecodeWrapper(ProtocolEnum protocolEnum, long generation, String serverName, Object object) {
             this.generation = generation;
             this.protocolEnum = protocolEnum;
             this.serverName = serverName;
@@ -76,7 +76,7 @@ public class Coder {
             return protocolEnum;
         }
 
-        public int getGeneration() {
+        public long getGeneration() {
             return generation;
         }
 
