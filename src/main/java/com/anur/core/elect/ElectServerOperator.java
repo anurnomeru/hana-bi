@@ -6,9 +6,9 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.Coder.DecodeWrapper;
-import com.anur.core.coder.ProtocolEnum;
+import com.anur.core.coder.ElectCoder;
+import com.anur.core.coder.ElectCoder.ElectDecodeWrapper;
+import com.anur.core.coder.ElectProtocolEnum;
 import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.elect.model.Votes;
@@ -48,7 +48,7 @@ public class ElectServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        DecodeWrapper decodeWrapper = Coder.decode(msg);
+        ElectDecodeWrapper decodeWrapper = ElectCoder.decode(msg);
         VotesResponse votesResponse;
         switch (decodeWrapper.getProtocolEnum()) {
         case VOTES_REQUEST:
@@ -67,7 +67,7 @@ public class ElectServerOperator implements Runnable {
                 logger.debug("来自节点 {}，世代 {}，的选票请求无效", votes.getServerName(), votes.getGeneration());
             }
 
-            ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
+            ctx.writeAndFlush(Unpooled.copiedBuffer(ElectCoder.encode(ElectProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
             break;
         case HEART_BEAT:
             ElectOperator.getInstance()
@@ -81,7 +81,7 @@ public class ElectServerOperator implements Runnable {
 
             heartBeat = new HeartBeat(ElectOperator.getInstance()
                                                    .getLeaderServerName());
-            ctx.writeAndFlush(Unpooled.copiedBuffer(Coder.encode(ProtocolEnum.HEART_BEAT_INFECTION, heartBeat), Charset.defaultCharset()));
+            ctx.writeAndFlush(Unpooled.copiedBuffer(ElectCoder.encode(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat), Charset.defaultCharset()));
         default:
             break;
         }

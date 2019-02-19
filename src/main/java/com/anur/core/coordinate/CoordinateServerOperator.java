@@ -5,8 +5,8 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.coder.ElectCoder;
+import com.anur.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.server.CoordinateServer;
@@ -42,7 +42,7 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        DecodeWrapper decodeWrapper = Coder.decode(msg);
+        ElectDecodeWrapper decodeWrapper = ElectCoder.decode(msg);
     };
 
     /**

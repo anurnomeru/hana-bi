@@ -12,8 +12,8 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.ProtocolEnum;
+import com.anur.core.coder.ElectCoder;
+import com.anur.core.coder.ElectProtocolEnum;
 import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
@@ -428,7 +428,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                                                   .getChannel(hanabiNode.getServerName()))
                                         .ifPresent(channel -> {
                                             logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的投票请求...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
-                                            channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.VOTES_REQUEST, votes));
+                                            channel.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.VOTES_REQUEST, votes));
                                         });
                             }
                         });
@@ -463,7 +463,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                                   .getChannel(hanabiNode.getServerName()))
                         .ifPresent(channel -> {
                             logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的心跳...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
-                            channel.writeAndFlush(Coder.encodeToByteBuf(ProtocolEnum.HEART_BEAT, heartBeat));
+                            channel.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT, heartBeat));
                         });
             }
         });

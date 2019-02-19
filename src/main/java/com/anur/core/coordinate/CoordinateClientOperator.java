@@ -5,8 +5,8 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.coder.ElectCoder;
+import com.anur.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
@@ -17,7 +17,6 @@ import io.netty.channel.ChannelHandlerContext;
  *
  * 集群内通讯、协调服务器操作类客户端，负责协调相关的业务
  */
-@SuppressWarnings("ALL")
 public class CoordinateClientOperator implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(CoordinateClientOperator.class);
@@ -48,7 +47,7 @@ public class CoordinateClientOperator implements Runnable {
      * 如何消费消息
      */
     private static BiConsumer<ChannelHandlerContext, String> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
-        DecodeWrapper decodeWrapper = Coder.decode(msg);
+        ElectDecodeWrapper decodeWrapper = ElectCoder.decode(msg);
     };
 
     /**

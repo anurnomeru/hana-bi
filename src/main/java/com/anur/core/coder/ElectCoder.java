@@ -12,23 +12,25 @@ import io.netty.util.internal.StringUtil;
 
 /**
  * Created by Anur IjuoKaruKas on 1/24/2019
+ *
+ * 选举通讯时使用的编解码器
  */
-public class Coder {
+public class ElectCoder {
 
     private static final String REGEX = "★=Hana-★";
 
     private static final String SUFFIX = "\n";
 
-    public static DecodeWrapper decode(String str) {
+    public static ElectDecodeWrapper decode(String str) {
         if (StringUtil.isNullOrEmpty(str)) {
             throw new DecodeException("解码失败，从其他节点收到的请求为空：" + str);
         }
 
         String[] strs = str.split(REGEX);
 
-        ProtocolEnum protocolEnum = Optional.of(strs[0])
-                                            .map(ProtocolEnum::valueOf)
-                                            .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
+        ElectProtocolEnum protocolEnum = Optional.of(strs[0])
+                                                 .map(ElectProtocolEnum::valueOf)
+                                                 .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
 
         long generation = Optional.of(strs[1])
                                   .map(Long::valueOf)
@@ -38,12 +40,12 @@ public class Coder {
                                     .map(String::valueOf)
                                     .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
 
-        return new DecodeWrapper(protocolEnum, generation, serverName, Optional.of(strs[3])
-                                                                               .map(s -> JSON.parseObject(s, protocolEnum.clazz))
-                                                                               .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
+        return new ElectDecodeWrapper(protocolEnum, generation, serverName, Optional.of(strs[3])
+                                                                                    .map(s -> JSON.parseObject(s, protocolEnum.clazz))
+                                                                                    .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
     }
 
-    public static String encode(ProtocolEnum protocolEnum, Object obj) {
+    public static String encode(ElectProtocolEnum protocolEnum, Object obj) {
         String json = JSON.toJSONString(obj);
         if (json.contains(REGEX)) {
             throw new HanabiException("协议封装失败，类中含有关键字：" + REGEX);
@@ -56,13 +58,13 @@ public class Coder {
             + json + SUFFIX;
     }
 
-    public static ByteBuf encodeToByteBuf(ProtocolEnum protocolEnum, Object obj) {
+    public static ByteBuf encodeToByteBuf(ElectProtocolEnum protocolEnum, Object obj) {
         return Unpooled.copiedBuffer(encode(protocolEnum, obj), Charset.defaultCharset());
     }
 
-    public static class DecodeWrapper {
+    public static class ElectDecodeWrapper {
 
-        private ProtocolEnum protocolEnum;
+        private ElectProtocolEnum protocolEnum;
 
         private long generation;
 
@@ -70,14 +72,14 @@ public class Coder {
 
         private Object object;
 
-        public DecodeWrapper(ProtocolEnum protocolEnum, long generation, String serverName, Object object) {
+        public ElectDecodeWrapper(ElectProtocolEnum protocolEnum, long generation, String serverName, Object object) {
             this.generation = generation;
             this.protocolEnum = protocolEnum;
             this.serverName = serverName;
             this.object = object;
         }
 
-        public ProtocolEnum getProtocolEnum() {
+        public ElectProtocolEnum getProtocolEnum() {
             return protocolEnum;
         }
 

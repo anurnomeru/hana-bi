@@ -7,8 +7,8 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.coder.Coder;
-import com.anur.core.coder.Coder.DecodeWrapper;
+import com.anur.core.coder.ElectCoder;
+import com.anur.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
@@ -21,7 +21,6 @@ import io.netty.channel.ChannelHandlerContext;
  *
  * 选举服务器操作类客户端，负责选举相关的业务
  */
-@SuppressWarnings("ALL")
 public class ElectClientOperator implements Runnable {
 
     private static Logger logger = LoggerFactory.getLogger(ElectServerOperator.class);
@@ -52,7 +51,7 @@ public class ElectClientOperator implements Runnable {
      * 如何消费消息
      */
     private static BiConsumer<ChannelHandlerContext, String> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
-        DecodeWrapper decodeWrapper = Coder.decode(msg);
+        ElectDecodeWrapper decodeWrapper = ElectCoder.decode(msg);
         VotesResponse votesResponse;
 
         switch (decodeWrapper.getProtocolEnum()) {

@@ -7,7 +7,7 @@ import com.anur.core.elect.model.VotesResponse;
 /**
  * Created by Anur IjuoKaruKas on 1/24/2019
  */
-public enum ProtocolEnum {
+public enum ElectProtocolEnum {
 
     /**
      * 候选者发往其他节点的拉票请求
@@ -29,7 +29,7 @@ public enum ProtocolEnum {
      */
     HEART_BEAT_INFECTION(HeartBeat.class) ;
 
-    ProtocolEnum(Class clazz) {
+    ElectProtocolEnum(Class clazz) {
         this.clazz = clazz;
     }
 
