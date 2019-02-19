@@ -10,7 +10,5 @@ public class ErrorHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        System.out.println("喵喵喵");
-        ctx.close();
     }
 }

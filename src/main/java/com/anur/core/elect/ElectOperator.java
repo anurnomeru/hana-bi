@@ -312,7 +312,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 logger.debug(msg);
 
                 if (this.leaderServerName == null) {
-                    logger.info("集群中，节点 {} 已经成功在世代 {} 上位成为 Leader，本节点将成为 Follower，直到与 Leader 的网络通讯出现问题。", leaderServerName, generation);
+                    logger.info("集群中，节点 {} 已经成功在世代 {} 上位成为 Leader，本节点将成为 Follower，直到与 Leader 的网络通讯出现问题", leaderServerName, generation);
 
                     Optional.ofNullable(this.clusters)
                             .ifPresent(hanabiNodes -> hanabiNodes.forEach(hanabiNode -> {
