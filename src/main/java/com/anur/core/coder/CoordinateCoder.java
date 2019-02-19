@@ -40,12 +40,16 @@ public class CoordinateCoder {
                                     .map(String::valueOf)
                                     .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
 
-        return new CoordinateDecodeWrapper(coordinateProtocolEnum, generation, serverName, Optional.of(strs[3])
-                                                                                                   .map(s -> JSON.parseObject(s, coordinateProtocolEnum.clazz))
-                                                                                                   .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
+        String operationId = Optional.of(strs[3])
+                                     .map(String::valueOf)
+                                     .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 operationId 有误：" + str));
+
+        return new CoordinateDecodeWrapper(coordinateProtocolEnum, generation, serverName, operationId, Optional.of(strs[4])
+                                                                                                                .map(s -> JSON.parseObject(s, coordinateProtocolEnum.clazz))
+                                                                                                                .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
     }
 
-    public static String encode(CoordinateProtocolEnum coordinateProtocolEnum, Object obj) {
+    public static String encode(CoordinateProtocolEnum coordinateProtocolEnum, String operationId, Object obj) {
         String json = JSON.toJSONString(obj);
         if (json.contains(REGEX)) {
             throw new HanabiException("协议封装失败，类中含有关键字：" + REGEX);
@@ -55,11 +59,12 @@ public class CoordinateCoder {
             + ElectOperator.getInstance()
                            .getGeneration() + REGEX
             + InetSocketAddressConfigHelper.getServerName() + REGEX
+            + operationId + REGEX
             + json + SUFFIX;
     }
 
-    public static ByteBuf encodeToByteBuf(CoordinateProtocolEnum coordinateProtocolEnum, Object obj) {
-        return Unpooled.copiedBuffer(encode(coordinateProtocolEnum, obj), Charset.defaultCharset());
+    public static ByteBuf encodeToByteBuf(CoordinateProtocolEnum coordinateProtocolEnum, String operationId, Object obj) {
+        return Unpooled.copiedBuffer(encode(coordinateProtocolEnum, operationId, obj), Charset.defaultCharset());
     }
 
     public static class CoordinateDecodeWrapper {
@@ -70,12 +75,15 @@ public class CoordinateCoder {
 
         private String serverName;
 
+        private String operationId;
+
         private Object object;
 
-        public CoordinateDecodeWrapper(CoordinateProtocolEnum coordinateProtocolEnum, long generation, String serverName, Object object) {
-            this.generation = generation;
+        public CoordinateDecodeWrapper(CoordinateProtocolEnum coordinateProtocolEnum, long generation, String serverName, String operationId, Object object) {
             this.coordinateProtocolEnum = coordinateProtocolEnum;
+            this.generation = generation;
             this.serverName = serverName;
+            this.operationId = operationId;
             this.object = object;
         }
 
@@ -89,6 +97,10 @@ public class CoordinateCoder {
 
         public String getServerName() {
             return serverName;
+        }
+
+        public String getOperationId() {
+            return operationId;
         }
 
         public Object getObject() {
