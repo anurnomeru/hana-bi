@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
@@ -109,6 +110,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private String leaderServerName;
 
+    private long beginElectTime;
+
     private ElectOperator() {
         this.generation = 0;
         this.serial = 0;
@@ -150,6 +153,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
             if (this.generation != generation) {// 存在这么一种情况，虽然取消了选举任务，但是选举任务还是被执行了，所以这里要多做一重处理，避免上个周期的任务被执行
                 return null;
+            }
+
+            if (this.beginElectTime == 0) {
+                this.beginElectTime = TimeUtil.getTime();
             }
 
             logger.info("Election Timeout 到期，可能期间内未收到来自 Leader 的心跳包或上一轮选举没有在期间内选出 Leader，故本节点即将发起选举");
@@ -277,12 +284,14 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void becomeLeader() {
         this.lockSupplier(() -> {
-            logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Leader.name());
+            long becomeLeaderCostTime = TimeUtil.getTime() - this.beginElectTime;
+            this.beginElectTime = 0L;
+
+            logger.info("本节点 {} 角色由 {} 变更为 {} 选举耗时 {} ms，并开始向其他节点发送心跳包 ......", InetSocketAddressConfigHelper.getServerName(), this.nodeRole.name(), NodeRole.Leader.name(), becomeLeaderCostTime);
             this.serial = 0;
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
 
-            logger.info("本节点开始向其他节点发送心跳包");
             this.heartBeatTask();
             this.leaderServerName = InetSocketAddressConfigHelper.getServerName();
             return null;
@@ -324,6 +333,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                     CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(leaderServerName))
                                             .tryStartWhileDisconnected();
+
+                    this.beginElectTime = 0;
                 }
 
                 // 重置成为候选者任务
@@ -444,9 +455,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private void heartBeatTask() {
         this.clusters.forEach(hanabiNode -> {
             if (!hanabiNode.isLocalNode()) {
-
-                System.out.println(this.genId());
-
                 // 确保和其他选举服务器保持连接
                 ElectClientOperator.getInstance(hanabiNode)
                                    .tryStartWhileDisconnected();

@@ -15,7 +15,7 @@ import io.netty.util.internal.StringUtil;
  */
 public class Coder {
 
-    private static final String REGEX = "★-★";
+    private static final String REGEX = "★=Hana-★";
 
     private static final String SUFFIX = "\n";
 
@@ -31,8 +31,8 @@ public class Coder {
                                             .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
 
         long generation = Optional.of(strs[1])
-                                 .map(Long::valueOf)
-                                 .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
+                                  .map(Long::valueOf)
+                                  .orElseThrow(() -> new DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
 
         String serverName = Optional.of(strs[2])
                                     .map(String::valueOf)
@@ -44,11 +44,16 @@ public class Coder {
     }
 
     public static String encode(ProtocolEnum protocolEnum, Object obj) {
+        String json = JSON.toJSONString(obj);
+        if (json.contains(REGEX)) {
+            throw new HanabiException("协议封装失败，类中含有关键字：" + REGEX);
+        }
+
         return protocolEnum.name() + REGEX
             + ElectOperator.getInstance()
                            .getGeneration() + REGEX
             + InetSocketAddressConfigHelper.getServerName() + REGEX
-            + JSON.toJSONString(obj) + SUFFIX;
+            + json + SUFFIX;
     }
 
     public static ByteBuf encodeToByteBuf(ProtocolEnum protocolEnum, Object obj) {
