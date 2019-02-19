@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.handle.ClientReconnectHandler;
+import com.anur.io.core.handle.ErrorHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
@@ -81,7 +82,7 @@ public abstract class ReconnectableClient {
                          protected void initChannel(SocketChannel socketChannel) throws Exception {
                              channelPipelineConsumer(
                                  socketChannel.pipeline()
-                                              .addLast(new ClientReconnectHandler(serverName, reconnectLatch))); // 引入重连机制
+                                              .addLast(new ClientReconnectHandler(serverName, reconnectLatch))).addLast(new ErrorHandler()); // 引入重连机制
                          }
                      });
 

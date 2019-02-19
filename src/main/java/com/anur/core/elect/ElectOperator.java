@@ -7,7 +7,6 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
@@ -37,11 +36,11 @@ import com.anur.timewheel.Timer;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
-    private static final long ELECTION_TIMEOUT_MS = 150;// 为了测试方便，所以这里将时间扩大10倍
+    private static final long ELECTION_TIMEOUT_MS = 1500;// 为了测试方便，所以这里将时间扩大10倍
 
-    private static final long VOTES_BACK_OFF_MS = 70;
+    private static final long VOTES_BACK_OFF_MS = 700;
 
-    private static final long HEART_BEAT_MS = 70;
+    private static final long HEART_BEAT_MS = 700;
 
     private volatile static ElectOperator INSTANCE;
 
@@ -190,7 +189,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     public VotesResponse receiveVotes(Votes votes) {
         return this.lockSupplier(() -> {
-            logger.info("收到节点 {} 的投票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
+            logger.debug("收到节点 {} 的投票请求，其世代为 {}", votes.getServerName(), votes.getGeneration());
             String cause = "";
 
             if (votes.getGeneration() < this.generation) {
@@ -204,9 +203,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             boolean result = votes.equals(this.voteRecord);
 
             if (result) {
-                logger.info("投票记录更新成功：在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
+                logger.debug("投票记录更新成功：在世代 {}，本节点投票给 => {} 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                logger.info("投票记录更新失败：原因：{}", cause);
+                logger.debug("投票记录更新失败：原因：{}", cause);
             }
 
             String serverName = InetSocketAddressConfigHelper.getServerName();

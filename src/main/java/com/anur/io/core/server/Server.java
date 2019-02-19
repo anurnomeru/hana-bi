@@ -3,6 +3,7 @@ package com.anur.io.core.server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.handle.ErrorHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -44,7 +45,7 @@ public abstract class Server {
 
                                @Override
                                protected void initChannel(SocketChannel socketChannel) {
-                                   channelPipelineConsumer(socketChannel.pipeline());
+                                   channelPipelineConsumer(socketChannel.pipeline()).addLast(new ErrorHandler());
                                }
                            })
                            // 保持连接

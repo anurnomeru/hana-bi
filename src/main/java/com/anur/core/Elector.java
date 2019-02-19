@@ -12,6 +12,7 @@ import com.anur.core.elect.ElectServerOperator;
 public class Elector {
 
     public static void main(String[] args) {
+
         /**
          * 启动协调服务器
          */
