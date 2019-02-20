@@ -50,6 +50,15 @@ public class CoordinateCoder {
     }
 
     public static String encode(CoordinateProtocolEnum coordinateProtocolEnum, String operationId, Object obj) {
+        if (obj == null) {
+            throw new CoordinateCoderException("不能发送空协议内容");
+        }
+
+        if (!obj.getClass()
+                .equals(coordinateProtocolEnum.clazz)) {
+            throw new CoordinateCoderException(String.format("协议封装类型传入错误，应为 %s 但实际是 %s", coordinateProtocolEnum.clazz, obj.getClass()));
+        }
+
         String json = JSON.toJSONString(obj);
         if (json.contains(REGEX)) {
             throw new HanabiException("协议封装失败，类中含有关键字：" + REGEX);
@@ -108,9 +117,9 @@ public class CoordinateCoder {
         }
     }
 
-    public static class DecodeException extends HanabiException {
+    public static class CoordinateCoderException extends HanabiException {
 
-        public DecodeException(String message) {
+        public CoordinateCoderException(String message) {
             super(message);
         }
     }

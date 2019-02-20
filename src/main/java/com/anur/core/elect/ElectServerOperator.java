@@ -67,7 +67,7 @@ public class ElectServerOperator implements Runnable {
                 logger.debug("来自节点 {}，世代 {}，的选票请求无效", votes.getServerName(), votes.getGeneration());
             }
 
-            ctx.writeAndFlush(Unpooled.copiedBuffer(ElectCoder.encode(ElectProtocolEnum.VOTES_RESPONSE, votesResponse), Charset.defaultCharset()));
+            ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.VOTES_RESPONSE, votesResponse));
             break;
         case HEART_BEAT:
             ElectOperator.getInstance()
@@ -81,7 +81,7 @@ public class ElectServerOperator implements Runnable {
 
             heartBeat = new HeartBeat(ElectOperator.getInstance()
                                                    .getLeaderServerName());
-            ctx.writeAndFlush(Unpooled.copiedBuffer(ElectCoder.encode(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat), Charset.defaultCharset()));
+            ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat));
         default:
             break;
         }

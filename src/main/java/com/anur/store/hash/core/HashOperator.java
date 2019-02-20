@@ -6,6 +6,8 @@ import com.anur.core.lock.ReentrantReadWriteLocker;
 
 /**
  * Created by Anur IjuoKaruKas on 2/15/2019
+ *
+ * 用于在内存中存储 k - v
  */
 public class HashOperator extends ReentrantReadWriteLocker {
 
