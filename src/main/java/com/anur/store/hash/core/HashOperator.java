@@ -43,4 +43,13 @@ public class HashOperator extends ReentrantReadWriteLocker {
             }
         });
     }
+
+    /**
+     * 移除成功 返回 false
+     */
+    public boolean rm(String key) {
+        return this.writeLockSupplier(() ->
+            hashMap.remove(key) != null
+        );
+    }
 }

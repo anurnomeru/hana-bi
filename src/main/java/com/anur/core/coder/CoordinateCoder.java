@@ -28,28 +28,28 @@ public class CoordinateCoder {
 
         String[] strs = str.split(REGEX);
 
-        CoordinateProtocolEnum coordinateProtocolEnum = Optional.of(strs[0])
-                                                                .map(CoordinateProtocolEnum::valueOf)
-                                                                .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
-
-        long generation = Optional.of(strs[1])
-                                  .map(Long::valueOf)
-                                  .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
-
-        String serverName = Optional.of(strs[2])
-                                    .map(String::valueOf)
-                                    .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
-
-        String operationId = Optional.of(strs[3])
+        String operationId = Optional.of(strs[0])
                                      .map(String::valueOf)
                                      .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 operationId 有误：" + str));
 
-        return new CoordinateDecodeWrapper(coordinateProtocolEnum, generation, serverName, operationId, Optional.of(strs[4])
+        CoordinateProtocolEnum coordinateProtocolEnum = Optional.of(strs[1])
+                                                                .map(CoordinateProtocolEnum::valueOf)
+                                                                .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 protocolEnum 有误：" + str));
+
+        long generation = Optional.of(strs[2])
+                                  .map(Long::valueOf)
+                                  .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
+
+        String serverName = Optional.of(strs[3])
+                                    .map(String::valueOf)
+                                    .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议头 generation 有误：" + str));
+
+        return new CoordinateDecodeWrapper(operationId, coordinateProtocolEnum, generation, serverName, Optional.of(strs[4])
                                                                                                                 .map(s -> JSON.parseObject(s, coordinateProtocolEnum.clazz))
                                                                                                                 .orElseThrow(() -> new ElectCoder.DecodeException("解码失败，从其他节点收到请求的协议体有误：" + str)));
     }
 
-    public static String encode(CoordinateProtocolEnum coordinateProtocolEnum, String operationId, Object obj) {
+    public static String encode(String operationId, CoordinateProtocolEnum coordinateProtocolEnum, Object obj) {
         if (obj == null) {
             throw new CoordinateCoderException("不能发送空协议内容");
         }
@@ -64,19 +64,23 @@ public class CoordinateCoder {
             throw new HanabiException("协议封装失败，类中含有关键字：" + REGEX);
         }
 
-        return coordinateProtocolEnum.name() + REGEX
-            + ElectOperator.getInstance()
-                           .getGeneration() + REGEX
-            + InetSocketAddressConfigHelper.getServerName() + REGEX
-            + operationId + REGEX
-            + json + SUFFIX;
+        return
+            operationId
+                + REGEX + coordinateProtocolEnum.name()
+                + REGEX + ElectOperator.getInstance()
+                                       .getGeneration()
+                + REGEX + InetSocketAddressConfigHelper.getServerName()
+                + REGEX + json
+                + SUFFIX;
     }
 
-    public static ByteBuf encodeToByteBuf(CoordinateProtocolEnum coordinateProtocolEnum, String operationId, Object obj) {
-        return Unpooled.copiedBuffer(encode(coordinateProtocolEnum, operationId, obj), Charset.defaultCharset());
+    public static ByteBuf encodeToByteBuf(String operationId, CoordinateProtocolEnum coordinateProtocolEnum, Object obj) {
+        return Unpooled.copiedBuffer(encode(operationId, coordinateProtocolEnum, obj), Charset.defaultCharset());
     }
 
     public static class CoordinateDecodeWrapper {
+
+        private String operationId;
 
         private CoordinateProtocolEnum coordinateProtocolEnum;
 
@@ -84,15 +88,13 @@ public class CoordinateCoder {
 
         private String serverName;
 
-        private String operationId;
-
         private Object object;
 
-        public CoordinateDecodeWrapper(CoordinateProtocolEnum coordinateProtocolEnum, long generation, String serverName, String operationId, Object object) {
+        public CoordinateDecodeWrapper(String operationId, CoordinateProtocolEnum coordinateProtocolEnum, long generation, String serverName, Object object) {
+            this.operationId = operationId;
             this.coordinateProtocolEnum = coordinateProtocolEnum;
             this.generation = generation;
             this.serverName = serverName;
-            this.operationId = operationId;
             this.object = object;
         }
 

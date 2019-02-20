@@ -24,6 +24,7 @@ import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
+import com.anur.core.util.OperationIdGenerator;
 import com.anur.core.util.TimeUtil;
 import com.anur.exception.HanabiException;
 import com.anur.timewheel.TimedTask;
@@ -543,7 +544,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 生成对应一次操作的id号（用于给其他节点发送日志同步消息，并且得到其ack，以便知道消息是否持久化成功）
      */
-    public String genId() {
+    public String genOperationId() {
         return this.lockSupplier(() -> {
             if (NodeRole.Leader == nodeRole) {
 
@@ -554,12 +555,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 }
 
                 this.serial++;
-                return new StringBuilder("G").append(this.generation)
-                                             .append("T")
-                                             .append(TimeUtil.getTime())
-                                             .append("S")
-                                             .append(this.serial)
-                                             .toString();
+                return OperationIdGenerator.genOperationId(this.generation, this.serial);
             } else {
                 throw new HanabiException("不是 Leader 的节点无法生成id号");
             }

@@ -12,20 +12,26 @@ import java.util.stream.Collectors;
  */
 public class InetSocketAddressConfigHelper extends ConfigHelper {
 
+    private static HanabiNode me;
+
+    static {
+        me = getNode(getConfig(ConfigEnum.SERVER_NAME, Function.identity()));
+    }
+
     public void refreshConfig() {
         ConfigHelper.refresh();
     }
 
     public static Integer getServerElectionPort() {
-        return getNode(getServerName()).electionPort;
+        return me.electionPort;
     }
 
     public static Integer getServerCoordinatePort() {
-        return getNode(getServerName()).coordinatePort;
+        return me.coordinatePort;
     }
 
     public static String getServerName() {
-        return getConfig(ConfigEnum.SERVER_NAME, Function.identity());
+        return me.serverName;
     }
 
     public static List<HanabiNode> getCluster() {
