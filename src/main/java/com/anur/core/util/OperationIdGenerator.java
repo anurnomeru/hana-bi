@@ -1,6 +1,5 @@
 package com.anur.core.util;
 
-import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.model.OperationId;
 
 /**
@@ -12,17 +11,13 @@ public class OperationIdGenerator {
         return new StringBuilder("G").append(generation)
                                      .append("S")
                                      .append(serial)
-                                     .append("N")
-                                     .append(InetSocketAddressConfigHelper.getServerName()
-                                                                          .hashCode())
                                      .toString();
     }
 
     public static OperationId decodeOperationId(String operationId) {
         return new OperationId(
             Long.valueOf(operationId.substring(1, operationId.indexOf("S"))),
-            Long.valueOf(operationId.substring(operationId.indexOf("S") + 1, operationId.indexOf("N"))),
-            Integer.valueOf(operationId.substring(operationId.indexOf("N") + 1))
+            Long.valueOf(operationId.substring(operationId.indexOf("S") + 1))
         );
     }
 }
