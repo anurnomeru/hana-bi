@@ -1,4 +1,4 @@
-package com.anur.core.protocol.operation;
+package com.anur.core.log.operation;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

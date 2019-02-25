@@ -1,4 +1,4 @@
-package com.anur.core.protocol.operation;
+package com.anur.core.log.operation;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019

@@ -1,4 +1,4 @@
-package com.anur.core.protocol.operation;
+package com.anur.core.log.operation;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,7 +10,6 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import com.anur.core.protocol.log.OffsetAndPosition;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
