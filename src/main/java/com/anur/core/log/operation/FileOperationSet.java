@@ -1,3 +1,20 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.anur.core.log.operation;
 
 import java.io.File;
@@ -10,9 +27,13 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.anur.core.util.IteratorTemplate;
+import com.anur.exception.HanabiException;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
+ *
+ * 高仿kafka FileMessageSet 写的，是操作日志在磁盘的映射类。
  */
 public class FileOperationSet extends OperationSet {
 
@@ -129,7 +150,31 @@ public class FileOperationSet extends OperationSet {
 
             int messageSize = buffer.getInt(); // 8字节的offset后面紧跟着4字节的这条消息的长度
 
+            if (messageSize < Operation.getMinMessageOverhead()) {
+                throw new IllegalStateException("Invalid message size: " + messageSize);
+            }
+
+            position += OperationSet.LogOverhead + messageSize;
         }
+        return null;
+    }
+
+    /**
+     * 将某个日志文件进行裁剪到指定大小，必须小于文件的size
+     */
+    public int druncateTo(int targetSize) throws IOException {
+        int originalSize = this.sizeInBytes();
+        if (targetSize > originalSize || targetSize < 0) {
+            throw new HanabiException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
+                " 原文件大小为 " + originalSize + " bytes。");
+        }
+
+        if (targetSize < fileChannel.size()) {
+            fileChannel.truncate(targetSize);
+            fileChannel.position(targetSize);
+            _size.set(targetSize);
+        }
+        return originalSize - targetSize;
     }
 
     /**
@@ -154,13 +199,96 @@ public class FileOperationSet extends OperationSet {
         }
     }
 
+    /**
+     * Write some of this set to the given channel.
+     *
+     * 将FileMessageSet的部分数据写到指定的channel上
+     *
+     * @param destChannel The channel to write to.
+     * @param writePosition The position in the message set to begin writing from.
+     * @param size The maximum number of bytes to write
+     *
+     * @return The number of bytes actually written.
+     */
     @Override
-    int writeTo(GatheringByteChannel channel, long offset, int maxSize) {
-        return 0;
+    public int writeTo(GatheringByteChannel destChannel, long writePosition, int size) throws IOException {
+        // 进行边界检查
+        int newSize = Math.min((int) fileChannel.size(), end) - start;
+        if (newSize < _size.get()) {
+            throw new HanabiException(String.format("FileOperationSet 的文件大小 %s 在写的过程中被截断了：之前的文件大小为 %d, 现在的文件大小为 %d", file.getAbsolutePath(), _size.get(), newSize));
+        }
+        int position = start + (int) writePosition; // The position in the message set to begin writing from.
+        int count = Math.min(size, sizeInBytes());
+
+        // 将从position开始的count个bytes写到指定到channel中
+        int bytesTransferred = (int) fileChannel.transferTo(position, count, destChannel);
+        return bytesTransferred;
     }
 
+    /**
+     * 获取各种消息的迭代器
+     */
     @Override
-    Iterator<OperationAndOffset> iterator() {
-        return null;
+    public Iterator<OperationAndOffset> iterator() {
+        return this.iterator(Integer.MAX_VALUE);
+    }
+
+    /**
+     * 获取某个文件的迭代器
+     */
+    public Iterator<OperationAndOffset> iterator(int maxMessageSize) {
+        return new IteratorTemplate<OperationAndOffset>() {
+
+            private int location = start;
+
+            private int sizeOffsetLength = OperationSet.LogOverhead;
+
+            private ByteBuffer sizeOffsetBuffer = ByteBuffer.allocate(sizeOffsetLength);
+
+            @Override
+            protected OperationAndOffset makeNext() {
+                if (location + sizeOffsetLength >= end) {// 如果已经到了末尾，返回空
+                    return allDone();
+                }
+
+                // read the size of the item
+                sizeOffsetBuffer.rewind();
+                try {
+                    fileChannel.read(sizeOffsetBuffer, location);
+                } catch (IOException e) {
+                    throw new HanabiException("Error occurred while reading data from fileChannel.");
+                }
+                if (sizeOffsetBuffer.hasRemaining()) {// 这也是读到了末尾
+                    return allDone();
+                }
+
+                long offset = sizeOffsetBuffer.getLong();
+                int size = sizeOffsetBuffer.getInt();
+
+                if (size < Operation.getMinMessageOverhead() || location + sizeOffsetLength + size > end) { // 代表消息放不下了
+                    return allDone();
+                }
+
+                if (size > maxMessageSize) {
+                    throw new HanabiException(String.format("Message size exceeds the largest allowable message size (%d).", maxMessageSize));
+                }
+
+                // read the item itself
+                ByteBuffer buffer = ByteBuffer.allocate(size);
+                try {
+                    fileChannel.read(buffer, location + sizeOffsetLength);
+                } catch (IOException e) {
+                    throw new HanabiException("Error occurred while reading data from fileChannel.");
+                }
+                if (buffer.hasRemaining()) {// 代表没读完，其实和上面一样，可能是消息写到最后写不下了，或者被截取截没了
+                    return allDone();
+                }
+                buffer.rewind();
+
+                // increment the location and return the item
+                location += size + sizeOffsetLength;
+                return new OperationAndOffset(new Operation(buffer), offset);
+            }
+        };
     }
 }

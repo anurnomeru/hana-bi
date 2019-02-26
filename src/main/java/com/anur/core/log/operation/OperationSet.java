@@ -1,5 +1,6 @@
 package com.anur.core.log.operation;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
@@ -23,10 +24,10 @@ public abstract class OperationSet {
      * 向指定的channel从某个指定的offset开始，将OperationSet写入这个channel，
      * 这个方法将返回已经写入的字节
      */
-    abstract int writeTo(GatheringByteChannel channel, long offset, int maxSize);
+    public abstract int writeTo(GatheringByteChannel channel, long offset, int maxSize) throws IOException;
 
     /**
      * 返回此OperationSet内部的迭代器
      */
-    abstract Iterator<OperationAndOffset> iterator();
+    public abstract Iterator<OperationAndOffset> iterator();
 }
