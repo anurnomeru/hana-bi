@@ -1,6 +1,7 @@
 package com.anur.core.log.index;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
@@ -8,7 +9,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.log.common.OffsetAndPosition;
-import com.sun.java.util.jar.pack.Instruction.Switch;
+import com.anur.exception.HanabiException;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27
@@ -28,18 +29,19 @@ public class OffsetIndex extends ReentrantLocker {
     private volatile MappedByteBuffer mmap;
 
     /* the number of eight-byte entries currently in the index */
-    private volatile int entries;
+    private volatile int entries;// 索引个数
 
     /* The maximum number of eight-byte entries this index can hold */
-    private volatile int maxEntries;
+    private volatile int maxEntries;// 最大索引个数
 
-    private volatile long lastOffset;
+    private volatile long lastOffset;// 最后一个索引的 offset
 
     public OffsetIndex(File file, long baseOffset, int maxIndexSize) throws IOException {
         this.file = file;
         this.baseOffset = baseOffset;
         this.maxIndexSize = maxIndexSize;
 
+        // 判断索引文件是否已经被创建
         boolean newlyCreated = this.file.createNewFile();
         RandomAccessFile raf = new RandomAccessFile(this.file, "rw");
         try {
@@ -48,6 +50,7 @@ public class OffsetIndex extends ReentrantLocker {
                 if (maxIndexSize < FACTOR) {
                     throw new IllegalArgumentException("Invalid max index size: " + maxIndexSize);
                 }
+                // 对于新创建的文件来说，需要进行扩容，扩容为小于 maxIndexSize 最大的8的倍数
                 raf.setLength(roundToExactMultiple(maxIndexSize, FACTOR));
             }
 
@@ -56,9 +59,9 @@ public class OffsetIndex extends ReentrantLocker {
             this.mmap = raf.getChannel()
                            .map(FileChannel.MapMode.READ_WRITE, 0, len);
 
-            if (newlyCreated) {
+            if (newlyCreated) {// 新创建的索引文件从0开始写
                 this.mmap.position(0);
-            } else {
+            } else {// 非新创建的则从limit，也就是读的尽头开始写
                 this.mmap.position(roundToExactMultiple(this.mmap.limit(), FACTOR));
             }
         } finally {
@@ -96,7 +99,7 @@ public class OffsetIndex extends ReentrantLocker {
      */
     private OffsetAndPosition lookup(long targetOffset) {
         return this.lockSupplier(() -> {
-            ByteBuffer idx = mmap.duplicate();
+            ByteBuffer idx = mmap.duplicate();// 创建一个副本
             int slot = indexSlotFor(idx, targetOffset);
             if (slot == -1) {
                 return new OffsetAndPosition(baseOffset, 0);
@@ -182,5 +185,168 @@ public class OffsetIndex extends ReentrantLocker {
             ByteBuffer idx = mmap.duplicate();
             return new OffsetAndPosition(relativeOffset(idx, n), physical(idx, n));
         });
+    }
+
+    /**
+     * Append an entry for the given offset/location pair to the index. This entry must have a larger offset than all subsequent entries.
+     */
+    public void append(long offset, int position) {
+        this.lockSupplier(() -> {
+            if (isFull()) {
+                throw new HanabiException("Attempt to append to a full index (size = " + entries + ").");
+            }
+            if (entries == 0 || offset > lastOffset) {
+                mmap.putInt((int) (offset - baseOffset));
+                mmap.putInt(position);
+                entries += 1;
+                lastOffset = offset;
+
+                if (entries * 8 != mmap.position()) {
+                    throw new HanabiException(
+                        entries + " entries but file position in index is " + mmap.position() + ".");
+                }
+            } else {
+                throw new HanabiException(
+                    String.format("Attempt to append an offset (%d) to position %d no larger than the last offset appended (%d) to %s.", offset, entries, lastOffset, file.getAbsolutePath()));
+            }
+            return null;
+        });
+    }
+
+    /**
+     * True iff there are no more slots available in this index
+     */
+    public boolean isFull() {
+        return entries >= maxEntries;
+    }
+
+    /**
+     * Truncate the entire index, deleting all entries
+     */
+    public void truncate() {
+        truncateToEntries(0);
+    }
+
+    /**
+     * Remove all entries from the index which have an offset greater than or equal to the given offset.
+     * Truncating to an offset larger than the largest in the index has no effect.
+     */
+    public void truncateTo(long offset) {
+        lockSupplier(() -> {
+            ByteBuffer idx = mmap.duplicate();
+            int slot = indexSlotFor(idx, offset);
+
+            /* There are 3 cases for choosing the new size
+             * 1) if there is no entry in the index <= the offset, delete everything
+             * 2) if there is an entry for this exact offset, delete it and everything larger than it
+             * 3) if there is no entry for this offset, delete everything larger than the next smallest
+             */
+            int newEntries;
+            if (slot < 0) {
+                newEntries = 0;
+            } else if (relativeOffset(idx, slot) == offset - baseOffset) {
+                newEntries = slot;
+            } else {
+                newEntries = slot + 1;
+            }
+
+            truncateToEntries(newEntries);
+            return null;
+        });
+    }
+
+    /**
+     * Truncates index to a known number of entries.
+     */
+    private void truncateToEntries(int entries) {
+        lockSupplier(() -> {
+            this.entries = entries;
+            mmap.position(entries * 8);
+            lastOffset = readLastEntry().getOffset();
+            return null;
+        });
+    }
+
+    /**
+     * Trim this segment to fit just the valid entries, deleting all trailing unwritten bytes from
+     * the file.
+     */
+    public void trimToValidSize() {
+        lockSupplier(() -> {
+            resize(entries * 8);
+            return null;
+        });
+    }
+
+    /**
+     * Reset the size of the memory map and the underneath file. This is used in two kinds of cases: (1) in
+     * trimToValidSize() which is called at closing the segment or new segment being rolled; (2) at
+     * loading segments from disk or truncating back to an old segment where a new log segment became active;
+     * we want to reset the index size to maximum index size to avoid rolling new segment.
+     */
+    public void resize(int newSize) {
+        lockSupplier(() -> {
+            RandomAccessFile raf = null;
+
+            try {
+                raf = new RandomAccessFile(file, "rw");
+            } catch (FileNotFoundException e) {
+                throw new HanabiException(e);
+            }
+
+            int roundedNewSize = roundToExactMultiple(newSize, 8);
+            int position = mmap.position();
+
+            /* Windows won't let us modify the file length while the file is mmapped :-( */
+            forceUnmap(mmap);
+            try {
+                raf.setLength(roundedNewSize);
+                mmap = raf.getChannel()
+                          .map(FileChannel.MapMode.READ_WRITE, 0, roundedNewSize);
+                maxEntries = mmap.limit() / 8;
+                mmap.position(position);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    raf.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Forcefully free the buffer's mmap. We do this only on windows.
+     */
+    private void forceUnmap(MappedByteBuffer m) {
+        try {
+            if (m instanceof sun.nio.ch.DirectBuffer) {
+                ((sun.nio.ch.DirectBuffer) m).cleaner()
+                                             .clean();
+            }
+        } catch (Throwable e) {
+            throw new HanabiException("Error when freeing index buffer");
+        }
+    }
+
+    /**
+     * Flush the data in the index to disk
+     */
+    public void flush() {
+        lockSupplier(() -> {
+            mmap.force();
+            return null;
+        });
+    }
+
+    /**
+     * Delete this index file
+     */
+    public boolean delete() {
+        forceUnmap(mmap);
+        return file.delete();
     }
 }
