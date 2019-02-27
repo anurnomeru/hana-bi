@@ -46,6 +46,7 @@ public class ByteBufferUtil {
      * Compute the CRC32 of the byte array
      *
      * @param bytes The array to compute the checksum for
+     *
      * @return The CRC32
      */
     public static long crc32(byte[] bytes) {
@@ -60,5 +61,16 @@ public class ByteBufferUtil {
         Crc32 crc = new Crc32();
         crc.update(bytes, offset, size);
         return crc.getValue();
+    }
+
+    /**
+     * Write the given long value as a 4 byte unsigned integer. Overflow is ignored.
+     *
+     * @param buffer The buffer to write to
+     * @param index The position in the buffer at which to begin writing
+     * @param value The value to write
+     */
+    public static void writeUnsignedInt(ByteBuffer buffer, int index, long value) {
+        buffer.putInt(index, (int) (value & 0xffffffffL));
     }
 }

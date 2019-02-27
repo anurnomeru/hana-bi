@@ -22,7 +22,7 @@ public class OffsetAndPosition {
         this.position = position;
     }
 
-    public long getSerial() {
+    public long getOffset() {
         return offset;
     }
 
