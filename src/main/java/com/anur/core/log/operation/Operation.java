@@ -1,6 +1,8 @@
 package com.anur.core.log.operation;
 
 import java.nio.ByteBuffer;
+import com.anur.core.log.common.OperationConstant;
+import com.anur.core.util.ByteBufferUtil;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -9,20 +11,26 @@ import java.nio.ByteBuffer;
  */
 public class Operation {
 
-    private ByteBuffer byteBuffer;
+    private ByteBuffer buffer;
 
-    public Operation(ByteBuffer byteBuffer) {
-        this.byteBuffer = byteBuffer;
+    public Operation(ByteBuffer buffer) {
+        this.buffer = buffer;
     }
 
     public ByteBuffer getByteBuffer() {
-        return byteBuffer;
+        return buffer;
     }
 
     /**
      * The complete serialized size of this operation in bytes (including crc, header attributes, etc)
      */
     public int size() {
-        return byteBuffer.limit();
+        return buffer.limit();
     }
+
+    public long computeChecksum() {
+        return ByteBufferUtil.crc32(buffer.array(), buffer.arrayOffset() + OperationConstant.TypeOffset, buffer.limit() - OperationConstant.TypeOffset);
+    }
+
+
 }

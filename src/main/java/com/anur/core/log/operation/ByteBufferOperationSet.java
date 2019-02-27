@@ -45,7 +45,7 @@ public class ByteBufferOperationSet extends OperationSet {
     }
 
     /**
-     * 重新进行 offset 的分配，验证与更新 crc32 等信息
+     * 验证与更新 crc32 等信息
      */
     public ByteBufferOperationSet validateMessages() {
         int messagePosition = 0;
@@ -53,7 +53,8 @@ public class ByteBufferOperationSet extends OperationSet {
 
         while (messagePosition < sizeInBytes() - OperationSet.LogOverhead) {
             byteBuffer.position(messagePosition);
-            byteBuffer.putLong(offsetAssigner.nextAbsoluteOffset());
+            //            byteBuffer.putLong(offsetAssigner.nextAbsoluteOffset());
+            long offset = byteBuffer.getLong();
             int messageSize = byteBuffer.getInt();
             ByteBuffer messageBufferShared = byteBuffer.slice();// The content of the new buffer will start at this buffer's current position.
             messageBufferShared.limit(messageSize);
