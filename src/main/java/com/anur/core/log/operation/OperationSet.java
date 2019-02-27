@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import com.anur.core.log.common.OperationAndOffset;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -13,11 +14,11 @@ import java.util.Iterator;
  */
 public abstract class OperationSet {
 
-    public static final int MessageSizeLength = 4;
-
     public static final int OffsetLength = 8;
 
-    public static final int LogOverhead = MessageSizeLength + OffsetLength;
+    public static final int MessageSizeLength = 4;
+
+    public static final int LogOverhead = OffsetLength + MessageSizeLength;
 
     public static final ByteBufferOperationSet Empty = new ByteBufferOperationSet(ByteBuffer.allocate(0));
 
@@ -36,7 +37,6 @@ public abstract class OperationSet {
 
     /**
      * The size of a size-delimited entry in a operationSet
-     *
      */
     public static int entrySize(Operation operation) {
         return LogOverhead + operation.size();

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
-import com.anur.core.log.core.OffsetAssigner;
+import com.anur.core.log.common.OperationAndOffset;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019\
@@ -47,7 +47,7 @@ public class ByteBufferOperationSet extends OperationSet {
     /**
      * 重新进行 offset 的分配，验证与更新 crc32 等信息
      */
-    public ByteBufferOperationSet validateMessagesAndAssignOffsets(OffsetAssigner offsetAssigner) {
+    public ByteBufferOperationSet validateMessages() {
         int messagePosition = 0;
         byteBuffer.mark();
 

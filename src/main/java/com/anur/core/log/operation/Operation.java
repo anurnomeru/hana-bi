@@ -1,6 +1,7 @@
 package com.anur.core.log.operation;
 
 import java.nio.ByteBuffer;
+
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
  *

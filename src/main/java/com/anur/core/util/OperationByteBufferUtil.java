@@ -2,8 +2,8 @@ package com.anur.core.util;
 
 import java.nio.ByteBuffer;
 import java.util.Collection;
+import com.anur.core.log.core.OffsetAssigner;
 import com.anur.core.log.operation.ByteBufferOperationSet;
-import com.anur.core.log.operation.ByteBufferOperationSet.OffsetAssigner;
 import com.anur.core.log.operation.Operation;
 import com.anur.core.log.operation.OperationSet;
 
