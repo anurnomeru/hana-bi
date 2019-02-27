@@ -18,15 +18,15 @@
 package com.anur.core.log.operation;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.anur.core.log.core.OffsetAndPosition;
+import com.anur.core.log.core.OperationConstant;
+import com.anur.core.util.FileIOUtil;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
 
@@ -72,7 +72,7 @@ public class FileOperationSet extends OperationSet {
      */
     public FileOperationSet(File file) throws IOException {
         this.file = file;
-        this.fileChannel = FileOperationSet.openChannel(file, true);
+        this.fileChannel = FileIOUtil.openChannel(file, true);
         this.start = 0;
         this.end = Integer.MAX_VALUE;
         this.isSlice = false;
@@ -84,7 +84,7 @@ public class FileOperationSet extends OperationSet {
      */
     public FileOperationSet(File file, boolean mutable) throws IOException {
         this.file = file;
-        this.fileChannel = FileOperationSet.openChannel(file, mutable);
+        this.fileChannel = FileIOUtil.openChannel(file, mutable);
         this.start = 0;
         this.end = Integer.MAX_VALUE;
         this.isSlice = false;
@@ -150,7 +150,7 @@ public class FileOperationSet extends OperationSet {
 
             int messageSize = buffer.getInt(); // 8字节的offset后面紧跟着4字节的这条消息的长度
 
-            if (messageSize < Operation.getMinMessageOverhead()) {
+            if (messageSize < OperationConstant.MinMessageOverhead) {
                 throw new IllegalStateException("Invalid message size: " + messageSize);
             }
 
@@ -182,21 +182,6 @@ public class FileOperationSet extends OperationSet {
      */
     public int sizeInBytes() {
         return _size.get();
-    }
-
-    /**
-     * 开启一个文件channel
-     *
-     * mutable，是否可改变（是否不可读）
-     * true 可读可写
-     * false 只可读
-     */
-    public static FileChannel openChannel(File file, boolean mutable) throws FileNotFoundException {
-        if (mutable) {
-            return new RandomAccessFile(file, "rw").getChannel();
-        } else {
-            return new FileInputStream(file).getChannel();
-        }
     }
 
     /**
@@ -265,7 +250,7 @@ public class FileOperationSet extends OperationSet {
                 long offset = sizeOffsetBuffer.getLong();
                 int size = sizeOffsetBuffer.getInt();
 
-                if (size < Operation.getMinMessageOverhead() || location + sizeOffsetLength + size > end) { // 代表消息放不下了
+                if (size < OperationConstant.MinMessageOverhead || location + sizeOffsetLength + size > end) { // 代表消息放不下了
                     return allDone();
                 }
 
