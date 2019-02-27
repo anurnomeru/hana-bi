@@ -18,6 +18,9 @@ import com.anur.exception.HanabiException;
  */
 public class OffsetIndex extends ReentrantLocker {
 
+    /**
+     * factor为什么是8，因为index是由 4 位的相对 offset + 4位的 position 组成
+     */
     private static final int FACTOR = 8;
 
     private File file;
@@ -104,6 +107,7 @@ public class OffsetIndex extends ReentrantLocker {
             if (slot == -1) {
                 return new OffsetAndPosition(baseOffset, 0);
             } else {
+                // 返回slot这个索引的绝对 offset 和 position
                 return new OffsetAndPosition(baseOffset + relativeOffset(idx, slot), physical(idx, slot));
             }
         });
@@ -120,6 +124,7 @@ public class OffsetIndex extends ReentrantLocker {
      */
     private int indexSlotFor(ByteBuffer idx, long targetOffset) {
         // we only store the difference from the base offset so calculate that
+        // 将目标的 offset 转为相对 offset
         long relOffset = targetOffset - baseOffset;
 
         // check if the index is empty
@@ -135,8 +140,11 @@ public class OffsetIndex extends ReentrantLocker {
         // binary search for the entry
         int lo = 0;
         int hi = entries - 1;
-        while (lo < hi) {
+        while (lo < hi) {// 二分法寻找，如果实在找不到，返回小的那一个，比如索引位置只有 100, 200 ,300, 查找 150 则返回100
+            // mid 为索引个数的中间值
             int mid = (int) Math.ceil(hi / 2.0 + lo / 2.0);
+
+            // 寻找这个中间值的相对 offset
             int found = relativeOffset(idx, mid);
             if (found == relOffset) {
                 return mid;
@@ -161,12 +169,12 @@ public class OffsetIndex extends ReentrantLocker {
 
     /* return the nth offset relative to the base offset */
     private int relativeOffset(ByteBuffer buffer, int n) {
-        return buffer.getInt(n * FACTOR);
+        return buffer.getInt(n * FACTOR);// 返回相对 offset
     }
 
     /* return the nth physical position */
     private int physical(ByteBuffer buffer, int n) {
-        return buffer.getInt(n * FACTOR + 4);
+        return buffer.getInt(n * FACTOR + 4);// 返回 position
     }
 
     /**
