@@ -1,6 +1,7 @@
 package com.anur.core.log;
 
 import java.io.IOException;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.log.common.OffsetAndPosition;
@@ -34,11 +35,6 @@ public class LogSegment {
      * 索引字节间隔
      */
     private int indexIntervalBytes;
-
-    //    /**
-    //     *
-    //     */
-    //    private long rollJitterMs;
 
     /**
      * 距离上一次添加索引，已经写了多少个字节了
