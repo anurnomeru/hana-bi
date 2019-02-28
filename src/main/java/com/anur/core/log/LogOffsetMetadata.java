@@ -28,17 +28,26 @@ import com.anur.exception.HanabiException;
  */
 public class LogOffsetMetadata {
 
-    private static LogOffsetMetadata UnknownOffsetMetadata = new LogOffsetMetadata();
+    private static LogOffsetMetadata UnknownOffsetMetadata = new LogOffsetMetadata(-1, 0, 0);
 
     private static long UnknownSegBaseOffset = -1L;
 
     private static int UnknownFilePosition = -1;
 
+    /** 这条操作记录的绝对位置 */
     private long messageOffset;
 
+    /** LogSegment的基础offset */
     private long segmentBaseOffset;
 
+    /** 相对位置 */
     private int relativePositionInSegment;
+
+    public LogOffsetMetadata(long messageOffset, long segmentBaseOffset, int relativePositionInSegment) {
+        this.messageOffset = messageOffset;
+        this.segmentBaseOffset = segmentBaseOffset;
+        this.relativePositionInSegment = relativePositionInSegment;
+    }
 
     // check if this offset is already on an older segment compared with the given offset
     public boolean onOlderSegment(LogOffsetMetadata that) {

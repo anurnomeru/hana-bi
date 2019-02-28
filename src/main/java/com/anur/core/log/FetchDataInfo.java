@@ -1,5 +1,7 @@
 package com.anur.core.log;
 
+import com.anur.core.log.operation.OperationSet;
+
 /**
  * Created by Anur IjuoKaruKas on 2019/2/28
  *
@@ -7,4 +9,12 @@ package com.anur.core.log;
  */
 public class FetchDataInfo {
 
+    private LogOffsetMetadata fetchOffsetMetadata;
+
+    private OperationSet operationSet;
+
+    public FetchDataInfo(LogOffsetMetadata fetchOffsetMetadata, OperationSet operationSet) {
+        this.fetchOffsetMetadata = fetchOffsetMetadata;
+        this.operationSet = operationSet;
+    }
 }

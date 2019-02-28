@@ -125,6 +125,33 @@ public class FileOperationSet extends OperationSet {
     }
 
     /**
+     * Return a message set which is a view into this set starting from the given position and with the given size limit.
+     *
+     * If the size is beyond the end of the file, the end will be based on the size of the file at the time of the read.
+     *
+     * If this message set is already sliced, the position will be taken relative to that slicing.
+     *
+     * 返回当前FileMessageSet中的一部分FileMessageSet
+     *
+     * @param position The start position to begin the read from
+     * @param size The number of bytes after the start position to include
+     *
+     * @return A sliced wrapper on this message set limited based on the given position and size
+     */
+    public FileOperationSet read(int position, int size) throws IOException {
+        if (position < 0) {
+            throw new IllegalArgumentException("Invalid position: " + position);
+        }
+        if (size < 0) {
+            throw new IllegalArgumentException("Invalid size: " + size);
+        }
+        return new FileOperationSet(file,
+            fileChannel,
+            this.start + position,
+            Math.min(this.start + position + size, sizeInBytes()));
+    }
+
+    /**
      * 从startingPosition开始，找到第一个大于等于目标offset的物理地址
      *
      * 如果找不到，则返回null
