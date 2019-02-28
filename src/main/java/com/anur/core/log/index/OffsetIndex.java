@@ -23,7 +23,7 @@ public class OffsetIndex extends ReentrantLocker {
      */
     private static final int FACTOR = 8;
 
-    private File file;
+    private volatile File file;
 
     private long baseOffset;
 
@@ -94,13 +94,15 @@ public class OffsetIndex extends ReentrantLocker {
      * Find the largest offset less than or equal to the given targetOffset
      * and return a pair holding this offset and its corresponding physical file position.
      *
+     * 找寻小于或者等于传入 offset 的最大 offset 索引，返回这个索引的绝对 offset 和 position
+     *
      * @param targetOffset The offset to look up.
      *
      * @return The offset found and the corresponding file position for this offset.
      * If the target offset is smaller than the least entry in the index (or the index is empty),
      * the pair (baseOffset, 0) is returned.
      */
-    private OffsetAndPosition lookup(long targetOffset) {
+    public OffsetAndPosition lookup(long targetOffset) {
         return this.lockSupplier(() -> {
             ByteBuffer idx = mmap.duplicate();// 创建一个副本
             int slot = indexSlotFor(idx, targetOffset);
@@ -206,7 +208,7 @@ public class OffsetIndex extends ReentrantLocker {
             if (entries == 0 || offset > lastOffset) {
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
-                entries += 1;
+                entries ++;
                 lastOffset = offset;
 
                 if (entries * 8 != mmap.position()) {
