@@ -1,7 +1,6 @@
 package com.anur.core.log;
 
 import java.io.IOException;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.log.common.OffsetAndPosition;
@@ -41,12 +40,17 @@ public class LogSegment {
      */
     private int bytesSinceLastIndexEntry = 0;
 
+    /**
+     * 将传入的 ByteBufferOperationSet 追加到文件之中，offset的值为 messages 的初始offset
+     */
     public void append(long offset, ByteBufferOperationSet messages) throws IOException {
         if (messages.sizeInBytes() > 0) {
             logger.debug("Inserting {} bytes at offset {} at position {}", messages.sizeInBytes(), offset, fileOperationSet.sizeInBytes());
             // append an entry to the index (if needed)
             // 追加到了一定的容量，添加索引
             if (bytesSinceLastIndexEntry > indexIntervalBytes) {
+
+                // 追加 offset 以及当前文件的 size，也就是写的 position到索引文件中
                 offsetIndex.append(offset, fileOperationSet.sizeInBytes());
                 this.bytesSinceLastIndexEntry = 0;
             }

@@ -199,6 +199,8 @@ public class OffsetIndex extends ReentrantLocker {
 
     /**
      * Append an entry for the given offset/location pair to the index. This entry must have a larger offset than all subsequent entries.
+     *
+     * 追加 offset + position 到索引之中，offset 必须大于其他索引的offset
      */
     public void append(long offset, int position) {
         this.lockSupplier(() -> {
