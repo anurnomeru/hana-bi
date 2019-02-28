@@ -26,7 +26,9 @@ import com.anur.core.log.common.OperationConstant;
 import com.anur.core.util.ByteBufferUtil;
 
 /**
- * Created by Anur IjuoKaruKas on 2/25/2019\
+ * Created by Anur IjuoKaruKas on 2/25/2019
+ *
+ * 仿照 Kafka ByteBufferMessageSet 所写
  */
 public class ByteBufferOperationSet extends OperationSet {
 

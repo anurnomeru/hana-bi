@@ -1,6 +1,7 @@
 package com.anur.core.log.common;
 
 import com.anur.core.log.operation.Operation;
+
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
  */

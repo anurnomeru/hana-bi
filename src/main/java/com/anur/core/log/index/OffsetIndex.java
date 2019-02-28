@@ -1,3 +1,19 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.anur.core.log.index;
 
 import java.io.File;
@@ -14,7 +30,7 @@ import com.anur.exception.HanabiException;
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27
  *
- * 每个磁盘上 OperationSet 的索引文件
+ * 每个磁盘上 OperationSet 的索引文件，仿照 Kafka OffsetIndex 所写
  */
 public class OffsetIndex extends ReentrantLocker {
 
@@ -210,7 +226,7 @@ public class OffsetIndex extends ReentrantLocker {
             if (entries == 0 || offset > lastOffset) {
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
-                entries ++;
+                entries++;
                 lastOffset = offset;
 
                 if (entries * 8 != mmap.position()) {
