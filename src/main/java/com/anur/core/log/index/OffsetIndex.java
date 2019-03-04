@@ -386,4 +386,25 @@ public class OffsetIndex extends ReentrantLocker {
     public int getMaxIndexSize() {
         return maxIndexSize;
     }
+
+    /**
+     * 简单的核验一下这个索引文件有无大问题
+     */
+    public void sanityCheck() {
+        if (entries != 0 || lastOffset <= baseOffset) {
+            throw new OffsetIndexIllegalException(String.format("Corrupt index found, index file (%s) has non-zero size but the last offset is %s and the base offset is %s",
+                file.getAbsolutePath(), lastOffset, baseOffset));
+        }
+        if (file.length() % 8 != 0) {
+            throw new OffsetIndexIllegalException("Index file " + file.getName() + " is corrupt, found " + file.length() +
+                " bytes which is not positive or not a multiple of 8.");
+        }
+    }
+
+    public static class OffsetIndexIllegalException extends HanabiException {
+
+        public OffsetIndexIllegalException(String message) {
+            super(message);
+        }
+    }
 }

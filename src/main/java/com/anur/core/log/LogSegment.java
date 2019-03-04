@@ -18,9 +18,11 @@ package com.anur.core.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.log.common.OffsetAndPosition;
+import com.anur.core.log.common.OperationAndOffset;
 import com.anur.core.log.index.OffsetIndex;
 import com.anur.core.log.operation.ByteBufferOperationSet;
 import com.anur.core.log.operation.FileOperationSet;
@@ -213,6 +215,22 @@ public class LogSegment {
         return bytesTruncated;
     }
 
+    /**
+     * 修复该日志分片的索引文件
+     */
+    public void recover(int maxLogMessageSize) {
+        offsetIndex.truncate();
+        offsetIndex.resize(offsetIndex.getMaxIndexSize());
+
+        int validBytes = 0;
+        int lastIndexEntry = 0;
+        Iterator<OperationAndOffset> iter = fileOperationSet.iterator(maxLogMessageSize);
+        while (iter.hasNext()) {
+            OperationAndOffset operationAndOffset = iter.next();
+            operationAndOffset.getOperation().computeChecksum()
+        }
+    }
+
     public long size() {
         return fileOperationSet.sizeInBytes();
     }
@@ -225,5 +243,9 @@ public class LogSegment {
 
     public long getBaseOffset() {
         return baseOffset;
+    }
+
+    public OffsetIndex getOffsetIndex() {
+        return offsetIndex;
     }
 }

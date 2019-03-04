@@ -19,4 +19,12 @@ public class OperationAndOffset {
     public long nextOffset() {
         return offset + 1;
     }
+
+    public Operation getOperation() {
+        return operation;
+    }
+
+    public long getOffset() {
+        return offset;
+    }
 }

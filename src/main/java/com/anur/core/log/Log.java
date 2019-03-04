@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
+import com.anur.core.log.index.OffsetIndex.OffsetIndexIllegalException;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/1
@@ -89,7 +90,15 @@ public class Log {
                     LogSegment logSegment = new LogSegment(dir, startOffset, LogConfigHelper.getIndexInterval(), LogConfigHelper.getIndexInterval());
 
                     if (indexFile.exists()) {
-
+                        try {
+                            logSegment.getOffsetIndex()
+                                      .sanityCheck();
+                        } catch (OffsetIndexIllegalException e) {
+                            logger.error(e.getMessage());
+                            logger.error("正在重建 {} 的索引文件", fileName);
+                            indexFile.delete();
+                            logSegment.recover(LogConfigHelper.getMaxLogMessageSize());
+                        }
                     }
                 }
             }

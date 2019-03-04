@@ -28,6 +28,10 @@ public class Operation {
         return buffer.limit();
     }
 
+    public long checkSum() {
+        return ByteBufferUtil.readUnsignedInt(buffer, OperationConstant.CrcOffset);
+    }
+
     public long computeChecksum() {
         return ByteBufferUtil.crc32(buffer.array(), buffer.arrayOffset() + OperationConstant.TypeOffset, buffer.limit() - OperationConstant.TypeOffset);
     }

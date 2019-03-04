@@ -123,7 +123,9 @@ public class ConfigHelper {
 
         CLIENT_ADDR("client.addr", "client.addr 的配置格式应由如下组成：client.addr.{服务名}:{选举leader使用端口号}:{集群内机器通讯使用端口号}"),
 
-        LOG_INDEX_INTERVAL("log.IndexInterval", "log.IndexInterval 是操作日志索引生成时的字节间隔，有助于节省空间，不设定的太小都可"),
+        LOG_INDEX_INTERVAL("log.indexInterval", "log.IndexInterval 是操作日志索引生成时的字节间隔，有助于节省空间，不设定的太小都可"),
+
+        LOG_MAX_MESSAGE_SIZE("log.maxMessageSize", "log.maxMessageSize 是操作日志最大的大小，它也影响我们的操作 key + value 最大可以为多大"),
 
         LOG_MAX_INDEX_SIZE("log.maxIndexSize","log.maxIndexSize TODO");
 
