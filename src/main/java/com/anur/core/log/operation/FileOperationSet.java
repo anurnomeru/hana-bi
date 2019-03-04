@@ -18,6 +18,7 @@
 package com.anur.core.log.operation;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -39,24 +40,29 @@ import com.anur.exception.HanabiException;
 public class FileOperationSet extends OperationSet {
 
     /**
-     * 对应着磁盘上的一个文件
-     */
-    private volatile File file;
-
-    /**
      * 用于读写日志，是此文件的 channel
      */
-    private FileChannel fileChannel;
+    private final FileChannel fileChannel;
 
     /**
      * OperationSet 开始的绝对位置的下界
      */
-    private int start;
+    private final int start;
 
     /**
      * OperationSet 结束的绝对位置的上限
      */
-    private int end;
+    private final int end;
+
+    /**
+     * 本FileOperationSet的大小
+     */
+    private final AtomicInteger _size;
+
+    /**
+     * 对应着磁盘上的一个文件
+     */
+    private volatile File file;
 
     /**
      * 表示这个类是否表示文件的一部分，也就是切片
@@ -64,56 +70,51 @@ public class FileOperationSet extends OperationSet {
     private boolean isSlice;
 
     /**
-     * 本FileOperationSet的大小
+     * 基础构造函数 => 创建一个 FileOperationSet
      */
-    private AtomicInteger _size;
-
-    /**
-     * 创建一个非分片的FileOperationSet
-     */
-    public FileOperationSet(File file) throws IOException {
+    private FileOperationSet(File file, FileChannel fileChannel, int start, int end, boolean isSlice) throws IOException {
         this.file = file;
-        this.fileChannel = FileIOUtil.openChannel(file, true);
-        this.start = 0;
-        this.end = Integer.MAX_VALUE;
-        this.isSlice = false;
-        this._size = new AtomicInteger(Math.min((int) fileChannel.size(), end));
-    }
+        this.fileChannel = fileChannel;
+        this.start = start;
+        this.end = end;
 
-    /**
-     * 创建一个非分片的FileOperationSet
-     */
-    public FileOperationSet(File file, boolean mutable) throws IOException {
-        this.file = file;
-        this.fileChannel = FileIOUtil.openChannel(file, mutable);
-        this.start = 0;
-        this.end = Integer.MAX_VALUE;
-        this.isSlice = false;
-        this._size = new AtomicInteger(Math.min((int) fileChannel.size(), end));
+        AtomicInteger s;
+        if (isSlice) {
+            s = new AtomicInteger(end - start);
+        } else {
+            int channelEnd = Math.min((int) fileChannel.size(), end);
+            s = new AtomicInteger(channelEnd - start);
+            fileChannel.position(channelEnd);
+        }
+        this._size = s;
     }
 
     /**
      * 创建一个非分片的FileOperationSet
      */
     public FileOperationSet(File file, FileChannel fileChannel) throws IOException {
-        this.file = file;
-        this.fileChannel = fileChannel;
-        this.start = 0;
-        this.end = Integer.MAX_VALUE;
-        this.isSlice = false;
-        this._size = new AtomicInteger(Math.min((int) fileChannel.size(), end));
+        this(file, fileChannel, 0, Integer.MAX_VALUE, false);
     }
 
     /**
-     * 创建一个文件分片
+     * 创建一个非分片的FileOperationSet
      */
-    public FileOperationSet(File file, FileChannel fileChannel, int start, int end) throws IOException {
-        this.file = file;
-        this.fileChannel = fileChannel;
-        this.start = start;
-        this.end = end;
-        this.isSlice = true;
-        this._size = new AtomicInteger(end - start);// 如果只是一个切片，我们不用去检查它的大小
+    public FileOperationSet(File file) throws IOException {
+        this(file, FileIOUtil.openChannel(file, true));
+    }
+
+    /**
+     * Create a file message set with mutable option
+     */
+    public FileOperationSet(File file, boolean mutable) throws IOException {
+        this(file, FileIOUtil.openChannel(file, mutable));
+    }
+
+    /**
+     * Create a slice view of the file message set that begins and ends at the given byte offsets
+     */
+    public FileOperationSet(File file, FileChannel channel, int start, int end) throws IOException {
+        this(file, channel, start, end, true);
     }
 
     /**
@@ -131,7 +132,7 @@ public class FileOperationSet extends OperationSet {
      *
      * If this message set is already sliced, the position will be taken relative to that slicing.
      *
-     * 返回当前FileMessageSet中的一部分FileMessageSet
+     * 返回当前FileMessageSet中的一部分FileMessageSet，不会真正将内容读到内存中
      *
      * @param position The start position to begin the read from
      * @param size The number of bytes after the start position to include
@@ -190,7 +191,7 @@ public class FileOperationSet extends OperationSet {
     /**
      * 将某个日志文件进行裁剪到指定大小，必须小于文件的size
      */
-    public int druncateTo(int targetSize) throws IOException {
+    public int truncateTo(int targetSize) throws IOException {
         int originalSize = this.sizeInBytes();
         if (targetSize > originalSize || targetSize < 0) {
             throw new HanabiException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +

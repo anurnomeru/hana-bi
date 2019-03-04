@@ -41,9 +41,9 @@ public class OffsetIndex extends ReentrantLocker {
 
     private volatile File file;
 
-    private long baseOffset;
+    private final long baseOffset;
 
-    private int maxIndexSize;
+    private final int maxIndexSize;
 
     private volatile MappedByteBuffer mmap;
 
@@ -55,6 +55,9 @@ public class OffsetIndex extends ReentrantLocker {
 
     private volatile long lastOffset;// 最后一个索引的 offset
 
+    /**
+     * 基础构造函数 => 创建一个日志文件分片索引
+     */
     public OffsetIndex(File file, long baseOffset, int maxIndexSize) throws IOException {
         this.file = file;
         this.baseOffset = baseOffset;
@@ -256,6 +259,8 @@ public class OffsetIndex extends ReentrantLocker {
     }
 
     /**
+     * 移除所有大于等于传入 offset 的索引，如果传入的 offset 比最大的索引还大，则返回空
+     *
      * Remove all entries from the index which have an offset greater than or equal to the given offset.
      * Truncating to an offset larger than the largest in the index has no effect.
      */
@@ -376,5 +381,9 @@ public class OffsetIndex extends ReentrantLocker {
     public boolean delete() {
         forceUnmap(mmap);
         return file.delete();
+    }
+
+    public int getMaxIndexSize() {
+        return maxIndexSize;
     }
 }

@@ -16,6 +16,7 @@
  */
 package com.anur.core.log;
 
+import java.io.File;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,27 +38,46 @@ public class LogSegment {
     /**
      * 管理的那个日志截片
      */
-    private FileOperationSet fileOperationSet;
+    private final FileOperationSet fileOperationSet;
 
     /**
      * 日志截片的索引文件
      */
-    private OffsetIndex offsetIndex;
+    private final OffsetIndex offsetIndex;
 
     /**
      * 该日志文件从哪个offset开始
      */
-    private long baseOffset;
+    private final long baseOffset;
 
     /**
      * 索引字节间隔
      */
-    private int indexIntervalBytes;
+    private final int indexIntervalBytes;
 
     /**
      * 距离上一次添加索引，已经写了多少个字节了
      */
     private int bytesSinceLastIndexEntry = 0;
+
+    /**
+     * 基础构造函数 => 创建一个日志文件分片
+     */
+    private LogSegment(FileOperationSet fileOperationSet, OffsetIndex offsetIndex, long baseOffset, int indexIntervalBytes) {
+        this.fileOperationSet = fileOperationSet;
+        this.offsetIndex = offsetIndex;
+        this.baseOffset = baseOffset;
+        this.indexIntervalBytes = indexIntervalBytes;
+    }
+
+    public LogSegment(File dir, long startOffset, int indexIntervalBytes, int maxIndexSize) throws IOException {
+        this(
+            new FileOperationSet(LogCommon.logFilename(dir, startOffset)),
+            new OffsetIndex(LogCommon.logFilename(dir, startOffset),
+                startOffset, maxIndexSize),
+            startOffset,
+            indexIntervalBytes);
+    }
 
     /**
      * 将传入的 ByteBufferOperationSet 追加到文件之中，offset的值为 messages 的初始offset
@@ -81,14 +101,14 @@ public class LogSegment {
     }
 
     /**
-     * 通过绝对 Offset 查找大于等于 0 的第一个 Offset 和 Position
+     * 找遍整个文件，找到第一个大于等于目标 offset 的地址信息
      */
     public OffsetAndPosition translateOffset(long offset) throws IOException {
         return translateOffset(offset, 0);
     }
 
     /**
-     * 通过绝对 Offset 查找第一个大于等于 startingPosition 的 Offset 和 Position
+     * 从 startingPosition开始，找到第一个大于等于目标 offset 的地址信息
      */
     public OffsetAndPosition translateOffset(long offset, int startingPosition) throws IOException {
 
@@ -97,6 +117,10 @@ public class LogSegment {
 
         // 从 startingPosition开始 ，找到第一个大于等于目标offset的物理地址
         return fileOperationSet.searchFor(offset, Math.max(offsetAndPosition.getPosition(), startingPosition));
+    }
+
+    public FetchDataInfo read(long startOffset, Long maxOffset, int maxSize) throws IOException {
+        return read(startOffset, maxOffset, maxSize, fileOperationSet.sizeInBytes());
     }
 
     /**
@@ -161,5 +185,45 @@ public class LogSegment {
         }
 
         return new FetchDataInfo(logOffsetMetadata, fileOperationSet.read(startPosition.getPosition(), length));
+    }
+
+    /**
+     * 传入 offset 如若有效，则
+     * 1、移除大于等于此 offset 的所有索引
+     * 2、移除大于等于此 offset 的所有操作日志
+     */
+    public int truncateTo(long offset) throws IOException {
+        OffsetAndPosition offsetAndPosition = translateOffset(offset);
+        if (offsetAndPosition == null) {
+            return 0;
+        }
+
+        offsetIndex.truncateTo(offset);
+
+        // after truncation, reset and allocate more space for the (new currently  active) index
+        offsetIndex.resize(offsetIndex.getMaxIndexSize());
+
+        int bytesTruncated = fileOperationSet.truncateTo(offsetAndPosition.getPosition());
+
+        //        if(log.sizeInBytes == 0){
+        //            // kafka存在删除一整个日志文件的情况
+        //        }
+
+        bytesSinceLastIndexEntry = 0;
+        return bytesTruncated;
+    }
+
+    public long size() {
+        return fileOperationSet.sizeInBytes();
+    }
+
+    public long nextOffset() {
+        // 原kafka实现方式：通过 read(index.lastOffset, None, log.sizeInBytes) 来获取第一个大于等于 log.sizeInBytes 的信息，实际上就是下一条信息
+        // TODO 使用统一的ID生成工具
+        return 0;
+    }
+
+    public long getBaseOffset() {
+        return baseOffset;
     }
 }
