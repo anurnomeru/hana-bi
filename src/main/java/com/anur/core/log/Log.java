@@ -1,11 +1,13 @@
 package com.anur.core.log;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.LogConfigHelper;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/1
@@ -47,7 +49,7 @@ public class Log {
      */
     private volatile long recoveryPoint = 0;
 
-    private void leadSements() {
+    private void loadSements() throws IOException {
         // 如果不存在的话，先创建这个目录
         dir.mkdirs();
 
@@ -82,7 +84,13 @@ public class Log {
                 } else if (fileName.endsWith(LogCommon.LogFileSuffix)) {
                     File indexFile = new File(file.getAbsolutePath()
                                                   .replace(LogCommon.LogFileSuffix, LogCommon.IndexFileSuffix));
-                    LogSegment logSegment = new LogSegment();
+
+                    long startOffset = Long.valueOf(fileName.substring(0, fileName.length() - LogCommon.LogFileSuffix.length()));
+                    LogSegment logSegment = new LogSegment(dir, startOffset, LogConfigHelper.getIndexInterval(), LogConfigHelper.getIndexInterval());
+
+                    if (indexFile.exists()) {
+
+                    }
                 }
             }
         }

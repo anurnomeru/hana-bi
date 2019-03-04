@@ -118,11 +118,14 @@ public class ConfigHelper {
     }
 
     protected enum ConfigEnum {
-        SERVER_PORT("server.port", "server.port 是本机的对外端口号配置，请检查配置是否正确。"),
 
-        SERVER_NAME("server.name", "server.name 是本机的服务名，应唯一。"),
+        SERVER_NAME("server.name", "server.name 是本机的服务名，集群内应唯一"),
 
-        CLIENT_ADDR("client.addr", "client.addr 的配置格式应由如下组成：client.addr.{服务名}:{选举leader使用端口号}:{集群内机器通讯使用端口号}");
+        CLIENT_ADDR("client.addr", "client.addr 的配置格式应由如下组成：client.addr.{服务名}:{选举leader使用端口号}:{集群内机器通讯使用端口号}"),
+
+        LOG_INDEX_INTERVAL("log.IndexInterval", "log.IndexInterval 是操作日志索引生成时的字节间隔，有助于节省空间，不设定的太小都可"),
+
+        LOG_MAX_INDEX_SIZE("log.maxIndexSize","log.maxIndexSize TODO");
 
         ConfigEnum(String key, String adv) {
             this.key = key;

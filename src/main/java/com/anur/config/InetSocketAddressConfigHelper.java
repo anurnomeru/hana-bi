@@ -18,10 +18,6 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
         me = getNode(getConfig(ConfigEnum.SERVER_NAME, Function.identity()));
     }
 
-    public void refreshConfig() {
-        ConfigHelper.refresh();
-    }
-
     public static Integer getServerElectionPort() {
         return me.electionPort;
     }
