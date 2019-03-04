@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.log.common.OffsetAndPosition;
 import com.anur.core.log.common.OperationAndOffset;
+import com.anur.core.log.common.OperationConstant;
 import com.anur.core.log.index.OffsetIndex;
 import com.anur.core.log.operation.ByteBufferOperationSet;
 import com.anur.core.log.operation.FileOperationSet;
@@ -215,20 +216,38 @@ public class LogSegment {
         return bytesTruncated;
     }
 
+
+
+    asdfasdfasdfasdfasdfasdfasdfasdf
     /**
      * 修复该日志分片的索引文件
      */
-    public void recover(int maxLogMessageSize) {
+    public int recover(int maxLogMessageSize) throws IOException {
         offsetIndex.truncate();
         offsetIndex.resize(offsetIndex.getMaxIndexSize());
 
-        int validBytes = 0;
-        int lastIndexEntry = 0;
+        int validBytes = 0;// 循环到哪个字节了
+        int lastIndexEntry = 0;// 最后一个索引的字节
         Iterator<OperationAndOffset> iter = fileOperationSet.iterator(maxLogMessageSize);
         while (iter.hasNext()) {
             OperationAndOffset operationAndOffset = iter.next();
-            operationAndOffset.getOperation().computeChecksum()
+            operationAndOffset.getOperation()
+                              .ensureValid();
+
+            if (validBytes - lastIndexEntry > indexIntervalBytes) {
+                // we need to decompress the message, if required, to get the offset of the first uncompressed message
+                long startOffset = operationAndOffset.getOffset();
+                offsetIndex.append(startOffset, validBytes);
+                lastIndexEntry = validBytes;
+            }
+            validBytes += OperationSet.LogOverhead + operationAndOffset.getOperation()
+                                                                       .size();
         }
+
+        int truncated = fileOperationSet.sizeInBytes() - validBytes;
+        fileOperationSet.truncateTo(validBytes);
+        offsetIndex.trimToValidSize();
+        return truncated;
     }
 
     public long size() {

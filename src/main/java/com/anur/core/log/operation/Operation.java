@@ -3,6 +3,7 @@ package com.anur.core.log.operation;
 import java.nio.ByteBuffer;
 import com.anur.core.log.common.OperationConstant;
 import com.anur.core.util.ByteBufferUtil;
+import com.anur.exception.HanabiException;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -26,6 +27,17 @@ public class Operation {
      */
     public int size() {
         return buffer.limit();
+    }
+
+    /**
+     * Throw an InvalidMessageException if isValid is false for this message
+     */
+    public void ensureValid() {
+        long stored = checkSum();
+        long compute = computeChecksum();
+        if (stored != compute) {
+            throw new HanabiException(String.format("Message is corrupt (stored crc = %s, computed crc = %s)", stored, compute));
+        }
     }
 
     public long checkSum() {
