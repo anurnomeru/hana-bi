@@ -383,6 +383,14 @@ public class OffsetIndex extends ReentrantLocker {
         return file.delete();
     }
 
+    public int getMaxEntries() {
+        return maxEntries;
+    }
+
+    public int getEntries() {
+        return entries;
+    }
+
     public int getMaxIndexSize() {
         return maxIndexSize;
     }

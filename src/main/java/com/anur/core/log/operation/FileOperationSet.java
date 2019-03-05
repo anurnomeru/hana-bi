@@ -191,17 +191,22 @@ public class FileOperationSet extends OperationSet {
     /**
      * 将某个日志文件进行裁剪到指定大小，必须小于文件的size
      */
-    public int truncateTo(int targetSize) throws IOException {
+    public int truncateTo(int targetSize) {
         int originalSize = this.sizeInBytes();
         if (targetSize > originalSize || targetSize < 0) {
             throw new HanabiException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
                 " 原文件大小为 " + originalSize + " bytes。");
         }
 
-        if (targetSize < fileChannel.size()) {
-            fileChannel.truncate(targetSize);
-            fileChannel.position(targetSize);
-            _size.set(targetSize);
+        try {
+            if (targetSize < fileChannel.size()) {
+                fileChannel.truncate(targetSize);
+                fileChannel.position(targetSize);
+                _size.set(targetSize);
+            }
+        } catch (IOException e) {
+            throw new HanabiException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
+                " 原文件大小为 " + originalSize + " bytes。");
         }
         return originalSize - targetSize;
     }
@@ -304,5 +309,9 @@ public class FileOperationSet extends OperationSet {
                 return new OperationAndOffset(new Operation(buffer), offset);
             }
         };
+    }
+
+    public void trim() {
+        truncateTo(sizeInBytes());
     }
 }

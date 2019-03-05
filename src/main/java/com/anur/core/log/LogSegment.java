@@ -23,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.log.common.OffsetAndPosition;
 import com.anur.core.log.common.OperationAndOffset;
-import com.anur.core.log.common.OperationConstant;
 import com.anur.core.log.index.OffsetIndex;
 import com.anur.core.log.operation.ByteBufferOperationSet;
 import com.anur.core.log.operation.FileOperationSet;
@@ -216,14 +215,15 @@ public class LogSegment {
         return bytesTruncated;
     }
 
-
-
-    asdfasdfasdfasdfasdfasdfasdfasdf
     /**
      * 修复该日志分片的索引文件
      */
     public int recover(int maxLogMessageSize) throws IOException {
+
+        // 将日志文件的 position 归 0，删除索引
         offsetIndex.truncate();
+
+        // 重新建立 mmap 映射，设置 limit 为 maxLogMessageSize（抹除 8 的余数）
         offsetIndex.resize(offsetIndex.getMaxIndexSize());
 
         int validBytes = 0;// 循环到哪个字节了
@@ -231,6 +231,8 @@ public class LogSegment {
         Iterator<OperationAndOffset> iter = fileOperationSet.iterator(maxLogMessageSize);
         while (iter.hasNext()) {
             OperationAndOffset operationAndOffset = iter.next();
+
+            // 校验 CRC
             operationAndOffset.getOperation()
                               .ensureValid();
 
@@ -266,5 +268,9 @@ public class LogSegment {
 
     public OffsetIndex getOffsetIndex() {
         return offsetIndex;
+    }
+
+    public FileOperationSet getFileOperationSet() {
+        return fileOperationSet;
     }
 }

@@ -16,4 +16,8 @@ public class LogConfigHelper extends ConfigHelper {
     public static int getMaxLogMessageSize() {
         return getConfig(ConfigEnum.LOG_MAX_MESSAGE_SIZE, Integer::valueOf);
     }
+
+    public static int getMaxLogSegmentSize() {
+        return getConfig(ConfigEnum.LOG_MAX_SEGMENT_SIZE, Integer::valueOf);
+    }
 }
