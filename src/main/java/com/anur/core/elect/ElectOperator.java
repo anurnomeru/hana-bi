@@ -70,9 +70,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private long generation;
 
     /**
-     * 流水号，用于生成 id，集群内每一次由 Leader 发起的关键操作都会生成一个id {@link #genId()}，其中就需要自增 serial 号
+     * 流水号，用于生成 id，集群内每一次由 Leader 发起的关键操作都会生成一个id {@link #genId()}，其中就需要自增 offset 号
      */
-    private long serial;
+    private long offset;
 
     /**
      * 当前节点的角色
@@ -113,7 +113,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private ElectOperator() {
         this.generation = 0;
-        this.serial = 0;
+        this.offset = 0;
         this.taskMap = new ConcurrentHashMap<>();
         this.box = new HashMap<>();
         this.nodeRole = NodeRole.Follower;
@@ -287,7 +287,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             this.beginElectTime = 0L;
 
             logger.info("本节点 {} 角色由 {} 变更为 {} 选举耗时 {} ms，并开始向其他节点发送心跳包 ......", InetSocketAddressConfigHelper.getServerName(), this.nodeRole.name(), NodeRole.Leader.name(), becomeLeaderCostTime);
-            this.serial = 0;
+            this.offset = 0;
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
 
@@ -548,12 +548,12 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (NodeRole.Leader == nodeRole) {
 
                 // 当流水号达到最大时，进行世代的自增，
-                if (serial == Long.MAX_VALUE) {
-                    logger.warn("流水号 serial 已达最大值，节点将更新自身世代 {} => {}", this.generation, this.generation + 1);
+                if (offset == Long.MAX_VALUE) {
+                    logger.warn("流水号 offset 已达最大值，节点将更新自身世代 {} => {}", this.generation, this.generation + 1);
                     this.generation++;
                 }
 
-                this.serial++;
+                this.offset++;
 
                 return  "";
             } else {
