@@ -27,6 +27,8 @@ import com.anur.core.log.index.OffsetIndex;
 import com.anur.core.log.operation.ByteBufferOperationSet;
 import com.anur.core.log.operation.FileOperationSet;
 import com.anur.core.log.operation.OperationSet;
+import com.anur.timewheel.TimedTask;
+import com.anur.timewheel.Timer;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27
@@ -272,5 +274,16 @@ public class LogSegment {
 
     public FileOperationSet getFileOperationSet() {
         return fileOperationSet;
+    }
+
+    /**
+     * Flush this log segment to disk
+     */
+    public void flush() {
+        Timer.getInstance()
+             .addTask(new TimedTask(0, () -> {
+                 this.fileOperationSet.flush();
+                 this.offsetIndex.flush();
+             }));
     }
 }

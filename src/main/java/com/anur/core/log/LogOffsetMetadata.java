@@ -85,6 +85,10 @@ public class LogOffsetMetadata {
         return this.relativePositionInSegment - that.relativePositionInSegment;
     }
 
+    public long getMessageOffset() {
+        return messageOffset;
+    }
+
     // decide if the offset metadata only contains message offset info
     private boolean messageOffsetOnly() {
         return segmentBaseOffset == LogOffsetMetadata.UnknownSegBaseOffset && relativePositionInSegment == LogOffsetMetadata.UnknownFilePosition;

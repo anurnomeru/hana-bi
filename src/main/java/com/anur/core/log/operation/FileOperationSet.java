@@ -314,4 +314,12 @@ public class FileOperationSet extends OperationSet {
     public void trim() {
         truncateTo(sizeInBytes());
     }
+
+    public void flush() {
+        try {
+            fileChannel.force(true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }

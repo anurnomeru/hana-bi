@@ -6,14 +6,14 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
-import javax.swing.text.Segment;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.ConfigHelper;
 import com.anur.config.LogConfigHelper;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.log.index.OffsetIndex.OffsetIndexIllegalException;
 import com.anur.core.log.operation.ByteBufferOperationSet;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
 import com.google.common.collect.Lists;
 
@@ -30,36 +30,29 @@ public class Log extends ReentrantLocker {
         this.recoveryPoint = recoveryPoint;
     }
 
-    /**
-     * The directory in which log segments are created.
-     */
+    /** The directory in which log segments are created */
     private final File dir;
 
-    /**
-     * the actual segments of the log
-     */
+    /** the actual segments of the log */
     private final ConcurrentSkipListMap<Long, LogSegment> segments = new ConcurrentSkipListMap<>();
+
+    /** last time it was flushed */
+    private final AtomicLong lastflushedTime = new AtomicLong(System.currentTimeMillis());
 
     /**
      * TODO 疑问：既然是要实时计算，为啥定义成var？
-     *
      * Calculate the offset of the next message
      */
     private volatile LogOffsetMetadata nextOffsetMetadata = new LogOffsetMetadata(activeSegment().nextOffset(), activeSegment().getBaseOffset(), (int) activeSegment().size());
 
-    /**
-     * Log segments named by generation
-     */
+    /** Log segments named by generation */
     private long generation;
 
-    /**
-     * current offset assign to the operation
-     */
+    /** current offset assign to the operation */
     private long currentOffset;
 
     /**
      * The offset at which to begin recovery--i.e. the first offset which has not been flushed to disk
-     *
      * 此点之前的消息已经刷入磁盘
      */
     private volatile long recoveryPoint = 0;
@@ -188,6 +181,55 @@ public class Log extends ReentrantLocker {
             if (addSegment(newLogSegment) != null) {
                 logger.error("滚动时创建新的日志分片失败，该分片已经存在");
             }
+
+            // We need to update the segment base offset and append position data of the metadata when log rolls.
+            // The next offset should not change.
+            updateLogEndOffset(nextOffsetMetadata.getMessageOffset());
+
+            HanabiExecutors.submit(() -> flush(newOffset));
+
+            return newLogSegment;
+        });
+    }
+
+    public void updateLogEndOffset(long offset) {
+
+    }
+
+    /**
+     * The number of messages appended to the log since the last flush
+     */
+    public long unflushedMessages() {
+        return logEndOffset - recoveryPoint;
+    }
+
+    /**
+     * Flush all log segments
+     */
+    private void flush() {
+        flush(logEndOffset);
+    }
+
+    /**
+     * Flush log segments for all offsets up to offset -1
+     */
+    private void flush(long offset) {
+        if (offset <= recoveryPoint) {
+            return;
+        }
+
+        logger.debug("将日志 {} 刷盘，现刷盘至 offset {}，上次刷盘时间为 {}，现共有 {} 条消息还未刷盘。", name(), offset, lastflushedTime.get(), unflushedMessages());
+
+        for (LogSegment logSegment : getLogSegments(recoveryPoint, offset)) {
+            logSegment.flush();
+        }
+
+        lockSupplier(() -> {
+            if (offset > this.recoveryPoint) {
+                this.recoveryPoint = offset;
+                lastflushedTime.set(System.currentTimeMillis());
+            }
+            return null;
         });
     }
 
@@ -210,5 +252,22 @@ public class Log extends ReentrantLocker {
 
     public String name() {
         return dir.getName();
+    }
+
+    /**
+     * Get all segments beginning with the segment that includes "from" and ending with the segment
+     * that includes up to "to-1" or the end of the log (if to > logEndOffset)
+     */
+    public Iterable<LogSegment> getLogSegments(long fromOffset, long toOffset) {
+        return lockSupplier(() -> {
+            Long floor = segments.floorKey(fromOffset);
+            if (floor == null) {
+                return segments.headMap(toOffset)
+                               .values();
+            } else {
+                return segments.subMap(floor, true, toOffset, false)
+                               .values();
+            }
+        });
     }
 }
