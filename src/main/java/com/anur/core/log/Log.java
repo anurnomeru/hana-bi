@@ -2,7 +2,6 @@ package com.anur.core.log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.LinkedHashMap;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,24 +45,29 @@ public class Log extends ReentrantLocker {
         this.recoveryPoint = recoveryPoint;
     }
 
-//    /**
-//     * 将一个操作添加到日志文件中
-//     */
-//    public void append(Operation operation) {
-//        LogSegment logSegment =
-//    }
-//
-//    public LogSegment maybeRoll(int size) {
-//        LogSegment logSegment = activeSegment();
-//        if (logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() || logSegment.getOffsetIndex()
-//                                                                                           .isFull()) {
-//            logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfigHelper.getMaxLogSegmentSize(),
-//                logSegment.getOffsetIndex()
-//                          .getEntries(), logSegment.getOffsetIndex()
-//                                                   .getMaxEntries());
-//            return
-//        }
-//    }
+    /**
+     * 将一个操作添加到日志文件中
+     */
+    public void append(Operation operation) {
+        LogSegment logSegment = maybeRoll(operation.size());
+    }
+
+    /**
+     * 如果要 append 的日志过大，则需要滚动到下一个日志分片，如果滚动到下一个日志分片，则将上一个日志文件刷盘。
+     */
+    public LogSegment maybeRoll(int size) {
+        LogSegment logSegment = activeSegment();
+        if (logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() || logSegment.getOffsetIndex()
+                                                                                           .isFull()) {
+            logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfigHelper.getMaxLogSegmentSize(),
+                logSegment.getOffsetIndex()
+                          .getEntries(), logSegment.getOffsetIndex()
+                                                   .getMaxEntries());
+            return roll();
+        } else {
+            return logSegment;
+        }
+    }
 
     /**
      * 获取最后一个日志分片文件
@@ -72,50 +76,52 @@ public class Log extends ReentrantLocker {
         return segments.lastEntry()
                        .getValue();
     }
-//
-//    /**
-//     * 滚动到下一个日志分片文件
-//     */
-//    private LogSegment roll() {
-//        return this.lockSupplier(() -> {
-//            long newOffset = currentOffset + 1;
-//            File newFile = LogCommon.logFilename(dir, newOffset);
-//            File indexFile = LogCommon.indexFilename(dir, newOffset);
-//
-//            Lists.newArrayList(newFile, indexFile)
-//                 .forEach(file -> Optional.of(newFile)
-//                                          .filter(File::exists)
-//                                          .ifPresent(f -> {
-//                                              logger.info("新创建的日志分片或索引竟然已经存在，将其抹除。");
-//                                              f.delete();
-//                                          }));
-//
-//            // 将原日志分片进行 trim 处理
-//            Optional.ofNullable(segments.lastEntry())
-//                    .ifPresent(e -> {
-//                        e.getValue()
-//                         .getOffsetIndex()
-//                         .trimToValidSize();
-//                        e.getValue()
-//                         .getFileOperationSet()
-//                         .trim();
-//                    });
-//
-//            LogSegment newLogSegment;
-//            try {
-//                newLogSegment = new LogSegment(dir, newOffset, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize());
-//            } catch (IOException e) {
-//                logger.error("滚动时创建新的日志分片失败，分片目录：{}, 创建的文件为：{}", dir.getAbsolutePath(), newFile.getName());
-//                throw new HanabiException("滚动时创建新的日志分片失败");
-//            }
-//
-//            if (addSegment(newLogSegment) != null) {
-//                logger.error("滚动时创建新的日志分片失败，该分片已经存在");
-//            }
-//
-//            HanabiExecutors.submit(() -> flush(newOffset));
-//        });
-//    }
+
+    /**
+     * 滚动到下一个日志分片文件
+     */
+    private LogSegment roll() {
+        return this.lockSupplier(() -> {
+            long newOffset = currentOffset + 1;
+            File newFile = LogCommon.logFilename(dir, newOffset);
+            File indexFile = LogCommon.indexFilename(dir, newOffset);
+
+            Lists.newArrayList(newFile, indexFile)
+                 .forEach(file -> Optional.of(newFile)
+                                          .filter(File::exists)
+                                          .ifPresent(f -> {
+                                              logger.info("新创建的日志分片或索引竟然已经存在，将其抹除。");
+                                              f.delete();
+                                          }));
+
+            // 将原日志分片进行 trim 处理
+            Optional.ofNullable(segments.lastEntry())
+                    .ifPresent(e -> {
+                        e.getValue()
+                         .getOffsetIndex()
+                         .trimToValidSize();
+                        e.getValue()
+                         .getFileOperationSet()
+                         .trim();
+                    });
+
+            LogSegment newLogSegment;
+            try {
+                newLogSegment = new LogSegment(dir, newOffset, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize());
+            } catch (IOException e) {
+                logger.error("滚动时创建新的日志分片失败，分片目录：{}, 创建的文件为：{}", dir.getAbsolutePath(), newFile.getName());
+                throw new HanabiException("滚动时创建新的日志分片失败");
+            }
+
+            if (addSegment(newLogSegment) != null) {
+                logger.error("滚动时创建新的日志分片失败，该分片已经存在");
+            }
+
+            HanabiExecutors.submit(() -> flush(newOffset));
+
+            return newLogSegment;
+        });
+    }
 
     /**
      * 将日志纳入跳表来管理
@@ -147,32 +153,9 @@ public class Log extends ReentrantLocker {
         return dir.getName();
     }
 
-    public static void main(String[] args) {
-        ConcurrentSkipListMap<Long, String> linkedHashMap = new ConcurrentSkipListMap<>();
-        linkedHashMap.put(1L, "1");
-        linkedHashMap.put(5L, "5");
-        linkedHashMap.put(10L, "10");
-        linkedHashMap.put(15L, "15");
-        linkedHashMap.put(20L, "20");
-
-        Long floor = linkedHashMap.floorKey(0L);
-        if (floor == null) {// 代表 segments 的所有键都大于 fromOffset
-            Iterable o =  linkedHashMap.headMap(11L)
-                           .values();
-            System.out.println(o);
-        } else {
-            Iterable o =  linkedHashMap.subMap(floor, true, 11L, false)
-                           .values();
-            System.out.println(o);
-        }
-    }
-
     /**
      * 获取从包含 fromOffset 的那个 segment 开始，到包含 to-1（注意，要传最新的那个分片的start才有这个效果） 的那个 segment 结束的所有日志分片。
-     * 或者获取最后的一个日志分片（当 toOffset ）
-     *
-     * Get all segments beginning with the segment that includes "from" and ending with the segment
-     * that includes up to "to-1" or the end of the log (if to > logEndOffset)
+     * 如果传入的 fromOffset 过小，则返回 从头 - toOffset的所有分片
      */
     public Iterable<LogSegment> getLogSegments(long fromOffset, long toOffset) {
         return lockSupplier(() -> {
