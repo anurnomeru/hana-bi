@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
 import com.anur.core.lock.ReentrantLocker;
+import com.anur.core.log.operation.ByteBufferOperationSet;
 import com.anur.core.log.operation.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
@@ -50,6 +51,14 @@ public class Log extends ReentrantLocker {
      */
     public void append(Operation operation) {
         LogSegment logSegment = maybeRoll(operation.size());
+
+        logSegment.append();
+    }
+
+    public void append(ByteBufferOperationSet byteBufferOperationSet){
+        LogSegment logSegment = maybeRoll(byteBufferOperationSet.sizeInBytes());
+
+//        logSegment.append(byteBufferOperationSet.byteBufferOperationSet);
     }
 
     /**
