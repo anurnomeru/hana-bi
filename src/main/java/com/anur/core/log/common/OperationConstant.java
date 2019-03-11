@@ -38,4 +38,9 @@ public class OperationConstant {
      * CRC32 +  type  + (KeySize = 1) + key + (ValueSize = 1)
      */
     public static final int MinMessageOverhead = KeyOffset + ValueSizeLength + MinKeyLength;
+
+    /**
+     * 最基础的operation大小
+     */
+    public static final int BaseMessageOverhead = KeyOffset + ValueSizeLength;
 }

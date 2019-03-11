@@ -34,6 +34,13 @@ public class ByteBufferOperationSet extends OperationSet {
 
     private ByteBuffer byteBuffer;
 
+    /**
+     * 一个日志将要被append到日志之前，需要进行的操作
+     */
+    public ByteBufferOperationSet(Operation operation, long offset) {
+
+    }
+
     public ByteBufferOperationSet(ByteBuffer byteBuffer) {
         this.byteBuffer = byteBuffer;
     }
