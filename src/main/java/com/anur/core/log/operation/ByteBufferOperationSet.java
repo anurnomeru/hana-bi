@@ -20,6 +20,7 @@ package com.anur.core.log.operation;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
+import java.time.Year;
 import java.util.Iterator;
 import com.anur.core.log.common.OperationAndOffset;
 import com.anur.core.log.common.OperationConstant;
@@ -38,7 +39,12 @@ public class ByteBufferOperationSet extends OperationSet {
      * 一个日志将要被append到日志之前，需要进行的操作
      */
     public ByteBufferOperationSet(Operation operation, long offset) {
+        int size = operation.size();
 
+        ByteBuffer byteBuffer = ByteBuffer.allocate(size + OperationSet.LogOverhead);
+        byteBuffer.putLong(offset);
+        byteBuffer.putInt(size);
+        byteBuffer.put(operation.getByteBuffer());
     }
 
     public ByteBufferOperationSet(ByteBuffer byteBuffer) {

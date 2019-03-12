@@ -239,8 +239,7 @@ public class FileOperationSet extends OperationSet {
         int count = Math.min(size, sizeInBytes());
 
         // 将从position开始的count个bytes写到指定到channel中
-        int bytesTransferred = (int) fileChannel.transferTo(position, count, destChannel);
-        return bytesTransferred;
+        return (int) fileChannel.transferTo(position, count, destChannel);
     }
 
     /**

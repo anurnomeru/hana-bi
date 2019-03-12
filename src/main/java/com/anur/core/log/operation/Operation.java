@@ -1,6 +1,5 @@
 package com.anur.core.log.operation;
 
-import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.log.common.OperationConstant;
@@ -22,19 +21,6 @@ public class Operation {
     private String key;
 
     private String value;
-
-    public static void main(String[] args) {
-        Operation operation = new Operation(OperationTypeEnum.SETNX, "kkkkkk", "asdfasdfasdfasdfasdf");
-        operation.ensureValid();
-
-        System.out.println(operation.buffer.getInt());
-        System.out.println(operation.buffer.getInt());
-
-        Operation o = new Operation(operation.buffer);
-
-        System.out.println(operation.buffer.getInt());
-        System.out.println(operation.buffer.getInt());
-    }
 
     private Operation(OperationTypeEnum operationTypeEnum, String key, String value) {
         this.operationTypeEnum = operationTypeEnum;
@@ -92,16 +78,10 @@ public class Operation {
         return buffer;
     }
 
-    /**
-     * The complete serialized size of this operation in bytes (including crc, header attributes, etc)
-     */
     public int size() {
         return buffer.limit();
     }
 
-    /**
-     * Throw an InvalidMessageException if isValid is false for this message
-     */
     public void ensureValid() {
         long stored = checkSum();
         long compute = computeChecksum();
@@ -120,5 +100,17 @@ public class Operation {
 
     public ByteBuffer getBuffer() {
         return buffer;
+    }
+
+    public OperationTypeEnum getOperationTypeEnum() {
+        return operationTypeEnum;
+    }
+
+    public String getKey() {
+        return key;
+    }
+
+    public String getValue() {
+        return value;
     }
 }
