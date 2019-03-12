@@ -331,7 +331,7 @@ public class OffsetIndex extends ReentrantLocker {
             int position = mmap.position();
 
             /* Windows won't let us modify the file length while the file is mmapped :-( */
-            forceUnmap(mmap);
+//            forceUnmap(mmap);
             try {
                 raf.setLength(roundedNewSize);
                 mmap = raf.getChannel()

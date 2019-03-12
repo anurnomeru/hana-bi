@@ -76,6 +76,9 @@ public class LogSegment {
         this.indexIntervalBytes = indexIntervalBytes;
     }
 
+    /**
+     * 常规创建一个日志分片
+     */
     public LogSegment(File dir, long startOffset, int indexIntervalBytes, int maxIndexSize) throws IOException {
         this(
             new FileOperationSet(LogCommon.logFilename(dir, startOffset)),
@@ -90,7 +93,7 @@ public class LogSegment {
      */
     public void append(long offset, ByteBufferOperationSet messages) throws IOException {
         if (messages.sizeInBytes() > 0) {
-            logger.debug("Inserting {} bytes at offset {} at position {}", messages.sizeInBytes(), offset, fileOperationSet.sizeInBytes());
+            logger.info("Inserting {} bytes at offset {} at position {}", messages.sizeInBytes(), offset, fileOperationSet.sizeInBytes());
             // append an entry to the index (if needed)
             // 追加到了一定的容量，添加索引
             if (bytesSinceLastIndexEntry > indexIntervalBytes) {
@@ -220,7 +223,7 @@ public class LogSegment {
     }
 
     /**
-     * 修复该日志分片的索引文件
+     * 重建该日志分片的索引文件
      */
     public int recover(int maxLogMessageSize) throws IOException {
 

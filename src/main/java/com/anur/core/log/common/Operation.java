@@ -22,7 +22,7 @@ public class Operation {
 
     private String value;
 
-    private Operation(OperationTypeEnum operationTypeEnum, String key, String value) {
+    public Operation(OperationTypeEnum operationTypeEnum, String key, String value) {
         this.operationTypeEnum = operationTypeEnum;
         this.key = key;
         this.value = value;

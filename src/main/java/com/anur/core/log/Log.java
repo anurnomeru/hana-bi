@@ -3,15 +3,19 @@ package com.anur.core.log;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
+import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
+import com.anur.core.elect.ElectServerOperator;
 import com.anur.core.elect.model.GennerationAndOffset;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.log.common.LogCommon;
+import com.anur.core.log.common.OperationTypeEnum;
 import com.anur.core.log.operationset.ByteBufferOperationSet;
 import com.anur.core.log.common.Operation;
 import com.anur.core.util.HanabiExecutors;
@@ -43,28 +47,111 @@ public class Log extends ReentrantLocker {
     /** 最近一个需要 append 到日志文件中的 offset */
     private long currentOffset = 0L;
 
+    public static void main(String[] args) throws InterruptedException {
+        /**
+         * 启动协调服务器
+         */
+        CoordinateServerOperator.getInstance()
+                                .start();
+
+        /**
+         * 启动选举服务器，没什么主要的操作，这个服务器主要就是应答选票以及应答成为 Flower 用
+         */
+        ElectServerOperator.getInstance()
+                           .start();
+
+        /**
+         * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
+         */
+        ElectOperator.getInstance()
+                     .start();
+
+        Thread.sleep(5000);
+
+        Log log = new Log(0, new File("E:\\log"), 0);
+
+        Random random = new Random();
+
+        for (int i = 0; i < 10000; i++) {
+            Operation operation = new Operation(OperationTypeEnum.SETNX, random.nextLong() + "", random.nextLong() + "");
+            try {
+                log.append(operation);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public Log(long generation, File dir, long recoveryPoint) {
         this.generation = generation;
         this.dir = dir;
         this.recoveryPoint = recoveryPoint;
+        load();
+    }
+
+    private void load() {
+        // 如果目录不存在，则创建此目录
+        dir.mkdirs();
+
+        for (File file : dir.listFiles()) {
+            if (file.isFile()) {
+
+                if (!file.canRead()) {
+                    throw new HanabiException("日志分片文件或索引文件不可读！");
+                }
+
+                String filename = file.getName();
+                if (filename.endsWith(LogCommon.IndexFileSuffix)) {
+                    File logFile = new File(file.getAbsolutePath()
+                                                .replace(LogCommon.IndexFileSuffix, LogCommon.LogFileSuffix));
+
+                    if (!logFile.exists()) {
+                        logger.warn("日志索引文件 {} 被创建了，但并没有创建相应的日志切片文件", filename);
+                        file.delete();
+                        break;
+                    }
+                } else if (filename.endsWith(LogCommon.LogFileSuffix)) {
+                    long start = Long.valueOf(filename.substring(0, filename.length() - LogCommon.LogFileSuffix.length()));
+                    File indexFile = LogCommon.indexFilename(dir, start);
+                    LogSegment thisSegment;
+                    try {
+                        thisSegment = new LogSegment(dir, start, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize());
+                    } catch (IOException e) {
+                        throw new HanabiException("创建或映射日志分片文件 " + filename + " 失败");
+                    }
+
+                    if (indexFile.exists()) {
+                        // 检查下这个索引文件有没有大的问题，比如大小不正确等
+                        thisSegment.getOffsetIndex()
+                                   .sanityCheck();
+                    } else {
+                        try {
+                            thisSegment.recover(LogConfigHelper.getMaxLogMessageSize());
+                        } catch (IOException e) {
+                            throw new HanabiException("重建日志分片索引 " + filename + " 失败");
+                        }
+                    }
+
+                    segments.put(start, thisSegment);
+                }
+            }
+        }
     }
 
     /**
      * 将一个操作添加到日志文件中
      */
     public void append(Operation operation) throws IOException {
+        logger.error("啦啦啦");
         GennerationAndOffset operationId = ElectOperator.getInstance()
                                                         .genOperationId();
 
         long offset = operationId.getOffset();
-
-        if (operationId.getGeneration() > this.generation) {
-            // TODO 需要触发上级创建新的Log
-
-
-
-            return;
-        }
+        //
+        //        if (operationId.getGeneration() > this.generation) {
+        //            // TODO 需要触发上级创建新的Log
+        //            return;
+        //        }
 
         LogSegment logSegment = maybeRoll(operation.size());
 
@@ -77,8 +164,12 @@ public class Log extends ReentrantLocker {
      */
     public LogSegment maybeRoll(int size) {
         LogSegment logSegment = activeSegment();
-        if (logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() || logSegment.getOffsetIndex()
-                                                                                           .isFull()) {
+
+        if (logSegment == null) {
+            logger.info("目录 {} 下暂无日志分片文件，将开启新的日志分片", dir.getAbsolutePath());
+            return roll();
+        } else if (logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() || logSegment.getOffsetIndex()
+                                                                                                  .isFull()) {
             logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfigHelper.getMaxLogSegmentSize(),
                 logSegment.getOffsetIndex()
                           .getEntries(), logSegment.getOffsetIndex()
@@ -93,8 +184,9 @@ public class Log extends ReentrantLocker {
      * 获取最后一个日志分片文件
      */
     private LogSegment activeSegment() {
-        return segments.lastEntry()
-                       .getValue();
+        return Optional.ofNullable(segments.lastEntry())
+                       .map(longLogSegmentEntry -> longLogSegmentEntry.getValue())
+                       .orElse(null);
     }
 
     /**

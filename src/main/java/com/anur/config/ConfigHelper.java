@@ -119,9 +119,13 @@ public class ConfigHelper {
 
     protected enum ConfigEnum {
 
+        ////////////////////// InetSocketAddressConfigHelper
+
         SERVER_NAME("server.name", "server.name 是本机的服务名，集群内应唯一"),
 
         CLIENT_ADDR("client.addr", "client.addr 的配置格式应由如下组成：client.addr.{服务名}:{选举leader使用端口号}:{集群内机器通讯使用端口号}"),
+
+        ////////////////////// LogConfigHelper
 
         LOG_INDEX_INTERVAL("log.indexInterval", "log.IndexInterval 是操作日志索引生成时的字节间隔，有助于节省空间，不设定的太小都可"),
 

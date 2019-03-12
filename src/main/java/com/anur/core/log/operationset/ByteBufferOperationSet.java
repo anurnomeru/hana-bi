@@ -43,6 +43,9 @@ public class ByteBufferOperationSet extends OperationSet {
         byteBuffer.putLong(offset);
         byteBuffer.putInt(size);
         byteBuffer.put(operation.getByteBuffer());
+
+        byteBuffer.rewind();
+        this.byteBuffer = byteBuffer;
     }
 
     public ByteBufferOperationSet(ByteBuffer byteBuffer) {
