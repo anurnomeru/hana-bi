@@ -52,7 +52,9 @@ public class Log extends ReentrantLocker {
     public void append(Operation operation) {
         LogSegment logSegment = maybeRoll(operation.size());
 
-        //        logSegment.append();
+        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, off);
+
+        logSegment.append(off, byteBufferOperationSet);
     }
 
     public void append(ByteBufferOperationSet byteBufferOperationSet) {

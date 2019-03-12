@@ -34,7 +34,6 @@ public class Operation {
         int vSize = vBytes.length;
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(OperationConstant.BaseMessageOverhead + kSize + vSize);
-        byteBuffer.mark();
 
         byteBuffer.position(OperationConstant.TypeOffset);
         byteBuffer.putInt(operationType);
@@ -70,8 +69,8 @@ public class Operation {
         buffer.get(vByte);
         this.value = new String(vByte);
 
-        buffer.rewind();
         ensureValid();
+        buffer.reset();
     }
 
     public ByteBuffer getByteBuffer() {
