@@ -259,13 +259,11 @@ public class FileOperationSet extends OperationSet {
 
             private int location = start;
 
-            private int sizeOffsetLength = OperationSet.LogOverhead;
-
-            private ByteBuffer sizeOffsetBuffer = ByteBuffer.allocate(sizeOffsetLength);
+            private ByteBuffer sizeOffsetBuffer = ByteBuffer.allocate(OperationSet.LogOverhead);
 
             @Override
             protected OperationAndOffset makeNext() {
-                if (location + sizeOffsetLength >= end) {// 如果已经到了末尾，返回空
+                if (location + OperationSet.LogOverhead >= end) {// 如果已经到了末尾，返回空
                     return allDone();
                 }
 
@@ -280,10 +278,11 @@ public class FileOperationSet extends OperationSet {
                     return allDone();
                 }
 
+                sizeOffsetBuffer.flip();
                 long offset = sizeOffsetBuffer.getLong();
                 int size = sizeOffsetBuffer.getInt();
 
-                if (size < OperationConstant.MinMessageOverhead || location + sizeOffsetLength + size > end) { // 代表消息放不下了
+                if (size < OperationConstant.MinMessageOverhead || location + OperationSet.LogOverhead + size > end) { // 代表消息放不下了
                     return allDone();
                 }
 
@@ -294,7 +293,7 @@ public class FileOperationSet extends OperationSet {
                 // read the item itself
                 ByteBuffer buffer = ByteBuffer.allocate(size);
                 try {
-                    fileChannel.read(buffer, location + sizeOffsetLength);
+                    fileChannel.read(buffer, location + OperationSet.LogOverhead);
                 } catch (IOException e) {
                     throw new HanabiException("Error occurred while reading data from fileChannel.");
                 }
@@ -304,7 +303,7 @@ public class FileOperationSet extends OperationSet {
                 buffer.rewind();
 
                 // increment the location and return the item
-                location += size + sizeOffsetLength;
+                location += size + OperationSet.LogOverhead;
                 return new OperationAndOffset(new Operation(buffer), offset);
             }
         };

@@ -47,7 +47,7 @@ public class Log extends ReentrantLocker {
     /** 最近一个需要 append 到日志文件中的 offset */
     private long currentOffset = 0L;
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, IOException {
         /**
          * 启动协调服务器
          */
@@ -72,6 +72,9 @@ public class Log extends ReentrantLocker {
 
         Random random = new Random();
 
+        Operation op1 = new Operation(OperationTypeEnum.SETNX, "测试读写有没有问题", "测试读写有没有问题");
+        log.append(op1);
+
         for (int i = 0; i < 10000; i++) {
             Operation operation = new Operation(OperationTypeEnum.SETNX, random.nextLong() + "", random.nextLong() + "");
             try {
@@ -92,6 +95,7 @@ public class Log extends ReentrantLocker {
     private void load() {
         // 如果目录不存在，则创建此目录
         dir.mkdirs();
+        logger.info("正在读取操作日志目录 {}", dir.getName());
 
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
@@ -122,14 +126,16 @@ public class Log extends ReentrantLocker {
 
                     if (indexFile.exists()) {
                         // 检查下这个索引文件有没有大的问题，比如大小不正确等
-                        thisSegment.getOffsetIndex()
-                                   .sanityCheck();
-                    } else {
                         try {
+                            thisSegment.getOffsetIndex()
+                                       .sanityCheck();
+                        } catch (Exception e) {
+                            logger.info("日志 {} 的索引文件存在异常，正在重建索引文件。", filename);
                             thisSegment.recover(LogConfigHelper.getMaxLogMessageSize());
-                        } catch (IOException e) {
-                            throw new HanabiException("重建日志分片索引 " + filename + " 失败");
                         }
+                    } else {
+                        logger.info("日志 {} 的索引文件不存在，正在重建索引文件。", filename);
+                        thisSegment.recover(LogConfigHelper.getMaxLogMessageSize());
                     }
 
                     segments.put(start, thisSegment);
@@ -142,7 +148,6 @@ public class Log extends ReentrantLocker {
      * 将一个操作添加到日志文件中
      */
     public void append(Operation operation) throws IOException {
-        logger.error("啦啦啦");
         GennerationAndOffset operationId = ElectOperator.getInstance()
                                                         .genOperationId();
 
@@ -157,6 +162,7 @@ public class Log extends ReentrantLocker {
 
         ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, offset);
         logSegment.append(offset, byteBufferOperationSet);
+        currentOffset = offset;
     }
 
     /**
@@ -168,8 +174,10 @@ public class Log extends ReentrantLocker {
         if (logSegment == null) {
             logger.info("目录 {} 下暂无日志分片文件，将开启新的日志分片", dir.getAbsolutePath());
             return roll();
-        } else if (logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() || logSegment.getOffsetIndex()
-                                                                                                  .isFull()) {
+        } else if (
+            logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() // 即将 append 的消息将超过分片容纳最大大小
+                || logSegment.getOffsetIndex() // 可索引的 index 已经达到最大
+                             .isFull()) {
             logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfigHelper.getMaxLogSegmentSize(),
                 logSegment.getOffsetIndex()
                           .getEntries(), logSegment.getOffsetIndex()

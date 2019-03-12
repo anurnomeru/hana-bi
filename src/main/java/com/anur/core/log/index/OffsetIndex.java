@@ -331,7 +331,7 @@ public class OffsetIndex extends ReentrantLocker {
             int position = mmap.position();
 
             /* Windows won't let us modify the file length while the file is mmapped :-( */
-//            forceUnmap(mmap);
+            forceUnmap(mmap);
             try {
                 raf.setLength(roundedNewSize);
                 mmap = raf.getChannel()
@@ -399,7 +399,7 @@ public class OffsetIndex extends ReentrantLocker {
      * 简单的核验一下这个索引文件有无大问题
      */
     public void sanityCheck() {
-        if (entries != 0 || lastOffset <= baseOffset) {
+        if (!(entries == 0 || lastOffset > baseOffset)) {
             throw new OffsetIndexIllegalException(String.format("Corrupt index found, index file (%s) has non-zero size but the last offset is %s and the base offset is %s",
                 file.getAbsolutePath(), lastOffset, baseOffset));
         }
