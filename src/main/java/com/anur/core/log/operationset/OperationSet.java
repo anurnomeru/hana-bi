@@ -1,10 +1,11 @@
-package com.anur.core.log.operation;
+package com.anur.core.log.operationset;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import com.anur.core.log.common.Operation;
 import com.anur.core.log.common.OperationAndOffset;
 
 /**

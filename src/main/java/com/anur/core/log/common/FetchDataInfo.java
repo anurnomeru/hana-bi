@@ -1,6 +1,7 @@
-package com.anur.core.log;
+package com.anur.core.log.common;
 
-import com.anur.core.log.operation.OperationSet;
+import com.anur.core.log.LogOffsetMetadata;
+import com.anur.core.log.operationset.OperationSet;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/28

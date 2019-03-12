@@ -11,8 +11,9 @@ import com.anur.config.LogConfigHelper;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GennerationAndOffset;
 import com.anur.core.lock.ReentrantLocker;
-import com.anur.core.log.operation.ByteBufferOperationSet;
-import com.anur.core.log.operation.Operation;
+import com.anur.core.log.common.LogCommon;
+import com.anur.core.log.operationset.ByteBufferOperationSet;
+import com.anur.core.log.common.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
 import com.google.common.collect.Lists;
@@ -59,6 +60,8 @@ public class Log extends ReentrantLocker {
 
         if (operationId.getGeneration() > this.generation) {
             // TODO 需要触发上级创建新的Log
+
+
 
             return;
         }

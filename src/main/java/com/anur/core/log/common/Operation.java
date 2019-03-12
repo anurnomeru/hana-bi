@@ -1,4 +1,4 @@
-package com.anur.core.log.operation;
+package com.anur.core.log.common;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

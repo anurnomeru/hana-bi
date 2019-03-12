@@ -1,8 +1,8 @@
 package com.anur.core.util;
 
 import java.nio.ByteBuffer;
-import com.anur.core.log.operation.ByteBufferOperationSet;
-import com.anur.core.log.operation.Operation;
+import com.anur.core.log.operationset.ByteBufferOperationSet;
+import com.anur.core.log.common.Operation;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27

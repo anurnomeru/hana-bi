@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.anur.core.log.operation;
+package com.anur.core.log.operationset;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +25,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.anur.core.log.common.OffsetAndPosition;
+import com.anur.core.log.common.Operation;
 import com.anur.core.log.common.OperationAndOffset;
 import com.anur.core.log.common.OperationConstant;
 import com.anur.core.util.FileIOUtil;
