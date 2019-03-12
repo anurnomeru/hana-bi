@@ -1,5 +1,6 @@
 package com.anur.core.log.operation;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.log.common.OperationConstant;
@@ -25,6 +26,14 @@ public class Operation {
     public static void main(String[] args) {
         Operation operation = new Operation(OperationTypeEnum.SETNX, "kkkkkk", "asdfasdfasdfasdfasdf");
         operation.ensureValid();
+
+        System.out.println(operation.buffer.getInt());
+        System.out.println(operation.buffer.getInt());
+
+        Operation o = new Operation(operation.buffer);
+
+        System.out.println(operation.buffer.getInt());
+        System.out.println(operation.buffer.getInt());
     }
 
     private Operation(OperationTypeEnum operationTypeEnum, String key, String value) {
@@ -41,7 +50,7 @@ public class Operation {
         ByteBuffer byteBuffer = ByteBuffer.allocate(OperationConstant.BaseMessageOverhead + kSize + vSize);
         byteBuffer.mark();
 
-        byteBuffer.position(4);
+        byteBuffer.position(OperationConstant.TypeOffset);
         byteBuffer.putInt(operationType);
         byteBuffer.putInt(kSize);
         byteBuffer.put(kBytes);
@@ -58,7 +67,25 @@ public class Operation {
     }
 
     public Operation(ByteBuffer buffer) {
+        buffer.mark();
+
         this.buffer = buffer;
+
+        buffer.position(OperationConstant.TypeOffset);
+        this.operationTypeEnum = OperationTypeEnum.parseBybyteSign(buffer.getInt());
+
+        int kSize = buffer.getInt();
+        byte[] kByte = new byte[kSize];
+        buffer.get(kByte);
+        this.key = new String(kByte);
+
+        int vSize = buffer.getInt();
+        byte[] vByte = new byte[vSize];
+        buffer.get(vByte);
+        this.value = new String(vByte);
+
+        buffer.rewind();
+        ensureValid();
     }
 
     public ByteBuffer getByteBuffer() {
