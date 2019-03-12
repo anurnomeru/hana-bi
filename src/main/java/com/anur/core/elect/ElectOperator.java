@@ -17,6 +17,7 @@ import com.anur.core.coder.ElectProtocolEnum;
 import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
+import com.anur.core.elect.model.GennerationAndOffset;
 import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.elect.model.VotesResponse;
@@ -543,7 +544,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 生成对应一次操作的id号（用于给其他节点发送日志同步消息，并且得到其ack，以便知道消息是否持久化成功）
      */
-    public String genOperationId() {
+    public GennerationAndOffset genOperationId() {
         return this.lockSupplier(() -> {
             if (NodeRole.Leader == nodeRole) {
 
@@ -555,7 +556,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                 this.offset++;
 
-                return  "";
+                return new GennerationAndOffset(generation, offset);
             } else {
                 throw new HanabiException("不是 Leader 的节点无法生成id号");
             }

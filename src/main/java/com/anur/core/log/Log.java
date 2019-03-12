@@ -8,6 +8,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
+import com.anur.core.elect.ElectOperator;
+import com.anur.core.elect.model.GennerationAndOffset;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.log.operation.ByteBufferOperationSet;
 import com.anur.core.log.operation.Operation;
@@ -37,7 +39,7 @@ public class Log extends ReentrantLocker {
     /** 此 offset 之前的数据都已经刷盘 */
     public long recoveryPoint = 0L;
 
-    /** 最近一个 append 到日志文件中的 offset */
+    /** 最近一个需要 append 到日志文件中的 offset */
     private long currentOffset = 0L;
 
     public Log(long generation, File dir, long recoveryPoint) {
@@ -49,18 +51,22 @@ public class Log extends ReentrantLocker {
     /**
      * 将一个操作添加到日志文件中
      */
-    public void append(Operation operation) {
+    public void append(Operation operation) throws IOException {
+        GennerationAndOffset operationId = ElectOperator.getInstance()
+                                                        .genOperationId();
+
+        long offset = operationId.getOffset();
+
+        if (operationId.getGeneration() > this.generation) {
+            // TODO 需要触发上级创建新的Log
+
+            return;
+        }
+
         LogSegment logSegment = maybeRoll(operation.size());
 
-        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, off);
-
-        logSegment.append(off, byteBufferOperationSet);
-    }
-
-    public void append(ByteBufferOperationSet byteBufferOperationSet) {
-        LogSegment logSegment = maybeRoll(byteBufferOperationSet.sizeInBytes());
-
-        //        logSegment.append(byteBufferOperationSet.byteBufferOperationSet);
+        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, offset);
+        logSegment.append(offset, byteBufferOperationSet);
     }
 
     /**
@@ -141,6 +147,9 @@ public class Log extends ReentrantLocker {
         return this.segments.put(segment.getBaseOffset(), segment);
     }
 
+    /**
+     * 将消息刷盘
+     */
     private void flush(long offset) {
         if (offset <= recoveryPoint) {
             return;
