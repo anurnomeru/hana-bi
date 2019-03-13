@@ -2,6 +2,7 @@ package com.anur.core.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -44,55 +45,17 @@ public class Log extends ReentrantLocker {
     /** 此 offset 之前的数据都已经刷盘 */
     public long recoveryPoint = 0L;
 
-    /** 最近一个需要 append 到日志文件中的 offset */
+    /** 最近一个添加到 append 到日志文件中的 offset */
     private long currentOffset = 0L;
 
-    public static void main(String[] args) throws InterruptedException, IOException {
-        /**
-         * 启动协调服务器
-         */
-        CoordinateServerOperator.getInstance()
-                                .start();
-
-        /**
-         * 启动选举服务器，没什么主要的操作，这个服务器主要就是应答选票以及应答成为 Flower 用
-         */
-        ElectServerOperator.getInstance()
-                           .start();
-
-        /**
-         * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
-         */
-        ElectOperator.getInstance()
-                     .start();
-
-        Thread.sleep(5000);
-
-        Log log = new Log(0, new File("E:\\log"), 0);
-
-        Random random = new Random();
-
-        Operation op1 = new Operation(OperationTypeEnum.SETNX, "测试读写有没有问题", "测试读写有没有问题");
-        log.append(op1);
-
-        for (int i = 0; i < 10000; i++) {
-            Operation operation = new Operation(OperationTypeEnum.SETNX, random.nextLong() + "", random.nextLong() + "");
-            try {
-                log.append(operation);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    public Log(long generation, File dir, long recoveryPoint) {
+    public Log(long generation, File dir, long recoveryPoint) throws IOException {
         this.generation = generation;
         this.dir = dir;
         this.recoveryPoint = recoveryPoint;
         load();
     }
 
-    private void load() {
+    private void load() throws IOException {
         // 如果目录不存在，则创建此目录
         dir.mkdirs();
         logger.info("正在读取操作日志目录 {}", dir.getName());
@@ -142,26 +105,27 @@ public class Log extends ReentrantLocker {
                 }
             }
         }
+
+        if (segments.size() == 0) {
+            logger.info("当前目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", dir.getAbsolutePath());
+            segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
+        } else {
+            currentOffset = activeSegment().lastOffset();
+        }
     }
 
     /**
      * 将一个操作添加到日志文件中
      */
-    public void append(Operation operation) throws IOException {
-        GennerationAndOffset operationId = ElectOperator.getInstance()
-                                                        .genOperationId();
-
-        long offset = operationId.getOffset();
-        //
-        //        if (operationId.getGeneration() > this.generation) {
-        //            // TODO 需要触发上级创建新的Log
-        //            return;
-        //        }
-
+    public void append(Operation operation, long offset) {
         LogSegment logSegment = maybeRoll(operation.size());
 
         ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, offset);
-        logSegment.append(offset, byteBufferOperationSet);
+        try {
+            logSegment.append(offset, byteBufferOperationSet);
+        } catch (IOException e) {
+            throw new HanabiException("写入操作日志失败：" + operation.toString());
+        }
         currentOffset = offset;
     }
 
@@ -171,10 +135,7 @@ public class Log extends ReentrantLocker {
     public LogSegment maybeRoll(int size) {
         LogSegment logSegment = activeSegment();
 
-        if (logSegment == null) {
-            logger.info("目录 {} 下暂无日志分片文件，将开启新的日志分片", dir.getAbsolutePath());
-            return roll();
-        } else if (
+        if (
             logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() // 即将 append 的消息将超过分片容纳最大大小
                 || logSegment.getOffsetIndex() // 可索引的 index 已经达到最大
                              .isFull()) {
@@ -192,9 +153,8 @@ public class Log extends ReentrantLocker {
      * 获取最后一个日志分片文件
      */
     private LogSegment activeSegment() {
-        return Optional.ofNullable(segments.lastEntry())
-                       .map(longLogSegmentEntry -> longLogSegmentEntry.getValue())
-                       .orElse(null);
+        return segments.lastEntry()
+                       .getValue();
     }
 
     /**

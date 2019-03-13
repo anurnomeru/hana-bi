@@ -23,6 +23,8 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.log.common.OffsetAndPosition;
 import com.anur.exception.HanabiException;
@@ -33,6 +35,8 @@ import com.anur.exception.HanabiException;
  * 每个磁盘上 OperationSet 的索引文件，仿照 Kafka OffsetIndex 所写
  */
 public class OffsetIndex extends ReentrantLocker {
+
+    private static Logger logger = LoggerFactory.getLogger(OffsetIndex.class);
 
     /**
      * factor为什么是8，因为index是由 4 位的相对 offset + 4位的 position 组成
@@ -67,7 +71,6 @@ public class OffsetIndex extends ReentrantLocker {
         boolean newlyCreated = this.file.createNewFile();
         RandomAccessFile raf = new RandomAccessFile(this.file, "rw");
         try {
-
             if (newlyCreated) {
                 if (maxIndexSize < FACTOR) {
                     throw new IllegalArgumentException("Invalid max index size: " + maxIndexSize);
@@ -227,6 +230,7 @@ public class OffsetIndex extends ReentrantLocker {
                 throw new HanabiException("Attempt to append to a full index (size = " + entries + ").");
             }
             if (entries == 0 || offset > lastOffset) {
+                logger.info("在索引文件 {} 为对应的操作日志添加 position 为 {} 的索引", baseOffset + ".index", position);
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
                 entries++;
@@ -331,7 +335,9 @@ public class OffsetIndex extends ReentrantLocker {
             int position = mmap.position();
 
             /* Windows won't let us modify the file length while the file is mmapped :-( */
-            forceUnmap(mmap);
+            if (mmap.limit() != 0) {// TODO 不知道为什么为 0 的时候会报错
+                forceUnmap(mmap);
+            }
             try {
                 raf.setLength(roundedNewSize);
                 mmap = raf.getChannel()
@@ -407,6 +413,10 @@ public class OffsetIndex extends ReentrantLocker {
             throw new OffsetIndexIllegalException("Index file " + file.getName() + " is corrupt, found " + file.length() +
                 " bytes which is not positive or not a multiple of 8.");
         }
+    }
+
+    public long getLastOffset() {
+        return lastOffset;
     }
 
     public static class OffsetIndexIllegalException extends HanabiException {

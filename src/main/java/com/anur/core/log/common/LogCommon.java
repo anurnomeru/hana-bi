@@ -36,6 +36,10 @@ public class LogCommon {
         return new File(dir, filenamePrefixFromOffset(offset) + IndexFileSuffix);
     }
 
+    public static File dirName(File baseDir, long generation) {
+        return new File(baseDir + "\\" + filenamePrefixFromOffset(generation));
+    }
+
     /**
      * Make log segment file name from offset bytes. All this does is pad out the offset number with zeros
      * so that ls sorts the files numerically.

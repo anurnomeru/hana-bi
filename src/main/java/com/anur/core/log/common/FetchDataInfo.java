@@ -18,4 +18,12 @@ public class FetchDataInfo {
         this.fetchOffsetMetadata = fetchOffsetMetadata;
         this.operationSet = operationSet;
     }
+
+    public LogOffsetMetadata getFetchOffsetMetadata() {
+        return fetchOffsetMetadata;
+    }
+
+    public OperationSet getOperationSet() {
+        return operationSet;
+    }
 }

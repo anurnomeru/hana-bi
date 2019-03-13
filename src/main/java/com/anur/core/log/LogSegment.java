@@ -52,14 +52,14 @@ public class LogSegment {
     private final OffsetIndex offsetIndex;
 
     /**
-     * 该日志文件从哪个offset开始
-     */
-    private final long baseOffset;
-
-    /**
      * 索引字节间隔
      */
     private final int indexIntervalBytes;
+
+    /**
+     * 该日志文件从哪个offset开始
+     */
+    private final long baseOffset;
 
     /**
      * 距离上一次添加索引，已经写了多少个字节了
@@ -93,7 +93,7 @@ public class LogSegment {
      */
     public void append(long offset, ByteBufferOperationSet messages) throws IOException {
         if (messages.sizeInBytes() > 0) {
-            logger.info("在 offset {}, position {}, 插入了 {} 个字节。", offset, fileOperationSet.sizeInBytes(), messages.sizeInBytes());
+            logger.info("在操作日志文件 {}, position {}, 插入了 {} 个字节, offset 为 {}。", baseOffset + ".log", fileOperationSet.sizeInBytes(), messages.sizeInBytes(), offset);
             // append an entry to the index (if needed)
             // 追加到了一定的容量，添加索引
             if (bytesSinceLastIndexEntry > indexIntervalBytes) {
@@ -263,10 +263,28 @@ public class LogSegment {
         return fileOperationSet.sizeInBytes();
     }
 
-    public long nextOffset() {
-        // 原kafka实现方式：通过 read(index.lastOffset, None, log.sizeInBytes) 来获取第一个大于等于 log.sizeInBytes 的信息，实际上就是下一条信息
-        // TODO 使用统一的ID生成工具
-        return 0;
+    /**
+     * 获取当前日志文件的最后一个 offset
+     * 先从索引文件中找到最后一个被记载的 offset
+     * 返回从这个 offset 的 position - 文件末尾的所有 日志
+     *
+     * 然后取最后一个
+     */
+    public long lastOffset() throws IOException {
+        FetchDataInfo fetchDataInfo = read(offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
+        if (fetchDataInfo == null) {
+            return baseOffset;
+        } else {
+            Iterator<OperationAndOffset> operationAndOffsetIterator = fetchDataInfo.getOperationSet()
+                                                                                   .iterator();
+            long lastOffset = baseOffset;
+
+            while (operationAndOffsetIterator.hasNext()) {
+                lastOffset = operationAndOffsetIterator.next()
+                                                       .getOffset() + baseOffset;// 因为文件里存储的是相对 offset
+            }
+            return lastOffset;
+        }
     }
 
     public long getBaseOffset() {

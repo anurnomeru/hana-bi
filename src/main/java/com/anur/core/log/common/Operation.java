@@ -112,4 +112,13 @@ public class Operation {
     public String getValue() {
         return value;
     }
+
+    @Override
+    public String toString() {
+        return "Operation{" +
+            ", operationTypeEnum=" + operationTypeEnum +
+            ", key='" + key + '\'' +
+            ", value='" + value + '\'' +
+            '}';
+    }
 }
