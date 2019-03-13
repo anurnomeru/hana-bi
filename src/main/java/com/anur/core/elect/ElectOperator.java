@@ -120,6 +120,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.nodeRole = NodeRole.Follower;
         this.startLatch = new CountDownLatch(1);
         this.heartBeat = new HeartBeat(InetSocketAddressConfigHelper.getServerName());
+        this.clusters = InetSocketAddressConfigHelper.getCluster();
+
         logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfigHelper.getServerName());
     }
 
@@ -160,6 +162,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             }
 
             logger.info("Election Timeout 到期，可能期间内未收到来自 Leader 的心跳包或上一轮选举没有在期间内选出 Leader，故本节点即将发起选举");
+
             updateGeneration("本节点发起了选举");// this.generation ++
 
             // 成为候选者
@@ -287,8 +290,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             long becomeLeaderCostTime = TimeUtil.getTime() - this.beginElectTime;
             this.beginElectTime = 0L;
 
-            logger.info("本节点 {} 角色由 {} 变更为 {} 选举耗时 {} ms，并开始向其他节点发送心跳包 ......", InetSocketAddressConfigHelper.getServerName(), this.nodeRole.name(), NodeRole.Leader.name(), becomeLeaderCostTime);
-            this.offset = 0;
+            logger.info("本节点 {} 在世代 {} 角色由 {} 变更为 {} 选举耗时 {} ms，并开始向其他节点发送心跳包 ......", InetSocketAddressConfigHelper.getServerName(), this.generation, this.nodeRole.name(), NodeRole.Leader.name(),
+                becomeLeaderCostTime);
             this.nodeRole = NodeRole.Leader;
             this.cancelAllTask();
 
@@ -366,6 +369,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 3、重置本地变量
                 logger.debug("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
+                this.offset = 0;
                 this.voteRecord = null;
                 this.box = new HashMap<>();
                 this.leaderServerName = null;
@@ -561,6 +565,17 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 throw new HanabiException("不是 Leader 的节点无法生成id号");
             }
         });
+    }
+
+    /**
+     * 设置本节点的世代和位移，仅有未启动时才可设置，已经启动则无法再设置
+     */
+    public ElectOperator resetGenerationAndOffset(GennerationAndOffset gennerationAndOffset) {
+        if (startLatch.getCount() > 0) {
+            this.generation = gennerationAndOffset.getGeneration();
+            this.offset = gennerationAndOffset.getOffset();
+        }
+        return this;
     }
 
     public void start() {

@@ -18,7 +18,7 @@ import com.anur.exception.HanabiException;
  */
 public class LogManager {
 
-    private static final String LogDir = "\\store";
+    private static final String LogDir = "\\store\\aof";
 
     public static volatile LogManager INSTANCE;
 
@@ -26,7 +26,11 @@ public class LogManager {
 
     private final File baseDir;
 
+    private final GennerationAndOffset initial;
+
     public static void main(String[] args) throws InterruptedException {
+        LogManager l = getINSTANCE();
+
         /**
          * 启动协调服务器
          */
@@ -43,11 +47,10 @@ public class LogManager {
          * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
          */
         ElectOperator.getInstance()
+                     .resetGenerationAndOffset(l.getInitial())
                      .start();
 
-        Thread.sleep(3000);
-
-        LogManager l = getINSTANCE();
+        Thread.sleep(10000);
 
         Random random = new Random();
         for (int i = 0; i < 10000; i++) {
@@ -71,14 +74,35 @@ public class LogManager {
         this.generationDirs = new ConcurrentSkipListMap<>();
         String relativelyPath = System.getProperty("user.dir");
         this.baseDir = new File(relativelyPath + LogDir);
+        initial = load();
+    }
 
-        if (generationDirs.size() == 0) {// 第一次启动项目
-            try {
-                generationDirs.put(1L, new Log(1L, createGenDirIfNEX(1L), 0));
-            } catch (IOException e) {
-                e.printStackTrace();
+    /**
+     * 加载既存的目录们
+     */
+    private GennerationAndOffset load() {
+        baseDir.mkdirs();
+
+        long latestGeneration = 0L;
+
+        for (File file : baseDir.listFiles()) {
+            if (!file.isFile()) {
+                latestGeneration = Math.max(latestGeneration, Integer.valueOf(file.getName()));
             }
         }
+
+        GennerationAndOffset init;
+
+        // 只要创建最新的那个 generation 即可
+        try {
+            Log latest = new Log(latestGeneration, createGenDirIfNEX(latestGeneration), 0);
+            generationDirs.put(1L, latest);
+            init = new GennerationAndOffset(latestGeneration, latest.getCurrentOffset());
+        } catch (IOException e) {
+            throw new HanabiException("操作日志初始化失败，项目无法启动");
+        }
+
+        return init;
     }
 
     /**
@@ -99,7 +123,7 @@ public class LogManager {
         Log current = activeLog();
         if (generation > current.generation) {
             File dir = createGenDirIfNEX(generation);
-            Log log = null;
+            Log log;
             try {
                 log = new Log(generation, dir, 0);
             } catch (IOException e) {
@@ -128,5 +152,9 @@ public class LogManager {
     private Log activeLog() {
         return generationDirs.lastEntry()
                              .getValue();
+    }
+
+    public GennerationAndOffset getInitial() {
+        return initial;
     }
 }

@@ -93,7 +93,7 @@ public class LogSegment {
      */
     public void append(long offset, ByteBufferOperationSet messages) throws IOException {
         if (messages.sizeInBytes() > 0) {
-            logger.info("在操作日志文件 {}, position {}, 插入了 {} 个字节, offset 为 {}。", baseOffset + ".log", fileOperationSet.sizeInBytes(), messages.sizeInBytes(), offset);
+            logger.debug("在操作日志文件 {}, position {}, 插入了 {} 个字节, offset 为 {}。", baseOffset + ".log", fileOperationSet.sizeInBytes(), messages.sizeInBytes(), offset);
             // append an entry to the index (if needed)
             // 追加到了一定的容量，添加索引
             if (bytesSinceLastIndexEntry > indexIntervalBytes) {

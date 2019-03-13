@@ -230,7 +230,7 @@ public class OffsetIndex extends ReentrantLocker {
                 throw new HanabiException("Attempt to append to a full index (size = " + entries + ").");
             }
             if (entries == 0 || offset > lastOffset) {
-                logger.info("在索引文件 {} 为对应的操作日志添加 position 为 {} 的索引", baseOffset + ".index", position);
+                logger.info("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引", baseOffset + ".index", offset, position);
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
                 entries++;

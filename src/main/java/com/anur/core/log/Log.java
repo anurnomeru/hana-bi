@@ -2,21 +2,14 @@ package com.anur.core.log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Optional;
-import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
-import com.anur.core.coordinate.CoordinateServerOperator;
-import com.anur.core.elect.ElectOperator;
-import com.anur.core.elect.ElectServerOperator;
-import com.anur.core.elect.model.GennerationAndOffset;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.log.common.LogCommon;
-import com.anur.core.log.common.OperationTypeEnum;
 import com.anur.core.log.operationset.ByteBufferOperationSet;
 import com.anur.core.log.common.Operation;
 import com.anur.core.util.HanabiExecutors;
@@ -115,9 +108,20 @@ public class Log extends ReentrantLocker {
     }
 
     /**
+     * 最近加入到日志中的那个 offset
+     */
+    public long getCurrentOffset() {
+        return currentOffset;
+    }
+
+    /**
      * 将一个操作添加到日志文件中
      */
     public void append(Operation operation, long offset) {
+        if (offset < currentOffset) {
+            throw new HanabiException("一定是哪里有问题");
+        }
+
         LogSegment logSegment = maybeRoll(operation.size());
 
         ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, offset);
