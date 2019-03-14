@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.anur.core.store.operationset;
+package com.anur.io.store.operationset;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,10 +24,10 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import com.anur.core.store.common.OffsetAndPosition;
-import com.anur.core.store.common.Operation;
-import com.anur.core.store.common.OperationAndOffset;
-import com.anur.core.store.common.OperationConstant;
+import com.anur.io.store.common.OffsetAndPosition;
+import com.anur.io.store.common.Operation;
+import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.store.common.OperationConstant;
 import com.anur.core.util.FileIOUtil;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
@@ -159,11 +159,11 @@ public class FileOperationSet extends OperationSet {
      */
     public OffsetAndPosition searchFor(long targetOffset, int startingPosition) throws IOException {
         int position = startingPosition;
-        ByteBuffer buffer = ByteBuffer.allocate(OperationSet.LogOverhead);
+        ByteBuffer buffer = ByteBuffer.allocate(LogOverhead);
         int size = this.sizeInBytes();
 
         // 没有越界之前，可以无限搜索
-        while (position + OperationSet.LogOverhead < size) {
+        while (position + LogOverhead < size) {
             buffer.rewind(); // 重置一下buffer指针
             fileChannel.read(buffer, position); // 读取文件的offset值
 
@@ -183,7 +183,7 @@ public class FileOperationSet extends OperationSet {
                 throw new IllegalStateException("Invalid message size: " + messageSize);
             }
 
-            position += OperationSet.LogOverhead + messageSize;
+            position += LogOverhead + messageSize;
         }
         return null;
     }
@@ -259,11 +259,11 @@ public class FileOperationSet extends OperationSet {
 
             private int location = start;
 
-            private ByteBuffer sizeOffsetBuffer = ByteBuffer.allocate(OperationSet.LogOverhead);
+            private ByteBuffer sizeOffsetBuffer = ByteBuffer.allocate(LogOverhead);
 
             @Override
             protected OperationAndOffset makeNext() {
-                if (location + OperationSet.LogOverhead >= end) {// 如果已经到了末尾，返回空
+                if (location + LogOverhead >= end) {// 如果已经到了末尾，返回空
                     return allDone();
                 }
 
@@ -282,7 +282,7 @@ public class FileOperationSet extends OperationSet {
                 long offset = sizeOffsetBuffer.getLong();
                 int size = sizeOffsetBuffer.getInt();
 
-                if (size < OperationConstant.MinMessageOverhead || location + OperationSet.LogOverhead + size > end) { // 代表消息放不下了
+                if (size < OperationConstant.MinMessageOverhead || location + LogOverhead + size > end) { // 代表消息放不下了
                     return allDone();
                 }
 
@@ -293,7 +293,7 @@ public class FileOperationSet extends OperationSet {
                 // read the item itself
                 ByteBuffer buffer = ByteBuffer.allocate(size);
                 try {
-                    fileChannel.read(buffer, location + OperationSet.LogOverhead);
+                    fileChannel.read(buffer, location + LogOverhead);
                 } catch (IOException e) {
                     throw new HanabiException("Error occurred while reading data from fileChannel.");
                 }
@@ -303,7 +303,7 @@ public class FileOperationSet extends OperationSet {
                 buffer.rewind();
 
                 // increment the location and return the item
-                location += size + OperationSet.LogOverhead;
+                location += size + LogOverhead;
                 return new OperationAndOffset(new Operation(buffer), offset);
             }
         };

@@ -1,21 +1,25 @@
-package com.anur.store.hash;
+package com.anur.store;
+
 import com.anur.core.coordinate.model.HashGet;
-import com.anur.store.hash.core.HashOperator;
+import com.anur.store.core.StoreOperator;
 
 /**
  * Created by Anur IjuoKaruKas on 2/15/2019
  *
  * 外部操作 HASH 命令用，最外层的入口
  */
-public class HashStore {
+public class StoreCoordinator {
 
-    private static volatile HashStore INSTANCE;
 
-    public static HashStore getINSTANCE() {
+
+
+    private static volatile StoreCoordinator INSTANCE;
+
+    public static StoreCoordinator getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (HashStore.class) {
+            synchronized (StoreCoordinator.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new HashStore();
+                    INSTANCE = new StoreCoordinator();
                 }
             }
         }
@@ -27,8 +31,8 @@ public class HashStore {
      * hash 的 Get 操作
      */
     public String get(HashGet hashGet) {
-        return HashOperator.getINSTANCE()
-                           .get(hashGet.key);
+        return StoreOperator.getINSTANCE()
+                            .get(hashGet.key);
     }
 
     //

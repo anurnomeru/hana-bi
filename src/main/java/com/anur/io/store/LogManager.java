@@ -1,15 +1,13 @@
-package com.anur.core.store;
+package com.anur.io.store;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentSkipListMap;
-import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
-import com.anur.core.elect.ElectServerOperator;
 import com.anur.core.elect.model.GennerationAndOffset;
-import com.anur.core.store.common.LogCommon;
-import com.anur.core.store.common.Operation;
-import com.anur.core.store.log.Log;
+import com.anur.io.store.common.LogCommon;
+import com.anur.io.store.common.Operation;
+import com.anur.io.store.log.Log;
 import com.anur.exception.HanabiException;
 
 /**
@@ -26,29 +24,6 @@ public class LogManager {
     private final File baseDir;
 
     private final GennerationAndOffset initial;
-
-    public static void main(String[] args) throws InterruptedException {
-        LogManager l = getINSTANCE();
-
-        /**
-         * 启动协调服务器
-         */
-        CoordinateServerOperator.getInstance()
-                                .start();
-
-        /**
-         * 启动选举服务器，没什么主要的操作，这个服务器主要就是应答选票以及应答成为 Flower 用
-         */
-        ElectServerOperator.getInstance()
-                           .start();
-
-        /**
-         * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
-         */
-        ElectOperator.getInstance()
-                     .resetGenerationAndOffset(l.getInitial())
-                     .start();
-    }
 
     public static LogManager getINSTANCE() {
         if (INSTANCE == null) {

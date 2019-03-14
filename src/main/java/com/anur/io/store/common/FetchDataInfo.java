@@ -1,7 +1,7 @@
-package com.anur.core.store.common;
+package com.anur.io.store.common;
 
-import com.anur.core.store.log.LogOffsetMetadata;
-import com.anur.core.store.operationset.OperationSet;
+import com.anur.io.store.log.LogOffsetMetadata;
+import com.anur.io.store.operationset.OperationSet;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/28

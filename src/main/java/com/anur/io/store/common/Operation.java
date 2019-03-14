@@ -1,4 +1,4 @@
-package com.anur.core.store.common;
+package com.anur.io.store.common;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;

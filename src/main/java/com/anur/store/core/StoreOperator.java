@@ -1,4 +1,4 @@
-package com.anur.store.hash.core;
+package com.anur.store.core;
 
 import java.util.HashMap;
 import java.util.Objects;
@@ -9,24 +9,24 @@ import com.anur.core.lock.ReentrantReadWriteLocker;
  *
  * 用于在内存中存储 k - v
  */
-public class HashOperator extends ReentrantReadWriteLocker {
+public class StoreOperator extends ReentrantReadWriteLocker {
 
     private HashMap<String, String> hashMap;
 
-    private static volatile HashOperator INSTANCE;
+    private static volatile StoreOperator INSTANCE;
 
-    public static HashOperator getINSTANCE() {
+    public static StoreOperator getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (HashOperator.class) {
+            synchronized (StoreOperator.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new HashOperator();
+                    INSTANCE = new StoreOperator();
                 }
             }
         }
         return INSTANCE;
     }
 
-    private HashOperator() {
+    private StoreOperator() {
         this.hashMap = new HashMap<>();
     }
 

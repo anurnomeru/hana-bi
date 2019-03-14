@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.anur.core.store.index;
+package com.anur.io.store.index;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -26,7 +26,7 @@ import java.nio.channels.FileChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantLocker;
-import com.anur.core.store.common.OffsetAndPosition;
+import com.anur.io.store.common.OffsetAndPosition;
 import com.anur.exception.HanabiException;
 
 /**

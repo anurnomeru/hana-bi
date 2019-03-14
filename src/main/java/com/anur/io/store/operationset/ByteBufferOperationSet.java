@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package com.anur.core.store.operationset;
+package com.anur.io.store.operationset;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
-import com.anur.core.store.common.Operation;
-import com.anur.core.store.common.OperationAndOffset;
+import com.anur.io.store.common.Operation;
+import com.anur.io.store.common.OperationAndOffset;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -39,7 +39,7 @@ public class ByteBufferOperationSet extends OperationSet {
     public ByteBufferOperationSet(Operation operation, long offset) {
         int size = operation.size();
 
-        ByteBuffer byteBuffer = ByteBuffer.allocate(size + OperationSet.LogOverhead);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(size + LogOverhead);
         byteBuffer.putLong(offset);
         byteBuffer.putInt(size);
         byteBuffer.put(operation.getByteBuffer());

@@ -3,7 +3,7 @@ package com.anur;
 import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
-import com.anur.core.store.LogManager;
+import com.anur.io.store.LogManager;
 /**
  * Created by Anur IjuoKaruKas on 2019/3/13
  */
