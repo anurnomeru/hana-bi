@@ -5,7 +5,7 @@ import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.handle.ClientChannelManagerHandler;
 import com.anur.io.core.client.ReconnectableClient;
-import com.anur.io.core.handle.MsgConsumeHandler;
+import com.anur.io.core.handle.StrMsgConsumeHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.LineBasedFrameDecoder;
@@ -32,7 +32,7 @@ public class ElectClient extends ReconnectableClient {
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         return channelPipeline.addFirst(new ClientChannelManagerHandler(ChannelType.ELECT, serverName))
                               .addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE)) // 解决拆包粘包
-                              .addLast(new MsgConsumeHandler(msgConsumer));// 业务处理逻辑处理器;// 将管道纳入统一管理
+                              .addLast(new StrMsgConsumeHandler(msgConsumer));// 业务处理逻辑处理器;// 将管道纳入统一管理
     }
 
     @Override

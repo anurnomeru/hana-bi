@@ -14,19 +14,14 @@ import io.netty.channel.SimpleChannelInboundHandler;
  *
  * 当要成为候选者时，需要去连接其他的 ServerElectHandler，并去发送各种选举相关的消息
  */
-public class MsgConsumeHandler extends SimpleChannelInboundHandler {
+public class StrMsgConsumeHandler extends SimpleChannelInboundHandler {
 
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
      */
     private BiConsumer<ChannelHandlerContext, String> msgConsumer;
 
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        super.channelActive(ctx);
-    }
-
-    public MsgConsumeHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+    public StrMsgConsumeHandler(BiConsumer<ChannelHandlerContext, String> msgConsumer) {
         this.msgConsumer = msgConsumer;
     }
 

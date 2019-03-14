@@ -1,4 +1,4 @@
-package com.anur.core.coder;
+package com.anur.io.core.coder;
 
 import java.nio.charset.Charset;
 import java.util.Optional;

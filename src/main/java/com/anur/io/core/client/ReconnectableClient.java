@@ -37,11 +37,6 @@ public abstract class ReconnectableClient {
 
     protected ShutDownHooker shutDownHooker;
 
-    /**
-     * 将如何消费消息的权利交给上级，将业务处理从Handler中隔离
-     */
-    protected BiConsumer<ChannelHandlerContext, String> msgConsumer;
-
     public abstract ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline);
 
     public abstract void howToRestart();
