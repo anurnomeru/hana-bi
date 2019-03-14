@@ -13,11 +13,11 @@ public class HashOperator extends ReentrantReadWriteLocker {
 
     private HashMap<String, String> hashMap;
 
-    private volatile HashOperator INSTANCE;
+    private static volatile HashOperator INSTANCE;
 
-    public HashOperator getINSTANCE() {
+    public static HashOperator getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (this) {
+            synchronized (HashOperator.class) {
                 if (INSTANCE == null) {
                     INSTANCE = new HashOperator();
                 }

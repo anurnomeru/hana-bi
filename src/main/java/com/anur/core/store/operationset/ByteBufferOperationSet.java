@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package com.anur.core.log.operationset;
+package com.anur.core.store.operationset;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
-import com.anur.core.log.common.Operation;
-import com.anur.core.log.common.OperationAndOffset;
+import com.anur.core.store.common.Operation;
+import com.anur.core.store.common.OperationAndOffset;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019

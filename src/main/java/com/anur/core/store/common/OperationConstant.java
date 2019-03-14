@@ -1,4 +1,4 @@
-package com.anur.core.log.common;
+package com.anur.core.store.common;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27

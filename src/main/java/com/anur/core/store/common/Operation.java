@@ -1,9 +1,7 @@
-package com.anur.core.log.common;
+package com.anur.core.store.common;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import com.anur.core.log.common.OperationConstant;
-import com.anur.core.log.common.OperationTypeEnum;
 import com.anur.core.util.ByteBufferUtil;
 import com.anur.exception.HanabiException;
 

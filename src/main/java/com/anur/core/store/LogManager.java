@@ -1,16 +1,15 @@
-package com.anur.core.log;
+package com.anur.core.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Random;
 import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
 import com.anur.core.elect.model.GennerationAndOffset;
-import com.anur.core.log.common.LogCommon;
-import com.anur.core.log.common.Operation;
-import com.anur.core.log.common.OperationTypeEnum;
+import com.anur.core.store.common.LogCommon;
+import com.anur.core.store.common.Operation;
+import com.anur.core.store.log.Log;
 import com.anur.exception.HanabiException;
 
 /**
@@ -49,14 +48,6 @@ public class LogManager {
         ElectOperator.getInstance()
                      .resetGenerationAndOffset(l.getInitial())
                      .start();
-
-        Thread.sleep(10000);
-
-        Random random = new Random();
-        for (int i = 0; i < 10000; i++) {
-            Operation operation = new Operation(OperationTypeEnum.SETNX, random.nextLong() + "", random.nextLong() + "");
-            l.append(operation);
-        }
     }
 
     public static LogManager getINSTANCE() {

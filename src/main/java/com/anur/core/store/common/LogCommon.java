@@ -1,4 +1,4 @@
-package com.anur.core.log.common;
+package com.anur.core.store.common;
 
 import java.io.File;
 import java.text.NumberFormat;

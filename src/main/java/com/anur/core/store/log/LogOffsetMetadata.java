@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.anur.core.log;
+package com.anur.core.store.log;
 
 import com.anur.exception.HanabiException;
 
