@@ -12,24 +12,6 @@ import com.anur.io.store.common.Operation;
 public class ByteBufferUtil {
 
     private static final ByteBufferOperationSet Empty = new ByteBufferOperationSet(ByteBuffer.allocate(0));
-    //
-    //    /**
-    //     * 传入一系列的operation，并为其分配序列
-    //     */
-    //    private static ByteBuffer create(OffsetAssigner offsetAssigner, Collection<Operation> operationCollection) {
-    //        if (operationCollection == null || operationCollection.isEmpty()) {
-    //            return Empty.getByteBuffer();
-    //        } else {
-    //
-    //            // 这个操作集合需要预留的空间大小
-    //            ByteBuffer byteBuffer = ByteBuffer.allocate(OperationSet.messageSetSize(operationCollection));
-    //            for (Operation operation : operationCollection) {
-    //                OperationByteBufferUtil.writeMessage(byteBuffer, operation, offsetAssigner.nextAbsoluteOffset());
-    //            }
-    //            byteBuffer.rewind();
-    //            return byteBuffer;
-    //        }
-    //    }
 
     /**
      * 将一个 operation，写入 buffer 中，并为其分配 offset
@@ -79,6 +61,7 @@ public class ByteBufferUtil {
      *
      * @param buffer the buffer to read from
      * @param index the index from which to read the integer
+     *
      * @return The integer read, as a long to avoid signedness
      */
     public static long readUnsignedInt(ByteBuffer buffer, int index) {

@@ -1,7 +1,11 @@
 package com.anur.io.coordinate.server;
 
+import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.coder.CoordinateDecoder;
+import com.anur.io.core.coder.CoordinateEncoder;
+import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;
 import com.anur.io.core.handle.StrMsgConsumeHandler;
 import com.anur.io.core.server.Server;
 import io.netty.channel.ChannelHandlerContext;
@@ -18,16 +22,17 @@ public class CoordinateServer extends Server {
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Server中剥离
      */
-    protected BiConsumer<ChannelHandlerContext, String> msgConsumer;
+    protected BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer;
 
-    public CoordinateServer(int port, ShutDownHooker shutDownHooker, BiConsumer<ChannelHandlerContext, String> msgConsumer) {
+    public CoordinateServer(int port, ShutDownHooker shutDownHooker, BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer) {
         super(port, shutDownHooker);
         this.msgConsumer = msgConsumer;
     }
 
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        return channelPipeline.addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
-                              .addLast(new StrMsgConsumeHandler(msgConsumer));
+        return channelPipeline.addLast(new CoordinateDecoder())
+                              .addLast(new CoordinateEncoder())
+                              .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
     }
 }

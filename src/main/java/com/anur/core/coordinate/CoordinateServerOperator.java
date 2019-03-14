@@ -1,5 +1,6 @@
 package com.anur.core.coordinate;
 
+import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -41,8 +42,8 @@ public class CoordinateServerOperator implements Runnable {
     /**
      * 如何去消费消息
      */
-    private static BiConsumer<ChannelHandlerContext, String> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        ElectDecodeWrapper decodeWrapper = ElectCoder.decode(msg);
+    private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
+        System.out.println(new String(msg.array()));
     };
 
     /**
