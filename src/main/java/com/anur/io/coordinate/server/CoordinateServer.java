@@ -32,7 +32,6 @@ public class CoordinateServer extends Server {
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         return channelPipeline.addLast(new CoordinateDecoder())
-                              .addLast(new CoordinateEncoder())
                               .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
     }
 }

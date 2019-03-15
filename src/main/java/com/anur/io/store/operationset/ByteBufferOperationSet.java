@@ -17,17 +17,15 @@
 
 package com.anur.io.store.operationset;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
-import java.util.List;
+import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.store.common.OperationTypeEnum;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -55,29 +53,13 @@ public class ByteBufferOperationSet extends OperationSet {
         this.byteBuffer = byteBuffer;
     }
 
-    public static void main(String[] args) throws IOException {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(12);
-        byteBuffer.putInt(0);
-        byteBuffer.putInt(0);
-        byteBuffer.putInt(0);
-
-        File file = new File("C:\\Users\\Administrator\\Desktop\\test.log");
-        file.createNewFile();
-        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
-
-        int w = 0;
-        while (w < 12) {
-            w += randomAccessFile.getChannel()
-                                 .write(byteBuffer);
-        }
-    }
-
     public ByteBufferOperationSet(ByteBuffer byteBuffer) {
         this.byteBuffer = byteBuffer;
     }
 
     public int writeFullyTo(GatheringByteChannel gatheringByteChannel) throws IOException {
         byteBuffer.mark();
+        byteBuffer.rewind();// 原本没有这个，但是不加这里会死循环
         int written = 0;
         while (written < sizeInBytes()) {
             written += gatheringByteChannel.write(byteBuffer);
@@ -107,7 +89,35 @@ public class ByteBufferOperationSet extends OperationSet {
 
     @Override
     public Iterator<OperationAndOffset> iterator() {
-        return null;
+        return new IteratorTemplate<OperationAndOffset>() {
+
+            private int location = byteBuffer.position();
+
+            @Override
+            protected OperationAndOffset makeNext() {
+                byteBuffer.mark();
+
+                if (location + LogOverhead >= sizeInBytes()) {// 如果已经到了末尾，返回空
+                    return allDone();
+                }
+
+                long offset = byteBuffer.getLong(location);
+                int size = byteBuffer.getInt(location + OffsetLength);
+
+                if (location + OffsetLength + size > sizeInBytes()) {
+                    return allDone();
+                }
+
+                byteBuffer.position(location + LogOverhead);
+                byteBuffer.limit(location + LogOverhead + size);
+                ByteBuffer operation = byteBuffer.slice();
+
+                byteBuffer.reset();
+                location += LogOverhead + size;
+
+                return new OperationAndOffset(new Operation(operation), offset);
+            }
+        };
     }
 
     public ByteBuffer getByteBuffer() {

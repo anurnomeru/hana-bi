@@ -77,6 +77,7 @@ public class FileOperationSet extends OperationSet {
         this.fileChannel = fileChannel;
         this.start = start;
         this.end = end;
+        this.isSlice = isSlice;
 
         AtomicInteger s;
         if (isSlice) {

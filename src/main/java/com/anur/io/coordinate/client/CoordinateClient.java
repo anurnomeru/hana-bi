@@ -11,7 +11,6 @@ import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationTypeEnum;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
-import com.anur.io.store.operationset.OperationSet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
@@ -37,7 +36,6 @@ public class CoordinateClient extends ReconnectableClient {
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         return channelPipeline.addLast(new CoordinateDecoder())
-                              .addLast(new CoordinateEncoder())
                               .addLast(new Register())
                               .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
     }
@@ -64,7 +62,8 @@ public class CoordinateClient extends ReconnectableClient {
             byte[] bytes = s.getBytes();
             ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
             byteBuffer.put(bytes);
-            ctx.writeAndFlush(byteBuffer);
+
+            CoordinateEncoder.calcCrcAndFlushMsg(ctx, byteBufferOperationSet.getByteBuffer());
         }
     }
 }

@@ -115,7 +115,7 @@ public class CoordinateClientOperator implements Runnable {
     public static void shutDownInstance(String log) {
         Optional.ofNullable(INSTANCE)
                 .ifPresent(c -> {
-                    logger.debug(log);
+                    logger.info(log);
                     c.shutDown();
                 });
     }

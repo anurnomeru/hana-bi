@@ -110,7 +110,7 @@ public class Operation {
     @Override
     public String toString() {
         return "Operation{" +
-            ", operationTypeEnum=" + operationTypeEnum +
+            "operationTypeEnum=" + operationTypeEnum +
             ", key='" + key + '\'' +
             ", value='" + value + '\'' +
             '}';
