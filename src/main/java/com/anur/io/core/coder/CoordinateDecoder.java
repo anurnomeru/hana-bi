@@ -17,7 +17,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) throws Exception {
-        Object o = decode(ctx, buffer);
+        ByteBuffer o = decode(ctx, buffer);
         if (o != null) {
             list.add(o);
         }
@@ -26,7 +26,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
     /**
      * 4位 长度 + 4位 CRC + msg
      */
-    private Object decode(ChannelHandlerContext ctx, ByteBuf buffer) {
+    private ByteBuffer decode(ChannelHandlerContext ctx, ByteBuf buffer) {
         buffer.markReaderIndex();
         int maybeLength = buffer.readInt();
 

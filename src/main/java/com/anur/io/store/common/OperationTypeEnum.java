@@ -10,7 +10,8 @@ import com.anur.exception.HanabiException;
  * Created by Anur IjuoKaruKas on 2019/3/11
  */
 public enum OperationTypeEnum {
-    SETNX(0),
+    REGISTER(0),// 协调从节点向主节点注册
+    SETNX(1),// 请求 HASH SET
     ;
 
     public int byteSign;
@@ -23,7 +24,6 @@ public enum OperationTypeEnum {
 
     static {
         Set<Integer> unique = new HashSet<>();
-
         for (OperationTypeEnum value : OperationTypeEnum.values()) {
             if (!unique.add(value.byteSign)) {
                 throw new HanabiException("OperationTypeEnum 中，byteSign 不可重复。");

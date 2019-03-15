@@ -111,7 +111,7 @@ public class ElectClientOperator implements Runnable {
             String.format("终止与选举节点 %s [%s:%s] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort()));
         this.electClient = new ElectClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.serverShutDownHooker, CLIENT_MSG_CONSUMER);
         initialLatch.countDown();
-    }
+}
 
     /**
      * 启动client，没事可以多调用，并不会启动多个连接

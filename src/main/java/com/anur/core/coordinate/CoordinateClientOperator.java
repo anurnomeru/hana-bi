@@ -1,13 +1,12 @@
 package com.anur.core.coordinate;
 
 import java.nio.ByteBuffer;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.io.core.coder.ElectCoder;
-import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
@@ -64,7 +63,7 @@ public class CoordinateClientOperator implements Runnable {
 
                     if (INSTANCE != null && !hanabiNode.getServerName()
                                                        .equals(INSTANCE.hanabiNode)) {
-                        INSTANCE.ShutDown();
+                        INSTANCE.shutDown();
                     }
 
                     INSTANCE = new CoordinateClientOperator(hanabiNode);
@@ -103,8 +102,22 @@ public class CoordinateClientOperator implements Runnable {
         }
     }
 
-    public synchronized void ShutDown() {
+    /**
+     * 关闭某个协调器的连接
+     */
+    public synchronized void shutDown() {
         this.serverShutDownHooker.shutdown();
+    }
+
+    /**
+     * 关闭协调器连接
+     */
+    public static void shutDownInstance(String log) {
+        Optional.ofNullable(INSTANCE)
+                .ifPresent(c -> {
+                    logger.debug(log);
+                    c.shutDown();
+                });
     }
 
     @Override

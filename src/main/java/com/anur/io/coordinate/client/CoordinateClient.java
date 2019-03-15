@@ -2,11 +2,16 @@ package com.anur.io.coordinate.client;
 
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.client.ReconnectableClient;
 import com.anur.io.core.coder.CoordinateDecoder;
 import com.anur.io.core.coder.CoordinateEncoder;
 import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;
+import com.anur.io.store.common.Operation;
+import com.anur.io.store.common.OperationTypeEnum;
+import com.anur.io.store.operationset.ByteBufferOperationSet;
+import com.anur.io.store.operationset.OperationSet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
@@ -33,7 +38,7 @@ public class CoordinateClient extends ReconnectableClient {
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         return channelPipeline.addLast(new CoordinateDecoder())
                               .addLast(new CoordinateEncoder())
-                              .addLast(new han())
+                              .addLast(new Register())
                               .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
     }
 
@@ -42,11 +47,18 @@ public class CoordinateClient extends ReconnectableClient {
         new CoordinateClient(this.serverName, this.host, this.port, this.shutDownHooker, this.msgConsumer).start();
     }
 
-    static class han extends ChannelInboundHandlerAdapter {
+    /**
+     * 这个类和业务算是有点关系，但是不知道放哪里好，就先塞这里吧
+     */
+    static class Register extends ChannelInboundHandlerAdapter {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
+
+            Operation operation = new Operation(OperationTypeEnum.REGISTER, InetSocketAddressConfigHelper.getServerName(), "");
+
+            ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation.getByteBuffer());
 
             String s = "测试能否正确编解码";
             byte[] bytes = s.getBytes();

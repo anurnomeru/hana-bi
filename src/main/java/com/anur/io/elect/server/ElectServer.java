@@ -25,6 +25,7 @@ public class ElectServer extends Server {
         this.msgConsumer = msgConsumer;
     }
 
+
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         return channelPipeline.addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))

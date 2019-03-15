@@ -2,7 +2,6 @@ package com.anur.io.core.handle;
 
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -22,7 +21,7 @@ public class ByteBufferMsgConsumerHandler extends SimpleChannelInboundHandler {
 
     @Override
     protected void channelRead0(ChannelHandlerContext channelHandlerContext, Object o) {
-        ByteBuf byteBuf = ((ByteBuf) o);
-        msgConsumer.accept(channelHandlerContext, byteBuf.nioBuffer());
+        ByteBuffer byteBuffer = ((ByteBuffer) o);
+        msgConsumer.accept(channelHandlerContext, byteBuffer);
     }
 }

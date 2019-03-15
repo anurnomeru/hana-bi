@@ -11,8 +11,6 @@ import com.anur.io.store.common.Operation;
  */
 public class ByteBufferUtil {
 
-    private static final ByteBufferOperationSet Empty = new ByteBufferOperationSet(ByteBuffer.allocate(0));
-
     /**
      * 将一个 operation，写入 buffer 中，并为其分配 offset
      */

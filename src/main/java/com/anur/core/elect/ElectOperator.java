@@ -162,6 +162,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             }
 
             logger.info("Election Timeout 到期，可能期间内未收到来自 Leader 的心跳包或上一轮选举没有在期间内选出 Leader，故本节点即将发起选举");
+            CoordinateClientOperator.shutDownInstance("与协调 Leader 断开连接");
 
             updateGeneration("本节点发起了选举");// this.generation ++
 

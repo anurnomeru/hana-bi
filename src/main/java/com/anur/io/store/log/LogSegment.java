@@ -166,7 +166,7 @@ public class LogSegment {
 
         // if the size is zero, still return a log segment but with zero size
         if (maxSize == 0) {
-            return new FetchDataInfo(logOffsetMetadata, OperationSet.Empty);
+            return new FetchDataInfo(logOffsetMetadata, ByteBufferOperationSet.Empty);
         }
 
         int length = 0;
@@ -176,7 +176,7 @@ public class LogSegment {
             length = (int) Math.min(maxPosition - startPosition.getPosition(), maxSize);
         } else {
             if (maxOffset < startOffset) {
-                return new FetchDataInfo(logOffsetMetadata, OperationSet.Empty);
+                return new FetchDataInfo(logOffsetMetadata, ByteBufferOperationSet.Empty);
             }
             // 查找第一个大于等于 maxOffset 的 Offset 和 Position
             OffsetAndPosition end = translateOffset(maxOffset, startPosition.getPosition());

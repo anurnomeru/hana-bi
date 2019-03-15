@@ -17,10 +17,15 @@
 
 package com.anur.io.store.operationset;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
+import java.util.List;
+import com.anur.exception.HanabiException;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 
@@ -32,6 +37,8 @@ import com.anur.io.store.common.OperationAndOffset;
 public class ByteBufferOperationSet extends OperationSet {
 
     private ByteBuffer byteBuffer;
+
+    public static final ByteBufferOperationSet Empty = new ByteBufferOperationSet(ByteBuffer.allocate(0));
 
     /**
      * 一个日志将要被append到日志之前，需要进行的操作
@@ -48,6 +55,23 @@ public class ByteBufferOperationSet extends OperationSet {
         this.byteBuffer = byteBuffer;
     }
 
+    public static void main(String[] args) throws IOException {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(12);
+        byteBuffer.putInt(0);
+        byteBuffer.putInt(0);
+        byteBuffer.putInt(0);
+
+        File file = new File("C:\\Users\\Administrator\\Desktop\\test.log");
+        file.createNewFile();
+        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+
+        int w = 0;
+        while (w < 12) {
+            w += randomAccessFile.getChannel()
+                                 .write(byteBuffer);
+        }
+    }
+
     public ByteBufferOperationSet(ByteBuffer byteBuffer) {
         this.byteBuffer = byteBuffer;
     }
@@ -62,16 +86,23 @@ public class ByteBufferOperationSet extends OperationSet {
         return written;
     }
 
+    @Override
+    public int writeTo(GatheringByteChannel channel, long offset, int maxSize) throws IOException {
+        if (offset > Integer.MAX_VALUE) {
+            throw new HanabiException("offset 不应大于 Integer.MaxValue");
+        }
+        ByteBuffer dup = byteBuffer.duplicate();
+        int pos = (int) offset;
+        dup.position(pos);
+        dup.limit(Math.min(dup.limit(), pos + maxSize));
+        return channel.write(dup);
+    }
+
     /**
      * Returns this buffer's limit.
      */
     public int sizeInBytes() {
         return byteBuffer.limit();
-    }
-
-    @Override
-    public int writeTo(GatheringByteChannel channel, long offset, int maxSize) throws IOException {
-        return 0;
     }
 
     @Override

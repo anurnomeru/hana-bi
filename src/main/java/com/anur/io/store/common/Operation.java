@@ -95,10 +95,6 @@ public class Operation {
         return ByteBufferUtil.crc32(buffer.array(), buffer.arrayOffset() + OperationConstant.TypeOffset, buffer.limit() - OperationConstant.TypeOffset);
     }
 
-    public ByteBuffer getBuffer() {
-        return buffer;
-    }
-
     public OperationTypeEnum getOperationTypeEnum() {
         return operationTypeEnum;
     }

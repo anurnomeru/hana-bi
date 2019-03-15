@@ -21,8 +21,6 @@ public abstract class OperationSet {
 
     public static final int LogOverhead = OffsetLength + MessageSizeLength;
 
-    public static final ByteBufferOperationSet Empty = new ByteBufferOperationSet(ByteBuffer.allocate(0));
-
     /**
      * The size of a message set containing the given operationCollections
      *

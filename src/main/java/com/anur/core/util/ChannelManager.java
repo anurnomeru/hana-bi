@@ -2,6 +2,7 @@ package com.anur.core.util;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import io.netty.channel.Channel;
@@ -48,8 +49,27 @@ public class ChannelManager extends ReentrantReadWriteLocker {
         this.writeLockSupplier(() -> serverChannelMap.put(serverName, channel));
     }
 
+    /**
+     * 根据服务名来注销服务
+     */
     public void unRegister(String serverName) {
         this.writeLockSupplier(() -> serverChannelMap.remove(serverName));
+    }
+
+    /**
+     * 根据管道来注销服务
+     */
+    public void unRegister(Channel channel) {
+        this.writeLockSupplier(() -> {
+            for (Entry<String, Channel> e : serverChannelMap.entrySet()) {
+                if (e.getValue()
+                     .equals(channel)) {
+                    this.unRegister(e.getKey());
+                    break;
+                }
+            }
+            return null;
+        });
     }
 
     /**

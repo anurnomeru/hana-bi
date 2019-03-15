@@ -43,7 +43,7 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        System.out.println(new String(msg.array()));
+        System.err.println(new String(msg.array()));
     };
 
     /**
