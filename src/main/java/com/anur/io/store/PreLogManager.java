@@ -6,22 +6,21 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GennerationAndOffset;
+import com.anur.exception.HanabiException;
 import com.anur.io.store.common.LogCommon;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.log.Log;
-import com.anur.exception.HanabiException;
-
 /**
- * Created by Anur IjuoKaruKas on 2019/3/13
+ * Created by Anur IjuoKaruKas on 2019/3/18
  *
- * 分段日志管理，这是真正的操作日志
+ * 预日志管理
  */
-public class LogManager {
+public class PreLogManager {
 
     // TODO 仅测试时，一台机器启动好几个副本，避免日志冲突
-    private final String LogDir = InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\log\\";
+    private final String LogDir = InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\prelog\\";
 
-    public static volatile LogManager INSTANCE;
+    public static volatile PreLogManager INSTANCE;
 
     /** 管理所有 Log */
     private final ConcurrentSkipListMap<Long, Log> generationDirs;
@@ -32,18 +31,18 @@ public class LogManager {
     /** 初始化时，最新的 Generation 和 Offset */
     private final GennerationAndOffset initial;
 
-    public static LogManager getINSTANCE() {
+    public static PreLogManager getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (LogManager.class) {
+            synchronized (PreLogManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new LogManager();
+                    INSTANCE = new PreLogManager();
                 }
             }
         }
         return INSTANCE;
     }
 
-    private LogManager() {
+    private PreLogManager() {
         this.generationDirs = new ConcurrentSkipListMap<>();
         String relativelyPath = System.getProperty("user.dir");
         this.baseDir = new File(relativelyPath + LogDir);
