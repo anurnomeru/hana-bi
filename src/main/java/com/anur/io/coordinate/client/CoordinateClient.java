@@ -63,7 +63,7 @@ public class CoordinateClient extends ReconnectableClient {
             ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
             byteBuffer.put(bytes);
 
-            CoordinateEncoder.calcCrcAndFlushMsg(ctx, byteBufferOperationSet.getByteBuffer());
+            CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), byteBufferOperationSet.getByteBuffer());
         }
     }
 }
