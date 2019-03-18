@@ -26,8 +26,9 @@ public class CoordinateEncoder {
 
         // 避免同个 channel 发生多线程问题
         synchronized (channel) {
-            channel.writeAndFlush(head);
-            channel.writeAndFlush(Unpooled.wrappedBuffer(body));
+            CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
+            compositeByteBuf.addComponents(true, head, Unpooled.wrappedBuffer(body));
+            channel.writeAndFlush(compositeByteBuf);
         }
     }
 

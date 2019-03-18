@@ -16,7 +16,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
     private static int CrcLength = 4;
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) {
         ByteBuffer o = decode(ctx, buffer);
         if (o != null) {
             list.add(o);

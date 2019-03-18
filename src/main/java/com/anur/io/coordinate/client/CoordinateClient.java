@@ -2,6 +2,7 @@ package com.anur.io.coordinate.client;
 
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.client.ReconnectableClient;
@@ -25,45 +26,31 @@ public class CoordinateClient extends ReconnectableClient {
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Client中剥离
      */
-    private BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer;
+    private final BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer;
+
+    /**
+     * 需要添加哪些额外的 ChannelPipeline
+     */
+    private final Consumer<ChannelPipeline> channelPipelineConsumer;
 
     public CoordinateClient(String serverName, String host, int port, ShutDownHooker shutDownHooker,
-        BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer) {
+        BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer, Consumer<ChannelPipeline> channelPipelineConsumer) {
         super(serverName, host, port, shutDownHooker);
         this.msgConsumer = msgConsumer;
+        this.channelPipelineConsumer = channelPipelineConsumer;
     }
 
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        return channelPipeline.addLast(new CoordinateDecoder())
-                              .addLast(new Register())
-                              .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
+        channelPipeline.addLast(new CoordinateDecoder())
+                       .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
+
+        channelPipelineConsumer.accept(channelPipeline);
+        return channelPipeline;
     }
 
     @Override
     public void howToRestart() {
-        new CoordinateClient(this.serverName, this.host, this.port, this.shutDownHooker, this.msgConsumer).start();
-    }
-
-    /**
-     * 这个类和业务算是有点关系，但是不知道放哪里好，就先塞这里吧
-     */
-    static class Register extends ChannelInboundHandlerAdapter {
-
-        @Override
-        public void channelActive(ChannelHandlerContext ctx) throws Exception {
-            super.channelActive(ctx);
-
-            Operation operation = new Operation(OperationTypeEnum.REGISTER, InetSocketAddressConfigHelper.getServerName(), "");
-
-            ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation.getByteBuffer());
-
-            String s = "测试能否正确编解码";
-            byte[] bytes = s.getBytes();
-            ByteBuffer byteBuffer = ByteBuffer.allocate(bytes.length);
-            byteBuffer.put(bytes);
-
-            CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), byteBufferOperationSet.getByteBuffer());
-        }
+        new CoordinateClient(this.serverName, this.host, this.port, this.shutDownHooker, this.msgConsumer, this.channelPipelineConsumer).start();
     }
 }

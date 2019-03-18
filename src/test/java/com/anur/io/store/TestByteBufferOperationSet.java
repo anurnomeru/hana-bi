@@ -1,4 +1,4 @@
-package com.anur.core.log;
+package com.anur.io.store;
 
 import java.util.Iterator;
 import com.anur.io.store.common.Operation;

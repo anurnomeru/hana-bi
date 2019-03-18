@@ -4,13 +4,21 @@ import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
+import com.anur.io.core.coder.CoordinateEncoder;
+import com.anur.io.store.common.Operation;
+import com.anur.io.store.common.OperationTypeEnum;
+import com.anur.io.store.operationset.ByteBufferOperationSet;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
 
 /**
  * Created by Anur IjuoKaruKas on 2/12/2019
@@ -51,6 +59,25 @@ public class CoordinateClientOperator implements Runnable {
     };
 
     /**
+     * 需要在 channelPipeline 上挂载什么
+     */
+    private static Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new Register());
+
+    /**
+     * Coordinate 初始化连接时的注册器
+     */
+    static class Register extends ChannelInboundHandlerAdapter {
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            super.channelActive(ctx);
+            Operation operation = new Operation(OperationTypeEnum.REGISTER, InetSocketAddressConfigHelper.getServerName(), "");
+            ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation.getByteBuffer());
+            CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), byteBufferOperationSet.getByteBuffer());
+        }
+    }
+
+    /**
      * 连接Leader节点的协调器连接，只能同时存在一个，如果要连接新的Leader，则需要将旧节点的连接关闭
      */
     public static CoordinateClientOperator getInstance(HanabiNode hanabiNode) {
@@ -85,7 +112,8 @@ public class CoordinateClientOperator implements Runnable {
     private void init() {
         this.serverShutDownHooker = new ShutDownHooker(
             String.format("终止与协调节点 %s [%s:%s] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort()));
-        this.coordinateClient = new CoordinateClient(hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort(), this.serverShutDownHooker, CLIENT_MSG_CONSUMER);
+        this.coordinateClient = new CoordinateClient(hanabiNode.getServerName(), hanabiNode.getHost(),
+            hanabiNode.getCoordinatePort(), this.serverShutDownHooker, CLIENT_MSG_CONSUMER, PIPE_LINE_ADDER);
         initialLatch.countDown();
     }
 

@@ -2,6 +2,7 @@ package com.anur.io.coordinate.server;
 
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.coder.CoordinateDecoder;
 import com.anur.io.core.coder.CoordinateEncoder;
@@ -22,16 +23,21 @@ public class CoordinateServer extends Server {
     /**
      * 将如何消费消息的权利交给上级，将业务处理从Server中剥离
      */
-    protected BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer;
+    private final BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer;
 
-    public CoordinateServer(int port, ShutDownHooker shutDownHooker, BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer) {
+    private final Consumer<ChannelPipeline> channelPipelineConsumer;
+
+    public CoordinateServer(int port, ShutDownHooker shutDownHooker, BiConsumer<ChannelHandlerContext, ByteBuffer> msgConsumer, Consumer<ChannelPipeline> channelPipelineConsumer) {
         super(port, shutDownHooker);
         this.msgConsumer = msgConsumer;
+        this.channelPipelineConsumer = channelPipelineConsumer;
     }
 
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
-        return channelPipeline.addLast(new CoordinateDecoder())
-                              .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
+        channelPipeline.addLast(new CoordinateDecoder())
+                       .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
+        channelPipelineConsumer.accept(channelPipeline);
+        return channelPipeline;
     }
 }
