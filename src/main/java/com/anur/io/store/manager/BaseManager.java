@@ -1,26 +1,19 @@
-package com.anur.io.store;
+package com.anur.io.store.manager;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentSkipListMap;
-import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.ElectOperator;
-import com.anur.core.elect.model.GennerationAndOffset;
+import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.exception.HanabiException;
 import com.anur.io.store.common.LogCommon;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.log.Log;
+
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18
- *
- * 预日志管理
  */
-public class PreLogManager {
-
-    // TODO 仅测试时，一台机器启动好几个副本，避免日志冲突
-    private final String LogDir = InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\prelog\\";
-
-    public static volatile PreLogManager INSTANCE;
+public class BaseManager {
 
     /** 管理所有 Log */
     private final ConcurrentSkipListMap<Long, Log> generationDirs;
@@ -29,30 +22,19 @@ public class PreLogManager {
     private final File baseDir;
 
     /** 初始化时，最新的 Generation 和 Offset */
-    private final GennerationAndOffset initial;
+    private final GenerationAndOffset initial;
 
-    public static PreLogManager getINSTANCE() {
-        if (INSTANCE == null) {
-            synchronized (PreLogManager.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new PreLogManager();
-                }
-            }
-        }
-        return INSTANCE;
-    }
-
-    private PreLogManager() {
+    protected BaseManager(String dir) {
         this.generationDirs = new ConcurrentSkipListMap<>();
         String relativelyPath = System.getProperty("user.dir");
-        this.baseDir = new File(relativelyPath + LogDir);
+        this.baseDir = new File(relativelyPath + dir);
         initial = load();
     }
 
     /**
      * 加载既存的目录们
      */
-    private GennerationAndOffset load() {
+    private GenerationAndOffset load() {
         baseDir.mkdirs();
 
         long latestGeneration = 0L;
@@ -63,13 +45,13 @@ public class PreLogManager {
             }
         }
 
-        GennerationAndOffset init;
+        GenerationAndOffset init;
 
         // 只要创建最新的那个 generation 即可
         try {
             Log latest = new Log(latestGeneration, createGenDirIfNEX(latestGeneration), 0);
             generationDirs.put(1L, latest);
-            init = new GennerationAndOffset(latestGeneration, latest.getCurrentOffset());
+            init = new GenerationAndOffset(latestGeneration, latest.getCurrentOffset());
         } catch (IOException e) {
             throw new HanabiException("操作日志初始化失败，项目无法启动");
         }
@@ -81,8 +63,8 @@ public class PreLogManager {
      * 添加一条操作日志到磁盘的入口
      */
     public void append(Operation operation) {
-        GennerationAndOffset operationId = ElectOperator.getInstance()
-                                                        .genOperationId();
+        GenerationAndOffset operationId = ElectOperator.getInstance()
+                                                       .genOperationId();
 
         Log log = maybeRoll(operationId.getGeneration());
         log.append(operation, operationId.getOffset());
@@ -126,7 +108,7 @@ public class PreLogManager {
                              .getValue();
     }
 
-    public GennerationAndOffset getInitial() {
+    public GenerationAndOffset getInitial() {
         return initial;
     }
 }
