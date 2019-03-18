@@ -1,28 +1,18 @@
 package com.anur.io.store.manager;
 
-import com.anur.config.InetSocketAddressConfigHelper;
+import java.nio.ByteBuffer;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18
- *
- * 预日志管理
  */
-public class PreLogManager extends BaseManager {
+public class PreLogManager {
 
-    public static volatile PreLogManager INSTANCE;
+    private final ByteBuf byteBuf;
 
-    public static PreLogManager getINSTANCE() {
-        if (INSTANCE == null) {
-            synchronized (PreLogManager.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new PreLogManager();
-                }
-            }
-        }
-        return INSTANCE;
-    }
-
-    private PreLogManager() {
-        super(InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\prelog\\");
+    public PreLogManager() {
+        this.byteBuf = Unpooled.buffer();
+        byteBuf.writeBytes(ByteBuffer.allocate(1));
     }
 }

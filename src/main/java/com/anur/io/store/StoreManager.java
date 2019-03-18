@@ -1,9 +1,6 @@
 package com.anur.io.store;
 
-import com.anur.core.elect.model.GenerationAndOffset;
-import com.anur.exception.HanabiException;
 import com.anur.io.store.manager.LogManager;
-import com.anur.io.store.manager.PreLogManager;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18
@@ -12,20 +9,14 @@ import com.anur.io.store.manager.PreLogManager;
  */
 public class StoreManager {
 
+    private static StoreManager INSTANCE;
+
+    /**
+     * 初始化所有日志
+     *
+     * 1、初始化 LogManager，加载所有的操作日志
+     */
     public void initial() {
         LogManager logManager = LogManager.getINSTANCE();
-        GenerationAndOffset logGAA = logManager.getInitial();
-
-        PreLogManager preLogManager = PreLogManager.getINSTANCE();
-        GenerationAndOffset preLogGAA = preLogManager.getInitial();
-
-        int result = logGAA.compareTo(preLogGAA);
-        if (result < 0) {
-            throw new HanabiException("预日志进度不应该比操作日志慢");
-        } else if (result == 0) {
-            // 不需要做任何操作
-        } else {
-            // 日志同步
-        }
     }
 }
