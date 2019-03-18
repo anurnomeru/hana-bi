@@ -8,12 +8,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.coordinate.CoordinateClientOperator.Register;
+import com.anur.core.util.ChannelManager;
+import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.io.core.coder.CoordinateEncoder;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.server.CoordinateServer;
+import com.anur.io.store.common.Operation;
+import com.anur.io.store.common.OperationTypeEnum;
+import com.anur.io.store.operationset.ByteBufferOperationSet;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 
 /**
@@ -46,14 +53,31 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        System.err.println(new String(msg.array()));
+        Operation operation = new Operation(msg);
+        switch (operation.getOperationTypeEnum()) {
+        case REGISTER:
+            ChannelManager.getInstance(ChannelType.COORDINATE)
+                          .register(operation.getKey(), ctx.channel());
+        }
     };
 
     /**
      * 需要在 channelPipeline 上挂载什么
      */
-    private static Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> {
-    };
+    private static Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new UnRegister());
+
+    /**
+     * Coordinate 断开连接时，需要从 ChannelManager 移除管理
+     */
+    static class UnRegister extends ChannelInboundHandlerAdapter {
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            super.channelInactive(ctx);
+            ChannelManager.getInstance(ChannelType.COORDINATE)
+                          .unRegister(ctx.channel());
+        }
+    }
 
     /**
      * 协调器的服务端是个纯单例，没什么特别的
