@@ -41,7 +41,7 @@ public class LogManager {
     private LogManager() {
         this.generationDirs = new ConcurrentSkipListMap<>();
         String relativelyPath = System.getProperty("user.dir");
-        this.baseDir = new File(relativelyPath + InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\prelog\\");
+        this.baseDir = new File(relativelyPath + InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\");
         this.initial = load();
     }
 
