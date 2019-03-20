@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
@@ -29,6 +31,7 @@ import com.anur.core.util.TimeUtil;
 import com.anur.exception.HanabiException;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/22
@@ -43,6 +46,13 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private static final long HEART_BEAT_MS = 700;
 
+    /**
+     * 协调器独享线程
+     */
+    private static Executor ElectControllerPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
+                                                                                                            .setNameFormat("Controller")
+                                                                                                            .build());
+
     private volatile static ElectOperator INSTANCE;
 
     private static Random RANDOM = new Random();
@@ -52,7 +62,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             synchronized (ElectOperator.class) {
                 if (INSTANCE == null) {
                     INSTANCE = new ElectOperator();
-                    HanabiExecutors.submit(INSTANCE);
+                    ElectControllerPool.execute(INSTANCE);
                 }
             }
         }
@@ -71,7 +81,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private long generation;
 
     /**
-     * 流水号，用于生成 id，集群内每一次由 Leader 发起的关键操作都会生成一个id {@link #genId()}，其中就需要自增 offset 号
+     * 流水号，用于生成 id，集群内每一次由 Leader 发起的关键操作都会生成一个id {@link #genOperationId()} ()}，其中就需要自增 offset 号
      */
     private long offset;
 
@@ -122,7 +132,11 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.heartBeat = new HeartBeat(InetSocketAddressConfigHelper.getServerName());
         this.clusters = InetSocketAddressConfigHelper.getCluster();
 
-        logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfigHelper.getServerName());
+        String serverName = InetSocketAddressConfigHelper.getServerName();
+        if (serverName == null || serverName.isEmpty()) {
+            throw new HanabiException("未正确配置 server.name 或 client.addr");
+        }
+        logger.info("初始化选举控制器 ElectOperator，本节点为 {}", serverName);
     }
 
     /**

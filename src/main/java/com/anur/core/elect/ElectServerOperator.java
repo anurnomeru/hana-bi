@@ -1,6 +1,8 @@
 package com.anur.core.elect;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +16,7 @@ import com.anur.core.elect.model.Votes;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.server.ElectServer;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelHandlerContext;
 
 /**
@@ -26,6 +29,13 @@ public class ElectServerOperator implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(ElectServerOperator.class);
 
     private volatile static ElectServerOperator INSTANCE;
+
+    /**
+     * 协调器独享线程
+     */
+    private static Executor ElectServerPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
+                                                                                                        .setNameFormat("Elector")
+                                                                                                        .build());
 
     /**
      * 关闭本服务的钩子
@@ -94,7 +104,7 @@ public class ElectServerOperator implements Runnable {
                 if (INSTANCE == null) {
                     INSTANCE = new ElectServerOperator();
                     INSTANCE.init();
-                    HanabiExecutors.submit(INSTANCE);
+                    ElectServerPool.execute(INSTANCE);
                 }
             }
         }

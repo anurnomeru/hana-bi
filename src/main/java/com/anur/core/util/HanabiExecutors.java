@@ -36,7 +36,7 @@ public class HanabiExecutors {
                                .availableProcessors();
         int threadCount = coreCount * 2;
         logger.info("创建 Hanabi 线程池 => 机器核心数为 {}, 故创建线程 {} 个", coreCount, threadCount);
-        Pool = new ThreadPoolExecutor(threadCount, threadCount, 5, TimeUnit.MILLISECONDS, MissionQueue, new ThreadFactoryBuilder().setNameFormat("Hana Pool")
+        Pool = new ThreadPoolExecutor(threadCount, threadCount, 5, TimeUnit.MILLISECONDS, MissionQueue, new ThreadFactoryBuilder().setNameFormat("Hana Pool - %s")
                                                                                                                                   .setDaemon(true)
                                                                                                                                   .build());
     }

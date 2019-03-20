@@ -2,6 +2,8 @@ package com.anur.core.coordinate;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import com.anur.io.coordinate.server.CoordinateServer;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationTypeEnum;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
@@ -33,6 +36,13 @@ public class CoordinateServerOperator implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(CoordinateServerOperator.class);
 
     private volatile static CoordinateServerOperator INSTANCE;
+
+    /**
+     * 协调器独享线程
+     */
+    private static Executor CoordinateServerPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
+                                                                                                             .setNameFormat("Coordinator")
+                                                                                                             .build());
 
     /**
      * 关闭本服务的钩子
@@ -88,7 +98,7 @@ public class CoordinateServerOperator implements Runnable {
                 if (INSTANCE == null) {
                     INSTANCE = new CoordinateServerOperator();
                     INSTANCE.init();
-                    HanabiExecutors.submit(INSTANCE);
+                    CoordinateServerPool.execute(INSTANCE);
                 }
             }
         }

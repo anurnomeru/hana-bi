@@ -59,7 +59,6 @@ public class ByteBufferOperationSet extends OperationSet {
 
     public int writeFullyTo(GatheringByteChannel gatheringByteChannel) throws IOException {
         byteBuffer.mark();
-        byteBuffer.rewind();// 原本没有这个，但是不加这里会死循环
         int written = 0;
         while (written < sizeInBytes()) {
             written += gatheringByteChannel.write(byteBuffer);

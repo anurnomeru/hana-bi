@@ -39,7 +39,7 @@ public class Timer {
      * 新建一个Timer，同时新建一个时间轮
      */
     private Timer() {
-        workerThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactoryBuilder().setPriority(10)
+        workerThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactoryBuilder().setPriority(5)
                                                                                        .setNameFormat("TimeWheelWorker")
                                                                                        .build());
         bossThreadPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
