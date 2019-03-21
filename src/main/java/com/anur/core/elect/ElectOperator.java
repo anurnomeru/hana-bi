@@ -136,7 +136,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         if (serverName == null || serverName.isEmpty()) {
             throw new HanabiException("未正确配置 server.name 或 client.addr");
         }
-        logger.info("初始化选举控制器 ElectOperator，本节点为 {}", serverName);
     }
 
     /**
@@ -600,7 +599,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     @Override
     public void run() {
         this.lockSupplier(() -> {
-            logger.debug("初始化选举控制器 待启动");
+            logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfigHelper.getServerName());
             try {
                 startLatch.await();
             } catch (InterruptedException e) {

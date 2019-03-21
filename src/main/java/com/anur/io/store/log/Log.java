@@ -66,7 +66,7 @@ public class Log extends ReentrantLocker {
                                                 .replace(LogCommon.IndexFileSuffix, LogCommon.LogFileSuffix));
 
                     if (!logFile.exists()) {
-                        logger.warn("日志索引文件 {} 被创建了，但并没有创建相应的日志切片文件", filename);
+                        logger.warn("世代 {} 日志索引文件 {} 被创建了，但并没有创建相应的日志切片文件", generation, filename);
                         file.delete();
                         break;
                     }
@@ -86,11 +86,11 @@ public class Log extends ReentrantLocker {
                             thisSegment.getOffsetIndex()
                                        .sanityCheck();
                         } catch (Exception e) {
-                            logger.info("日志 {} 的索引文件存在异常，正在重建索引文件。", filename);
+                            logger.info("世代 {} 日志 {} 的索引文件存在异常，正在重建索引文件。", generation, filename);
                             thisSegment.recover(LogConfigHelper.getMaxLogMessageSize());
                         }
                     } else {
-                        logger.info("日志 {} 的索引文件不存在，正在重建索引文件。", filename);
+                        logger.info("世代 {} 日志 {} 的索引文件不存在，正在重建索引文件。", generation, filename);
                         thisSegment.recover(LogConfigHelper.getMaxLogMessageSize());
                     }
 
@@ -100,7 +100,7 @@ public class Log extends ReentrantLocker {
         }
 
         if (segments.size() == 0) {
-            logger.info("当前目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", dir.getAbsolutePath());
+            logger.info("当前世代 {} 目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", generation, dir.getAbsolutePath());
             segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
         } else {
             currentOffset = activeSegment().lastOffset();
@@ -221,7 +221,7 @@ public class Log extends ReentrantLocker {
         if (offset <= recoveryPoint) {
             return;
         }
-        logger.debug("将日志 {} 刷盘，现刷盘至 offset {}，上次刷盘时间为 {}，现共有 {} 条消息还未刷盘。", name(), offset, lastFlushedTime.get(), unFlushedMessages());
+        logger.debug("将世代 {} 日志 {} 刷盘，现刷盘至 offset {}，上次刷盘时间为 {}，现共有 {} 条消息还未刷盘。", generation, name(), offset, lastFlushedTime.get(), unFlushedMessages());
 
         for (LogSegment logSegment : getLogSegments(recoveryPoint, offset)) {
             logSegment.flush();

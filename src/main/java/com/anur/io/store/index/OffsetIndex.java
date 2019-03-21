@@ -23,6 +23,7 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantLocker;
@@ -88,6 +89,7 @@ public class OffsetIndex extends ReentrantLocker {
             if (newlyCreated) {// 新创建的索引文件从0开始写
                 this.mmap.position(0);
             } else {// 非新创建的则从limit，也就是读的尽头开始写
+
                 this.mmap.position(roundToExactMultiple(this.mmap.limit(), FACTOR));
             }
         } finally {
@@ -231,7 +233,7 @@ public class OffsetIndex extends ReentrantLocker {
                 throw new HanabiException("Attempt to append to a full index (size = " + entries + ").");
             }
             if (entries == 0 || offset > lastOffset) {
-                logger.info("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引", baseOffset + ".index", offset, position);
+                logger.debug("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引", baseOffset + ".index", offset, position);
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
                 entries++;
