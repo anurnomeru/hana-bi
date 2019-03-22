@@ -16,7 +16,17 @@ public interface PreLogger {
     void append(Operation operation, long offset);
 
     /**
-     * 获取此消息之后的日志
+     * 获取此消息之后的消息（不包括 targetOffset 这一条）
      */
-    ByteBuf getAfter(long offset, boolean inclusive);
+    ByteBuf getAfter(long offset);
+
+    /**
+     * 获获取此消息之前的消息（包括 targetOffset 这一条）
+     */
+    ByteBuf getBefore(long offset);
+
+    /**
+     * 清除之前的 ByteBuf
+     */
+    void discardBefore(long offset);
 }

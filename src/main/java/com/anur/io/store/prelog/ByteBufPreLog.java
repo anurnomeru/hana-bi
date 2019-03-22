@@ -30,16 +30,6 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
         this.generation = generation;
     }
 
-    public static void main(String[] args) {
-        ByteBufPreLog preLog = new ByteBufPreLog(10);
-
-        for (int i = 0; i < 1000; i++) {
-            preLog.append(new Operation(OperationTypeEnum.REGISTER, "", ""), i);
-        }
-
-        ByteBuf byteBuf = preLog.getAfter(995, true);
-    }
-
     /**
      * 将消息添加到内存中
      */
@@ -61,21 +51,25 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
             int size = operation.size();
             byteBuf.writeLong(offset);
             byteBuf.writeInt(size);
-            byteBuf.addComponent(Unpooled.wrappedBuffer(operation.getByteBuffer()));
+            byteBuf.addComponent(true, Unpooled.wrappedBuffer(operation.getByteBuffer()));
 
             return null;
         });
     }
 
     /**
-     * 获取此消息之后的消息
+     * 获取此消息之后的消息（不包括 targetOffset 这一条）
      */
     @Override
-    public ByteBuf getAfter(long targetOffset, boolean inclusive) {
-        ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.tailMap(targetOffset, inclusive);
+    public ByteBuf getAfter(long targetOffset) {
+        ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.tailMap(targetOffset, true);
 
         if (result.size() == 0) {
-            result = preLog.tailMap(targetOffset - maxByteBufOperationSize, inclusive);
+            result = preLog.tailMap(targetOffset - maxByteBufOperationSize, true);
+        }
+
+        if (result.size() == 0) {
+            return null;
         }
 
         CompositeByteBuf firstOne = result.firstEntry()
@@ -84,7 +78,7 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
         CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
         for (Entry<Long, CompositeByteBuf> e : result.entrySet()) {
             if (e.getValue() != firstOne) {
-                compositeByteBuf.addComponent(e.getValue());
+                compositeByteBuf.addComponent(true, e.getValue());
             } else {
                 // 因为ByteBuffer里面可以装 maxByteBufOperationSize 个 byteBuffer，所以...
                 ByteBuf dup = firstOne.duplicate();
@@ -96,6 +90,10 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
                 while (offset != targetOffset) {
                     offsetAndSize.discardReadBytes();
 
+                    if (dup.readableBytes() < 12) {
+                        break;
+                    }
+
                     dup.readBytes(offsetAndSize);
 
                     offset = offsetAndSize.readLong();
@@ -104,10 +102,70 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
                     dup.readerIndex(dup.readerIndex() + size);
                 }
 
-                compositeByteBuf.addComponent(dup.slice());
+                compositeByteBuf.addComponent(true, dup.slice());
             }
         }
 
-        return null;
+        return compositeByteBuf.writerIndex() == 0 ? null : compositeByteBuf;
+    }
+
+    /**
+     * 获取此消息之前的消息（不包括 targetOffset 这一条）
+     */
+    @Override
+    public ByteBuf getBefore(long targetOffset) {
+        ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.headMap(targetOffset, true);
+
+        if (result.size() == 0) {
+            result = preLog.tailMap(targetOffset - maxByteBufOperationSize, true);
+        }
+
+        if (result.size() == 0) {
+            return null;
+        }
+
+        CompositeByteBuf lastOne = result.lastEntry()
+                                         .getValue();
+
+        CompositeByteBuf compositeByteBuf = Unpooled.compositeBuffer();
+        for (Entry<Long, CompositeByteBuf> e : result.entrySet()) {
+            if (e.getValue() != lastOne) {
+                compositeByteBuf.addComponent(true, e.getValue());
+            } else {
+                // 因为ByteBuffer里面可以装 maxByteBufOperationSize 个 byteBuffer，所以...
+                ByteBuf dup = lastOne.duplicate();
+                ByteBuf offsetAndSize = Unpooled.buffer(12);
+
+                long offset = -1;
+                int size = -1;
+
+                while (offset != targetOffset) {
+                    offsetAndSize.discardReadBytes();
+
+                    if (dup.readableBytes() < 12) {
+                        break;
+                    }
+
+                    dup.readBytes(offsetAndSize);
+
+                    offset = offsetAndSize.readLong();
+                    size = offsetAndSize.readInt();
+
+                    dup.readerIndex(dup.readerIndex() + size);
+                }
+
+                compositeByteBuf.addComponent(true, dup.slice(0, dup.readerIndex()));
+            }
+        }
+
+        return compositeByteBuf.writerIndex() == 0 ? null : compositeByteBuf;
+    }
+
+    @Override
+    public void discardBefore(long offset) {
+        ConcurrentNavigableMap<Long, CompositeByteBuf> discardMap = preLog.subMap(0L, true, offset - maxByteBufOperationSize, false);
+        for (Long key : discardMap.keySet()) {
+            preLog.remove(key);
+        }
     }
 }
