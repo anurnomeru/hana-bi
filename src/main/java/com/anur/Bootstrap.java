@@ -42,16 +42,16 @@ public class Bootstrap {
                          .resetGenerationAndOffset(logManager.getInitial())
                          .start();
 
-            try {
-                Thread.sleep(5000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            for (int i = 0; i < 1000; i++) {
-
-                logManager.append(new Operation(OperationTypeEnum.SETNX, "k", "v"));
-            }
+//            try {
+//                Thread.sleep(5000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//
+//            for (int i = 0; i < 10000000; i++) {
+//
+//                logManager.append(new Operation(OperationTypeEnum.SETNX, "k", "v"));
+//            }
         });
 
         while (RUNNING) {

@@ -22,7 +22,8 @@ public class LogManager {
         if (INSTANCE == null) {
             synchronized (LogManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new LogManager();
+                    String relativelyPath = System.getProperty("user.dir");
+                    INSTANCE = new LogManager(new File(relativelyPath + "\\" + InetSocketAddressConfigHelper.getServerName() + "\\log\\aof\\"));
                 }
             }
         }
@@ -38,10 +39,9 @@ public class LogManager {
     /** 初始化时，最新的 Generation 和 Offset */
     private GenerationAndOffset initial;
 
-    private LogManager() {
+    public LogManager(File path) {
         this.generationDirs = new ConcurrentSkipListMap<>();
-        String relativelyPath = System.getProperty("user.dir");
-        this.baseDir = new File(relativelyPath + "\\" + InetSocketAddressConfigHelper.getServerName() + "\\store\\aof\\");
+        this.baseDir = path;
         this.initial = load();
     }
 

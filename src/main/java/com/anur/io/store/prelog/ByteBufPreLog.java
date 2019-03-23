@@ -5,7 +5,6 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.io.store.common.Operation;
-import com.anur.io.store.common.OperationTypeEnum;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;
@@ -13,7 +12,7 @@ import io.netty.buffer.Unpooled;
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18
  *
- * 预日志
+ * 内存版预日志，主要用于子节点不断从leader节点同步预消息
  */
 public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
 
