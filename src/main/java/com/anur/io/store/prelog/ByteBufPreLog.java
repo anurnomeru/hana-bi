@@ -50,7 +50,6 @@ public class ByteBufPreLog extends ReentrantLocker {
             byteBuf.writeLong(offset);
             byteBuf.writeInt(size);
             byteBuf.addComponent(true, Unpooled.wrappedBuffer(operation.getByteBuffer()));
-
             return null;
         });
     }
