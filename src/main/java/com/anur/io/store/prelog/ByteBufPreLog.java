@@ -14,7 +14,7 @@ import io.netty.buffer.Unpooled;
  *
  * 内存版预日志，主要用于子节点不断从leader节点同步预消息
  */
-public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
+public class ByteBufPreLog extends ReentrantLocker {
 
     private static final int maxByteBufOperationSize = 10;
 
@@ -32,7 +32,6 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
     /**
      * 将消息添加到内存中
      */
-    @Override
     public void append(Operation operation, long offset) {
         this.lockSupplier(() -> {
             byteBufOperationSize++;
@@ -59,7 +58,6 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
     /**
      * 获取此消息之后的消息（不包括 targetOffset 这一条）
      */
-    @Override
     public ByteBuf getAfter(long targetOffset) {
         ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.tailMap(targetOffset, true);
 
@@ -111,7 +109,6 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
     /**
      * 获取此消息之前的消息（不包括 targetOffset 这一条）
      */
-    @Override
     public ByteBuf getBefore(long targetOffset) {
         ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.headMap(targetOffset, true);
 
@@ -160,7 +157,6 @@ public class ByteBufPreLog extends ReentrantLocker implements PreLogger {
         return compositeByteBuf.writerIndex() == 0 ? null : compositeByteBuf;
     }
 
-    @Override
     public void discardBefore(long offset) {
         ConcurrentNavigableMap<Long, CompositeByteBuf> discardMap = preLog.subMap(0L, true, offset - maxByteBufOperationSize, false);
         for (Long key : discardMap.keySet()) {

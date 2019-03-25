@@ -8,7 +8,7 @@ import io.netty.buffer.ByteBuf;
 /**
  * Created by Anur IjuoKaruKas on 2019/3/22
  */
-public class TestbyteBufPreLog {
+public class TestByteBufPreLog {
 
     public static void main(String[] args) {
         ByteBufPreLog preLog = new ByteBufPreLog(10);

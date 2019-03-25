@@ -13,7 +13,7 @@ public interface PreLogger {
     /**
      * 将消息追加到预日志中
      */
-    void append(Operation operation, long offset);
+    void append(Operation operation);
 
     /**
      * 获取此消息之后的消息（不包括 targetOffset 这一条）
