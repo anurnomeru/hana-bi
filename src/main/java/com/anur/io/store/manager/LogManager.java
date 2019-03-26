@@ -31,7 +31,7 @@ public class LogManager {
     }
 
     /** 管理所有 Log */
-    private final ConcurrentSkipListMap<Long, Log> generationDirs;
+    protected final ConcurrentSkipListMap<Long, Log> generationDirs;
 
     /** 基础目录 */
     private final File baseDir;

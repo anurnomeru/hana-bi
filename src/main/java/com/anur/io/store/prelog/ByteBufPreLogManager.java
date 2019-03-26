@@ -1,5 +1,7 @@
 package com.anur.io.store.prelog;
 
+import java.util.concurrent.ConcurrentSkipListMap;
+import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.io.store.common.Operation;
 import io.netty.buffer.ByteBuf;
 
@@ -8,22 +10,24 @@ import io.netty.buffer.ByteBuf;
  */
 public class ByteBufPreLogManager implements PreLogger {
 
+    private ConcurrentSkipListMap<Long, ByteBufPreLog> preLog;
+
     @Override
     public void append(Operation operation) {
     }
 
     @Override
-    public ByteBuf getAfter(long offset) {
+    public ByteBuf getAfter(GenerationAndOffset GAO) {
         return null;
     }
 
     @Override
-    public ByteBuf getBefore(long offset) {
+    public ByteBuf getBefore(GenerationAndOffset GAO) {
         return null;
     }
 
     @Override
-    public void discardBefore(long offset) {
+    public void discardBefore(GenerationAndOffset GAO) {
 
     }
 }
