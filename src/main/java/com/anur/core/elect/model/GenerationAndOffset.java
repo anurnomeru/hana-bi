@@ -40,4 +40,12 @@ public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
             return -1;
         }
     }
+
+    @Override
+    public String toString() {
+        return "GenerationAndOffset{" +
+            "generation=" + generation +
+            ", offset=" + offset +
+            '}';
+    }
 }

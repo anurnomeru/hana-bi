@@ -80,6 +80,7 @@ public class OffsetManager extends ReentrantReadWriteLocker {
                 current = null;
                 mmap.putLong(GAO.getGeneration());
                 mmap.putLong(GAO.getOffset());
+                mmap.rewind();
                 return null;
             }
         );

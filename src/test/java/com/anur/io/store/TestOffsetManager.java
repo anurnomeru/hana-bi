@@ -11,10 +11,10 @@ public class TestOffsetManager {
         OffsetManager offsetManager = OffsetManager.getINSTANCE();
         System.out.println(offsetManager.load());
         System.out.println(offsetManager.load());
-        offsetManager.cover(new GenerationAndOffset(10, 5));
+        offsetManager.cover(new GenerationAndOffset(1231233123123L, 123123123123L));
         System.out.println(offsetManager.load());
         System.out.println(offsetManager.load());
-        offsetManager.cover(new GenerationAndOffset(10, 6));
+        offsetManager.cover(new GenerationAndOffset(9, 1));
         System.out.println(offsetManager.load());
         System.out.println(offsetManager.load());
     }
