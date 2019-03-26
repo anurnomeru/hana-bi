@@ -4,9 +4,7 @@ import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
 import com.anur.core.util.HanabiExecutors;
-import com.anur.io.store.common.Operation;
-import com.anur.io.store.common.OperationTypeEnum;
-import com.anur.io.store.manager.LogManager;
+import com.anur.io.store.log.LogManager;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/13
