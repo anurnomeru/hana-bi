@@ -10,14 +10,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.util.HanabiExecutors;
-import com.anur.io.core.coder.ElectCoder;
-import com.anur.io.core.coder.ElectProtocolEnum;
+import com.anur.core.Cluster;
 import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
@@ -28,8 +27,11 @@ import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.TimeUtil;
 import com.anur.exception.HanabiException;
+import com.anur.io.core.coder.ElectCoder;
+import com.anur.io.core.coder.ElectProtocolEnum;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -131,7 +133,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private boolean clusterValid;
 
-    private List<Runnable> doWhenClusterValid;
+    private List<Consumer<Cluster>> doWhenClusterValid;
 
     private List<Runnable> doWhenClusterInvalid;
 
@@ -191,7 +193,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             }
 
             logger.info("Election Timeout 到期，可能期间内未收到来自 Leader 的心跳包或上一轮选举没有在期间内选出 Leader，故本节点即将发起选举");
-            CoordinateClientOperator.shutDownInstance("与协调 Leader 断开连接");
 
             updateGeneration("本节点发起了选举");// this.generation ++
 
@@ -364,11 +365,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                     // 将那个节点设为leader节点
                     this.leaderServerName = leaderServerName;
-
-                    CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(leaderServerName))
-                                            .tryStartWhileDisconnected();
-
                     this.beginElectTime = 0;
+
+                    this.changeClusterState(true);
                 }
 
                 // 重置成为候选者任务
@@ -642,7 +641,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
             if (valid) {
                 logger.info("集群状态 => 可用");
-                this.doWhenClusterValid.forEach(HanabiExecutors::submit);
+                Cluster cluster = new Cluster(leaderServerName, clusters);
+                this.doWhenClusterValid.forEach(c -> HanabiExecutors.submit(() -> c.accept(cluster)));
             } else {
                 logger.info("集群状态 => 不可用");
                 this.doWhenClusterInvalid.forEach(HanabiExecutors::submit);
@@ -651,11 +651,15 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         });
     }
 
-    public void registerWhenClusterValid(Runnable runnable) {
-        this.doWhenClusterValid.add(runnable);
+    public void registerWhenClusterValid(Consumer<Cluster> clusterConsumer) {
+        this.doWhenClusterValid.add(clusterConsumer);
     }
 
     public void registerWhenClusterInvalid(Runnable runnable) {
         this.doWhenClusterInvalid.add(runnable);
+    }
+
+    public List<HanabiNode> getClusters() {
+        return clusters;
     }
 }

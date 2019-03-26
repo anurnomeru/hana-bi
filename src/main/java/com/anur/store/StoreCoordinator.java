@@ -10,9 +10,6 @@ import com.anur.store.core.StoreOperator;
  */
 public class StoreCoordinator {
 
-
-
-
     private static volatile StoreCoordinator INSTANCE;
 
     public static StoreCoordinator getINSTANCE() {
