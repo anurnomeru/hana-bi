@@ -1,5 +1,6 @@
 package com.anur.core.elect;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectProtocolEnum;
 import com.anur.core.coordinate.CoordinateClientOperator;
@@ -119,7 +121,19 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private String leaderServerName;
 
+    /**
+     * 仅用于统计选主用了多长时间
+     */
     private long beginElectTime;
+
+    /**
+     * 集群是否可用
+     */
+    private boolean clusterValid;
+
+    private List<Runnable> doWhenClusterValid;
+
+    private List<Runnable> doWhenClusterInvalid;
 
     private ElectOperator() {
         this.generation = 0;
@@ -130,6 +144,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.startLatch = new CountDownLatch(1);
         this.heartBeat = new HeartBeat(InetSocketAddressConfigHelper.getServerName());
         this.clusters = InetSocketAddressConfigHelper.getCluster();
+        this.clusterValid = false;
+        this.doWhenClusterValid = new ArrayList<>();
+        this.doWhenClusterInvalid = new ArrayList<>();
 
         String serverName = InetSocketAddressConfigHelper.getServerName();
         if (serverName == null || serverName.isEmpty()) {
@@ -310,6 +327,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
             this.heartBeatTask();
             this.leaderServerName = InetSocketAddressConfigHelper.getServerName();
+            this.changeClusterState(true);
             return null;
         });
     }
@@ -404,6 +422,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (this.nodeRole == NodeRole.Follower) {
                 logger.info("本节点角色由 {} 变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
                 this.nodeRole = NodeRole.Candidate;
+                this.changeClusterState(false);
                 return true;
             } else {
                 logger.debug("本节点的角色已经是 {} ，无法变更为 {}", this.nodeRole.name(), NodeRole.Candidate.name());
@@ -608,5 +627,35 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             this.becomeCandidateAndBeginElectTask(this.generation);
             return null;
         });
+    }
+
+    /**
+     * 集群是否处于正常状态
+     */
+    private void changeClusterState(boolean valid) {
+        this.lockSupplier(() -> {
+            if (this.clusterValid == valid) {
+                return null;
+            }
+
+            this.clusterValid = valid;
+
+            if (valid) {
+                logger.info("集群状态 => 可用");
+                this.doWhenClusterValid.forEach(HanabiExecutors::submit);
+            } else {
+                logger.info("集群状态 => 不可用");
+                this.doWhenClusterInvalid.forEach(HanabiExecutors::submit);
+            }
+            return null;
+        });
+    }
+
+    public void registerWhenClusterValid(Runnable runnable) {
+        this.doWhenClusterValid.add(runnable);
+    }
+
+    public void registerWhenClusterInvalid(Runnable runnable) {
+        this.doWhenClusterInvalid.add(runnable);
     }
 }
