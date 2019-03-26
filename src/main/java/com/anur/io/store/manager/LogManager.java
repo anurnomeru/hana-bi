@@ -33,6 +33,9 @@ public class LogManager {
     /** 管理所有 Log */
     protected final ConcurrentSkipListMap<Long, Log> generationDirs;
 
+    /** 最新的那个 offset */
+    protected volatile long currentOffset;
+
     /** 基础目录 */
     private final File baseDir;
 
@@ -79,6 +82,8 @@ public class LogManager {
     public void append(Operation operation) {
         GenerationAndOffset operationId = ElectOperator.getInstance()
                                                        .genOperationId();
+
+        currentOffset = operationId.getOffset();
 
         Log log = maybeRoll(operationId.getGeneration());
         log.append(operation, operationId.getOffset());

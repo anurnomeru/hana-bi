@@ -91,6 +91,21 @@ public class FileOperationSet extends OperationSet {
     }
 
     /**
+     * 获取 File
+     */
+    public File getFile() {
+        return file;
+    }
+
+    public int getStart() {
+        return start;
+    }
+
+    public int getEnd() {
+        return end;
+    }
+
+    /**
      * 创建一个非分片的FileOperationSet
      */
     public FileOperationSet(File file, FileChannel fileChannel) throws IOException {
