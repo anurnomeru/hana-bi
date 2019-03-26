@@ -1,10 +1,11 @@
 package com.anur.core.elect.model;
 
-
 /**
  * Created by Anur IjuoKaruKas on 2019/3/12
  */
 public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
+
+    public static final GenerationAndOffset INVALID = new GenerationAndOffset(-1, -1);
 
     private long generation;
 

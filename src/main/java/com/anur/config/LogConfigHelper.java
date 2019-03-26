@@ -5,6 +5,15 @@ package com.anur.config;
  */
 public class LogConfigHelper extends ConfigHelper {
 
+    private static String relativelyPath;
+
+    public static String getBaseDir() {
+        if (relativelyPath == null) {// 并发没关系，这个并不会变动
+            relativelyPath = System.getProperty("user.dir");
+        }
+        return relativelyPath + "\\" + InetSocketAddressConfigHelper.getServerName();
+    }
+
     public static int getIndexInterval() {
         return getConfig(ConfigEnum.LOG_INDEX_INTERVAL, Integer::valueOf);
     }

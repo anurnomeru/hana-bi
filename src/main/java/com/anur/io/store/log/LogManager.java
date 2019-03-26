@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
-import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.LogConfigHelper;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.exception.HanabiException;
@@ -23,8 +23,7 @@ public class LogManager {
         if (INSTANCE == null) {
             synchronized (LogManager.class) {
                 if (INSTANCE == null) {
-                    String relativelyPath = System.getProperty("user.dir");
-                    INSTANCE = new LogManager(new File(relativelyPath + "\\" + InetSocketAddressConfigHelper.getServerName() + "\\log\\aof\\"));
+                    INSTANCE = new LogManager(new File(LogConfigHelper.getBaseDir() + "\\log\\aof\\"));
                 }
             }
         }
