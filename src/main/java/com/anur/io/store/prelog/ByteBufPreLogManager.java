@@ -1,10 +1,12 @@
 package com.anur.io.store.prelog;
 
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.exception.HanabiException;
-import com.anur.io.store.common.Operation;
+import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.store.operationset.ByteBufferOperationSet;
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -14,7 +16,17 @@ public class ByteBufPreLogManager {
 
     private ConcurrentSkipListMap<Long, ByteBufPreLog> preLog;
 
-    public void append(Operation operation) {
+    /**
+     * 此添加必须保证所有的操作日志都在同一个世代，实际上也确实如此
+     */
+    public void append(long generation, ByteBufferOperationSet byteBufferOperationSet) {
+        ByteBufPreLog byteBufPreLog = preLog.compute(generation, (aLong, b) -> b == null ? new ByteBufPreLog(generation) : b);
+        Iterator<OperationAndOffset> iterator = byteBufferOperationSet.iterator();
+
+        while (iterator.hasNext()) {
+            OperationAndOffset operationAndOffset = iterator.next();
+            byteBufPreLog.append(operationAndOffset.getOperation(), operationAndOffset.getOffset());
+        }
     }
 
     /**

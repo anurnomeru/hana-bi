@@ -112,15 +112,15 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                     return strings;
                 });
 
-                GenerationAndOffset approch = null;
+                GenerationAndOffset approach = null;
                 for (Entry<GenerationAndOffset, Set<String>> entry : offsetCommitMap.entrySet()) {
                     if (entry.getValue()
-                             .size() > clusters.size() / 2 + 1) {
-
+                             .size() >= validCommitCountNeed) {
+                        approach = entry.getKey();
                     }
                 }
 
-                return null;
+                return approach;
             });
 
             return null;

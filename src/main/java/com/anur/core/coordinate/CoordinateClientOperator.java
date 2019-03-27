@@ -55,7 +55,7 @@ public class CoordinateClientOperator implements Runnable {
      * 如何消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
-        System.out.println(new String(msg.array()));
+        Operation operation = new Operation(msg);
     };
 
     /**

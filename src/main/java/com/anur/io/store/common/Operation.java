@@ -55,7 +55,7 @@ public class Operation {
         this.buffer = buffer;
 
         buffer.position(OperationConstant.TypeOffset);
-        this.operationTypeEnum = OperationTypeEnum.parseBybyteSign(buffer.getInt());
+        this.operationTypeEnum = OperationTypeEnum.parseByByteSign(buffer.getInt());
 
         int kSize = buffer.getInt();
         byte[] kByte = new byte[kSize];
