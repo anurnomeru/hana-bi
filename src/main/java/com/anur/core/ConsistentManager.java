@@ -1,11 +1,21 @@
 package com.anur.core;
 
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.ElectOperator;
+import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
+import com.anur.io.store.OffsetManager;
+import com.anur.io.store.common.OffsetAndPosition;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/26
@@ -17,6 +27,16 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
     private static volatile ConsistentManager INSTANCE;
 
     private volatile boolean clusterValid;
+
+    private volatile List<HanabiNode> clusters;
+
+    private volatile int validCommitCountNeed;
+
+    private ConcurrentSkipListMap<GenerationAndOffset, Set<String>> offsetCommitMap;
+
+    private Map<String, GenerationAndOffset> nodeCommitMap;
+
+    private boolean isLeader;
 
     public static ConsistentManager getINSTANCE() {
         if (INSTANCE == null) {
@@ -30,22 +50,80 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
     }
 
     public ConsistentManager() {
+        disabled();
 
         ElectOperator.getInstance()
                      .registerWhenClusterValid(cluster -> writeLockSupplier(() -> {
                          clusterValid = true;
-                         CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
-                                                 .tryStartWhileDisconnected();
-                         System.err.println("触发集群可用啦");
+                         isLeader = InetSocketAddressConfigHelper.getServerName()
+                                                                 .equals(cluster.getLeader());
+
+                         if (isLeader) {
+                             clusters = cluster.getClusters();
+                             validCommitCountNeed = clusters.size() / 2 + 1;
+                         } else {
+                             CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
+                                                     .tryStartWhileDisconnected();
+                         }
+
                          return null;
                      }));
 
         ElectOperator.getInstance()
-                     .registerWhenClusterInvalid(() -> writeLockSupplier(() -> {
-                         clusterValid = false;
-                         CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
-                         System.err.println("触发集群不可用啦");
-                         return null;
-                     }));
+                     .registerWhenClusterInvalid(this::disabled);
+    }
+
+    private void disabled() {
+        writeLockSupplier(() -> {
+            clusterValid = false;
+            isLeader = false;
+            clusters = null;
+            validCommitCountNeed = Integer.MAX_VALUE;
+            CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
+            return null;
+        });
+    }
+
+    public GenerationAndOffset commitAck(String node, GenerationAndOffset GAO) {
+        return readLockSupplier(() -> {
+            GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
+                                                         .load();
+            if (GAOLatest.compareTo(GAO) > 0) {// 小于已经 commit 的 GAO 无需记录
+                return GAOLatest;
+            }
+
+            GenerationAndOffset GAOCommitBefore = nodeCommitMap.get(node);
+            if (GAOCommitBefore != null && GAOCommitBefore.compareTo(GAO) > 0) {// 小于之前提交记录的无需记录
+                return GAOLatest;
+            }
+
+            writeLockSupplier(() -> {
+                if (GAOCommitBefore != null) {
+                    offsetCommitMap.get(GAOCommitBefore)
+                                   .remove(node);
+                }
+
+                nodeCommitMap.put(node, GAO);
+                offsetCommitMap.compute(GAO, (generationAndOffset, strings) -> {
+                    if (strings == null) {
+                        strings = new HashSet<>();
+                    }
+                    strings.add(node);
+                    return strings;
+                });
+
+                GenerationAndOffset approch = null;
+                for (Entry<GenerationAndOffset, Set<String>> entry : offsetCommitMap.entrySet()) {
+                    if (entry.getValue()
+                             .size() > clusters.size() / 2 + 1) {
+
+                    }
+                }
+
+                return null;
+            });
+
+            return null;
+        });
     }
 }

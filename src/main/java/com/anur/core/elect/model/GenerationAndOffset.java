@@ -1,5 +1,6 @@
 package com.anur.core.elect.model;
 
+import java.util.Optional;
 /**
  * Created by Anur IjuoKaruKas on 2019/3/12
  */
@@ -22,6 +23,16 @@ public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
 
     public long getOffset() {
         return offset;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return Optional.ofNullable(obj)
+                       .filter(o -> o instanceof GenerationAndOffset)
+                       .map(o ->
+                           ((GenerationAndOffset) o).generation == this.generation
+                               && ((GenerationAndOffset) o).offset == this.offset)
+                       .orElse(false);
     }
 
     @Override
