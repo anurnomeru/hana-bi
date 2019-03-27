@@ -71,7 +71,6 @@ public class CoordinateClientOperator implements Runnable {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
-            System.err.println("进行协调注册");
             Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
             CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), operation.getByteBuffer());
         }
@@ -81,15 +80,12 @@ public class CoordinateClientOperator implements Runnable {
      * 连接Leader节点的协调器连接，只能同时存在一个，如果要连接新的Leader，则需要将旧节点的连接关闭
      */
     public static CoordinateClientOperator getInstance(HanabiNode hanabiNode) {
-        if (INSTANCE == null || !hanabiNode.getServerName()
-                                           .equals(INSTANCE.hanabiNode)) {
+        if (INSTANCE == null || !hanabiNode.equals(INSTANCE.hanabiNode)) {
             synchronized (CoordinateClientOperator.class) {
 
-                if (INSTANCE == null || !hanabiNode.getServerName()
-                                                   .equals(INSTANCE.hanabiNode)) {
+                if (INSTANCE == null || !hanabiNode.equals(INSTANCE.hanabiNode)) {
 
-                    if (INSTANCE != null && !hanabiNode.getServerName()
-                                                       .equals(INSTANCE.hanabiNode)) {
+                    if (INSTANCE != null && !hanabiNode.equals(INSTANCE.hanabiNode)) {
                         INSTANCE.shutDown();
                     }
 

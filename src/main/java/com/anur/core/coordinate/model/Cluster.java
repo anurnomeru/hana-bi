@@ -1,4 +1,4 @@
-package com.anur.core;
+package com.anur.core.coordinate.model;
 
 import java.util.List;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
