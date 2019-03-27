@@ -9,18 +9,13 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.coordinate.CoordinateClientOperator.Register;
+import com.anur.core.command.coordinate.Register;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
-import com.anur.io.core.coder.CoordinateEncoder;
-import com.anur.io.core.coder.ElectCoder;
-import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
-import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.server.CoordinateServer;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationTypeEnum;
-import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -63,11 +58,15 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        Operation operation = new Operation(msg);
-        switch (operation.getOperationTypeEnum()) {
+        msg.mark();
+        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt());
+        msg.reset();
+        switch (typeEnum) {
         case REGISTER:
+            Register register = new Register(msg);
+            logger.error("收到了来自节点%s的注册消息！！！！！！", register.getServerName());
             ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .register(operation.getKey(), ctx.channel());
+                          .register(register.getServerName(), ctx.channel());
         }
     };
 

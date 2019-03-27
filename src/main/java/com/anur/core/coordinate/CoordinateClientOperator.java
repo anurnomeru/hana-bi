@@ -9,12 +9,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.command.coordinate.Register;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
 import com.anur.io.core.coder.CoordinateEncoder;
 import com.anur.io.store.common.Operation;
-import com.anur.io.store.common.OperationTypeEnum;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -61,19 +61,19 @@ public class CoordinateClientOperator implements Runnable {
     /**
      * 需要在 channelPipeline 上挂载什么
      */
-    private static Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new Register());
+    private static Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter());
 
     /**
      * Coordinate 初始化连接时的注册器
      */
-    static class Register extends ChannelInboundHandlerAdapter {
+    static class RegisterAdapter extends ChannelInboundHandlerAdapter {
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
-            Operation operation = new Operation(OperationTypeEnum.REGISTER, InetSocketAddressConfigHelper.getServerName(), "");
-            ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation.getByteBuffer());
-            CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), byteBufferOperationSet.getByteBuffer());
+            System.err.println("进行协调注册");
+            Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
+            CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), operation.getByteBuffer());
         }
     }
 

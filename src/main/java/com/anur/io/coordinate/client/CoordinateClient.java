@@ -9,6 +9,7 @@ import com.anur.io.core.client.ReconnectableClient;
 import com.anur.io.core.coder.CoordinateDecoder;
 import com.anur.io.core.coder.CoordinateEncoder;
 import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;
+import com.anur.io.core.handle.ErrorHandler;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationTypeEnum;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
@@ -43,7 +44,8 @@ public class CoordinateClient extends ReconnectableClient {
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         channelPipeline.addLast(new CoordinateDecoder())
-                       .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
+                       .addLast(new ByteBufferMsgConsumerHandler(msgConsumer))
+                       .addLast(new ErrorHandler());
 
         channelPipelineConsumer.accept(channelPipeline);
         return channelPipeline;

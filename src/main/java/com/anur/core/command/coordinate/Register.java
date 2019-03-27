@@ -1,5 +1,6 @@
 package com.anur.core.command.coordinate;
 
+import java.nio.ByteBuffer;
 import com.anur.io.store.common.Operation;
 import com.anur.io.store.common.OperationTypeEnum;
 
@@ -10,6 +11,10 @@ public class Register extends Operation {
 
     public Register(String serverName) {
         super(OperationTypeEnum.REGISTER, serverName, "");
+    }
+
+    public Register(ByteBuffer buffer) {
+        super(buffer);
     }
 
     public String getServerName() {

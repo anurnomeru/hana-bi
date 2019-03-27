@@ -7,6 +7,7 @@ import com.anur.core.util.ShutDownHooker;
 import com.anur.io.core.coder.CoordinateDecoder;
 import com.anur.io.core.coder.CoordinateEncoder;
 import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;
+import com.anur.io.core.handle.ErrorHandler;
 import com.anur.io.core.handle.StrMsgConsumeHandler;
 import com.anur.io.core.server.Server;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,7 +37,8 @@ public class CoordinateServer extends Server {
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         channelPipeline.addLast(new CoordinateDecoder())
-                       .addLast(new ByteBufferMsgConsumerHandler(msgConsumer));
+                       .addLast(new ByteBufferMsgConsumerHandler(msgConsumer))
+                       .addLast(new ErrorHandler());
         channelPipelineConsumer.accept(channelPipeline);
         return channelPipeline;
     }

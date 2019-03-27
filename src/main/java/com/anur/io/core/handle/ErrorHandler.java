@@ -1,5 +1,6 @@
 package com.anur.io.core.handle;
 
+import com.anur.exception.HanabiException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
@@ -10,5 +11,6 @@ public class ErrorHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        throw new HanabiException(cause.getMessage(), cause);
     }
 }

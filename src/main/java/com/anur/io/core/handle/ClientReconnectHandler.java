@@ -52,6 +52,6 @@ public class ClientReconnectHandler extends ChannelInboundHandlerAdapter {
         }
         ctx.close();
         logger.debug("与节点 {} [{}] 的连接断开，原因：{}", serverName, ctx.channel()
-                                                               .remoteAddress(), cause);
+                                                               .remoteAddress(), cause.getMessage());
     }
 }
