@@ -10,7 +10,7 @@ import java.util.function.Consumer;
  */
 public class Response {
 
-    private boolean complate;
+    private volatile boolean complete;
 
     private Consumer<ByteBuffer> callBack;
 
@@ -18,7 +18,7 @@ public class Response {
         this.callBack = callBack;
     }
 
-    public boolean isComplate() {
-        return complate;
+    public boolean isComplete() {
+        return complete;
     }
 }
