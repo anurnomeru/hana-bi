@@ -64,7 +64,7 @@ public class CoordinateServerOperator implements Runnable {
         switch (typeEnum) {
         case REGISTER:
             Register register = new Register(msg);
-            logger.debug("收到了来自节点 {} 的注册消息！！！！！！", register.getServerName());
+            logger.debug("协调节点 {} 已注册到本节点", register.getServerName());
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(register.getServerName(), ctx.channel());
         }

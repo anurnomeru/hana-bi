@@ -10,6 +10,9 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.command.coordinate.Register;
+import com.anur.core.elect.ElectOperator;
+import com.anur.core.util.ChannelManager;
+import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
@@ -70,8 +73,13 @@ public class CoordinateClientOperator implements Runnable {
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
+            String leader = ElectOperator.getInstance()
+                                         .getLeaderServerName();
+            ChannelManager.getInstance(ChannelType.COORDINATE)
+                          .register(leader, ctx.channel());
+
             Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
-            CoordinateSender.calcCrcAndFlushMsg(ctx.channel(), operation.getByteBuffer());
+            CoordinateSender.send(leader, operation.getByteBuffer(), operation.size());
         }
     }
 

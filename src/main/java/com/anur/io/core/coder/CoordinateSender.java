@@ -17,8 +17,6 @@ import io.netty.util.ReferenceCounted;
  */
 public class CoordinateSender {
 
-    private static int MsgLength = 4;
-
     private static Map<String, ReentrantLock> lockerMap = new HashMap<>();
 
     /**
@@ -38,7 +36,7 @@ public class CoordinateSender {
     /**
      * 向某个服务发送东西~
      */
-    public static void calcCrcAndFlushMsg(String serverName, ByteBuffer body, int size) {
+    public static void send(String serverName, ByteBuffer body, int size) {
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
@@ -52,7 +50,7 @@ public class CoordinateSender {
     /**
      * 向某个服务发送东西~
      */
-    public static void calcCrcAndFlushMsg(String serverName, ReferenceCounted body, int size) {
+    public static void send(String serverName, ReferenceCounted body, int size) {
         // 避免同个 channel 发生多线程问题
 
         synchronized (getLock(serverName)) {

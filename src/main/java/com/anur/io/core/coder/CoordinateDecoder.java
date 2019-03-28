@@ -13,8 +13,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
  */
 public class CoordinateDecoder extends ByteToMessageDecoder {
 
-    private static int CrcLength = 4;
-
     @Override
     protected void decode(ChannelHandlerContext ctx, ByteBuf buffer, List<Object> list) {
         ByteBuffer o = decode(ctx, buffer);
@@ -24,7 +22,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
     }
 
     /**
-     * 4位 长度 + 4位 CRC + msg
+     * 4位 长度  + 消息内容
      */
     private ByteBuffer decode(ChannelHandlerContext ctx, ByteBuf buffer) {
         buffer.markReaderIndex();
@@ -42,27 +40,13 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
             return null;
         } else {
             buffer.markReaderIndex();
-
-            int crc = buffer.readInt();
-            byte[] bytes = new byte[maybeLength - CrcLength];
-
+            byte[] bytes = new byte[maybeLength];
             buffer.readBytes(bytes);
-            int crc32Compute = toUnsignedInt(Crc32.crc32(bytes));
 
-            if (crc != crc32Compute) {
-                buffer.resetReaderIndex();
-                buffer.discardReadBytes();
-                return null;
-            } else {
-                ByteBuffer result = ByteBuffer.allocate(maybeLength - CrcLength);
-                result.put(bytes);
-                result.rewind();
-                return result;
-            }
+            ByteBuffer result = ByteBuffer.allocate(maybeLength);
+            result.put(bytes);
+            result.rewind();
+            return result;
         }
-    }
-
-    private int toUnsignedInt(long v) {
-        return (int) (v & 0xffffffffL);
     }
 }
