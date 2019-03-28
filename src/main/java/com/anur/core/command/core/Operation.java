@@ -10,6 +10,8 @@ import com.anur.core.command.common.OperationTypeEnum;
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
  *
+ * Operation 是对应最基本的操作，这些操作将被写入日志
+ *
  * 一个Operation由以下部分组成：
  *
  * 　4　   +   4    +    4      + key +    4        +  v

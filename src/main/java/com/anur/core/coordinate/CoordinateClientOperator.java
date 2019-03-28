@@ -13,7 +13,7 @@ import com.anur.core.command.coordinate.Register;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
-import com.anur.io.core.coder.CoordinateEncoder;
+import com.anur.io.core.coder.CoordinateSender;
 import com.anur.core.command.core.Operation;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -71,7 +71,7 @@ public class CoordinateClientOperator implements Runnable {
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
             Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
-            CoordinateEncoder.calcCrcAndFlushMsg(ctx.channel(), operation.getByteBuffer());
+            CoordinateSender.calcCrcAndFlushMsg(ctx.channel(), operation.getByteBuffer());
         }
     }
 
