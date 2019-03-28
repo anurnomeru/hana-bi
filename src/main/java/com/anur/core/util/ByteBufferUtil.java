@@ -1,8 +1,7 @@
 package com.anur.core.util;
 
 import java.nio.ByteBuffer;
-import com.anur.io.store.operationset.ByteBufferOperationSet;
-import com.anur.io.store.common.Operation;
+import com.anur.core.command.core.Operation;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27

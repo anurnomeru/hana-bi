@@ -1,7 +1,7 @@
 package com.anur.io.store;
 
-import com.anur.io.store.common.Operation;
-import com.anur.io.store.common.OperationTypeEnum;
+import com.anur.core.command.core.Operation;
+import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.io.store.prelog.ByteBufPreLog;
 import io.netty.buffer.ByteBuf;
 

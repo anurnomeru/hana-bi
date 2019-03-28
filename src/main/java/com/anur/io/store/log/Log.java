@@ -11,7 +11,7 @@ import com.anur.config.LogConfigHelper;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.io.store.common.LogCommon;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
-import com.anur.io.store.common.Operation;
+import com.anur.core.command.core.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
 import com.google.common.collect.Lists;

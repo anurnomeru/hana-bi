@@ -1,8 +1,8 @@
 package com.anur.core.command.coordinate;
 
 import java.nio.ByteBuffer;
-import com.anur.io.store.common.Operation;
-import com.anur.io.store.common.OperationTypeEnum;
+import com.anur.core.command.core.Operation;
+import com.anur.core.command.common.OperationTypeEnum;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/27

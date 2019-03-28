@@ -1,11 +1,10 @@
 package com.anur.io.store.operationset;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
-import com.anur.io.store.common.Operation;
+import com.anur.core.command.core.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 
 /**

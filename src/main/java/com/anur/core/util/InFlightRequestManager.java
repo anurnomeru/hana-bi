@@ -1,6 +1,5 @@
 package com.anur.core.util;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -10,8 +9,8 @@ import org.slf4j.LoggerFactory;
 import com.anur.core.coordinate.model.Response;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager.ChannelType;
-import com.anur.io.store.common.Operation;
-import com.anur.io.store.common.OperationTypeEnum;
+import com.anur.core.command.core.Operation;
+import com.anur.core.command.common.OperationTypeEnum;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/27
@@ -57,6 +56,11 @@ public class InFlightRequestManager extends ReentrantLocker {
      * 真正发送消息的方法，内置了重发机制
      */
     private void sendImpl(String serverName, Operation operation, Response response) {
-        ChannelManager.getInstance(ChannelType.COORDINATE).getChannel(serverName);
+        if (!response.isComplate()) {
+            ChannelManager.getInstance(ChannelType.COORDINATE)
+                          .getChannel(serverName);
+
+
+        }
     }
 }

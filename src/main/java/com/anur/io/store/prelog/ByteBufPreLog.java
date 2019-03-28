@@ -4,7 +4,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.core.lock.ReentrantLocker;
-import com.anur.io.store.common.Operation;
+import com.anur.core.command.core.Operation;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.Unpooled;

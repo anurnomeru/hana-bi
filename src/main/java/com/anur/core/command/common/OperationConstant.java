@@ -1,4 +1,4 @@
-package com.anur.io.store.common;
+package com.anur.core.command.common;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27
