@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.command.coordinate.Register;
+import com.anur.core.command.core.AbstractCommand;
+import com.anur.core.command.core.Operation;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
@@ -58,10 +60,7 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        msg.mark();
-        msg.position(OperationConstant.TypeOffset);
-        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt());
-        msg.reset();
+        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractCommand.TypeOffset));
         switch (typeEnum) {
         case REGISTER:
             Register register = new Register(msg);

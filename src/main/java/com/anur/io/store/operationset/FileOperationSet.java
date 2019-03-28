@@ -195,7 +195,7 @@ public class FileOperationSet extends OperationSet {
 
             int messageSize = buffer.getInt(); // 8字节的offset后面紧跟着4字节的这条消息的长度
 
-            if (messageSize < OperationConstant.MinMessageOverhead) {
+            if (messageSize < Operation.MinMessageOverhead) {
                 throw new IllegalStateException("Invalid message size: " + messageSize);
             }
 
@@ -298,7 +298,7 @@ public class FileOperationSet extends OperationSet {
                 long offset = sizeOffsetBuffer.getLong();
                 int size = sizeOffsetBuffer.getInt();
 
-                if (size < OperationConstant.MinMessageOverhead || location + LogOverhead + size > end) { // 代表消息放不下了
+                if (size < Operation.MinMessageOverhead || location + LogOverhead + size > end) { // 代表消息放不下了
                     return allDone();
                 }
 

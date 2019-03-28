@@ -10,20 +10,43 @@ import com.anur.core.command.common.OperationTypeEnum;
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
  *
- * 记录了某一个操作
+ * 一个Operation由以下部分组成：
+ *
+ * 　4　   +   4    +    4      + key +    4        +  v
+ * CRC32  +  type  + keyLength + key + valueLength +  v
  */
-public class Operation {
+public class Operation extends AbstractCommand {
 
-    private ByteBuffer buffer;
+    public static final int KeySizeOffset = TypeOffset + TypeLength;
 
-    private OperationTypeEnum operationTypeEnum;
+    public static final int KeySizeLength = 4;
+
+    public static final int KeyOffset = KeySizeOffset + KeySizeLength;
+
+    /** 一定要有key */
+    public static final int MinKeyLength = 1;
+
+    public static final int ValueSizeLength = 4;
+
+    /**
+     * 除去消息头，最小的Operation长度为这个，小于这个不可能构成一条消息，最起码要满足
+     *
+     * CRC32 +  type  + (KeySize = 1) + key + (ValueSize = 1)
+     */
+    public static final int MinMessageOverhead = KeyOffset + ValueSizeLength + MinKeyLength;
+
+    /**
+     * 最基础的operation大小
+     */
+    public static final int BaseMessageOverhead = KeyOffset + ValueSizeLength;
+
+    // =================================================================
 
     private String key;
 
     private String value;
 
     public Operation(OperationTypeEnum operationTypeEnum, String key, String value) {
-        this.operationTypeEnum = operationTypeEnum;
         this.key = key;
         this.value = value;
 
@@ -33,9 +56,9 @@ public class Operation {
         byte[] vBytes = value.getBytes(Charset.defaultCharset());
         int vSize = vBytes.length;
 
-        ByteBuffer byteBuffer = ByteBuffer.allocate(OperationConstant.BaseMessageOverhead + kSize + vSize);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead + kSize + vSize);
 
-        byteBuffer.position(OperationConstant.TypeOffset);
+        byteBuffer.position(TypeOffset);
         byteBuffer.putInt(operationType);
         byteBuffer.putInt(kSize);
         byteBuffer.put(kBytes);
@@ -53,11 +76,9 @@ public class Operation {
 
     public Operation(ByteBuffer buffer) {
         buffer.mark();
-
         this.buffer = buffer;
 
-        buffer.position(OperationConstant.TypeOffset);
-        this.operationTypeEnum = OperationTypeEnum.parseByByteSign(buffer.getInt());
+        buffer.position(KeySizeOffset);
 
         int kSize = buffer.getInt();
         byte[] kByte = new byte[kSize];
@@ -73,34 +94,6 @@ public class Operation {
         buffer.reset();
     }
 
-    public ByteBuffer getByteBuffer() {
-        return buffer;
-    }
-
-    public int size() {
-        return buffer.limit();
-    }
-
-    public void ensureValid() {
-        long stored = checkSum();
-        long compute = computeChecksum();
-        if (stored != compute) {
-            throw new HanabiException(String.format("Message is corrupt (stored crc = %s, computed crc = %s)", stored, compute));
-        }
-    }
-
-    public long checkSum() {
-        return ByteBufferUtil.readUnsignedInt(buffer, OperationConstant.CrcOffset);
-    }
-
-    public long computeChecksum() {
-        return ByteBufferUtil.crc32(buffer.array(), buffer.arrayOffset() + OperationConstant.TypeOffset, buffer.limit() - OperationConstant.TypeOffset);
-    }
-
-    public OperationTypeEnum getOperationTypeEnum() {
-        return operationTypeEnum;
-    }
-
     public String getKey() {
         return key;
     }
@@ -112,7 +105,7 @@ public class Operation {
     @Override
     public String toString() {
         return "Operation{" +
-            "operationTypeEnum=" + operationTypeEnum +
+            "operationTypeEnum=" + getOperationTypeEnum() +
             ", key='" + key + '\'' +
             ", value='" + value + '\'' +
             '}';
