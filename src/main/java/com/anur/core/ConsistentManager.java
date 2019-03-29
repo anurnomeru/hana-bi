@@ -13,7 +13,7 @@ import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
-import com.anur.core.coordinate.InFlightRequestManager;
+import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.io.store.OffsetManager;
 
 /**
@@ -50,37 +50,33 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
 
     public ConsistentManager() {
         ElectOperator.getInstance()
-                     .registerWhenClusterValid(cluster -> writeLockSupplier(() -> {
-                         clusterValid = true;
-                         isLeader = InetSocketAddressConfigHelper.getServerName()
-                                                                 .equals(cluster.getLeader());
-
-                         if (isLeader) {
-                             clusters = cluster.getClusters();
-                             validCommitCountNeed = clusters.size() / 2 + 1;
-                         } else {
-                             CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
-                                                     .tryStartWhileDisconnected();
-                         }
-
-                         return null;
-                     }));
+                     .registerWhenClusterValid(
+                         cluster -> writeLockSupplier(() -> {
+                             clusterValid = true;
+                             isLeader = InetSocketAddressConfigHelper.getServerName()
+                                                                     .equals(cluster.getLeader());
+                             if (isLeader) {
+                                 clusters = cluster.getClusters();
+                                 validCommitCountNeed = clusters.size() / 2 + 1;
+                             } else {
+                                 CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
+                                                         .tryStartWhileDisconnected();
+                             }
+                             return null;
+                         }));
 
         ElectOperator.getInstance()
-                     .registerWhenClusterInvalid(this::disabled);
-    }
-
-    private void disabled() {
-        writeLockSupplier(() -> {
-            clusterValid = false;
-            isLeader = false;
-            clusters = null;
-            validCommitCountNeed = Integer.MAX_VALUE;
-            CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
-            InFlightRequestManager.getINSTANCE()
-                                  .reboot();
-            return null;
-        });
+                     .registerWhenClusterInvalid(
+                         () -> writeLockSupplier(() -> {
+                             clusterValid = false;
+                             isLeader = false;
+                             clusters = null;
+                             validCommitCountNeed = Integer.MAX_VALUE;
+                             CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
+                             InFlightRequestManager.getINSTANCE()
+                                                   .reboot();
+                             return null;
+                         }));
     }
 
     public GenerationAndOffset commitAck(String node, GenerationAndOffset GAO) {
