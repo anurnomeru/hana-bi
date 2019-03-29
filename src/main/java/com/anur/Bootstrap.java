@@ -17,6 +17,9 @@ public class Bootstrap {
     public static void main(String[] args) throws InterruptedException {
 
         HanabiExecutors.submit(() -> {
+            /**
+             * 日志一致性控制器
+             */
             ConsistentManager.getINSTANCE();
 
             /**

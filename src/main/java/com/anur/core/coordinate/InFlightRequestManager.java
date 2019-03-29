@@ -1,4 +1,4 @@
-package com.anur.io.coordinate;
+package com.anur.core.coordinate;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
@@ -13,7 +13,7 @@ import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
-import com.anur.io.core.coder.CoordinateSender;
+import com.anur.core.coordinate.sender.CoordinateSender;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
 import io.netty.channel.Channel;

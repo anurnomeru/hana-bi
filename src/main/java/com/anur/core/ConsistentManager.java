@@ -1,8 +1,7 @@
 package com.anur.core;
 
+import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -14,9 +13,8 @@ import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
-import com.anur.io.coordinate.InFlightRequestManager;
+import com.anur.core.coordinate.InFlightRequestManager;
 import com.anur.io.store.OffsetManager;
-import com.anur.io.store.common.OffsetAndPosition;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/26
@@ -27,17 +25,17 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
 
     private static volatile ConsistentManager INSTANCE;
 
-    private volatile boolean clusterValid;
+    private volatile boolean clusterValid = false;
 
-    private volatile List<HanabiNode> clusters;
+    private volatile List<HanabiNode> clusters = null;
 
-    private volatile int validCommitCountNeed;
+    private volatile int validCommitCountNeed = Integer.MAX_VALUE;
 
-    private ConcurrentSkipListMap<GenerationAndOffset, Set<String>> offsetCommitMap;
+    private ConcurrentSkipListMap<GenerationAndOffset, Set<String>> offsetCommitMap = new ConcurrentSkipListMap<>();
 
-    private Map<String, GenerationAndOffset> nodeCommitMap;
+    private Map<String, GenerationAndOffset> nodeCommitMap = new HashMap<>();
 
-    private boolean isLeader;
+    private boolean isLeader = false;
 
     public static ConsistentManager getINSTANCE() {
         if (INSTANCE == null) {
@@ -51,8 +49,6 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
     }
 
     public ConsistentManager() {
-        disabled();
-
         ElectOperator.getInstance()
                      .registerWhenClusterValid(cluster -> writeLockSupplier(() -> {
                          clusterValid = true;

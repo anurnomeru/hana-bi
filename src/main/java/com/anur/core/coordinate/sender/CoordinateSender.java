@@ -1,4 +1,4 @@
-package com.anur.io.core.coder;
+package com.anur.core.coordinate.sender;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
