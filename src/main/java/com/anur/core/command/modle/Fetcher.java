@@ -1,6 +1,6 @@
-package com.anur.core.command.coordinate;
+package com.anur.core.command.modle;
 
-import com.anur.core.command.core.AbstractCommand;
+import com.anur.core.command.common.AbstractCommand;
 import io.netty.channel.Channel;
 
 /**
@@ -9,6 +9,8 @@ import io.netty.channel.Channel;
  * 用于向协调 Leader 拉取消息
  */
 public class Fetcher extends AbstractCommand {
+
+
 
     @Override
     public void writeIntoChannel(Channel channel) {

@@ -4,10 +4,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import com.anur.core.command.coordinate.Fetcher;
-import com.anur.core.command.coordinate.Register;
-import com.anur.core.command.core.AbstractCommand;
-import com.anur.core.command.core.Operation;
+import com.anur.core.command.modle.Fetcher;
+import com.anur.core.command.modle.Register;
+import com.anur.core.command.modle.Operation;
 import com.anur.exception.HanabiException;
 
 /**

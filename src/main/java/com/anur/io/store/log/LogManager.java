@@ -10,7 +10,7 @@ import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.exception.HanabiException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.common.LogCommon;
-import com.anur.core.command.core.Operation;
+import com.anur.core.command.modle.Operation;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18

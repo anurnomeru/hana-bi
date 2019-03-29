@@ -1,7 +1,6 @@
-package com.anur.core.command.coordinate;
+package com.anur.core.command.modle;
 
 import java.nio.ByteBuffer;
-import com.anur.core.command.core.Operation;
 import com.anur.core.command.common.OperationTypeEnum;
 
 /**

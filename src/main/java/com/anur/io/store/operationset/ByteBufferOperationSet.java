@@ -23,7 +23,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
-import com.anur.core.command.core.Operation;
+import com.anur.core.command.modle.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 
 /**

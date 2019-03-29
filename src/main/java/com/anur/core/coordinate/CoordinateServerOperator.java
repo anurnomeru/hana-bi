@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.command.core.AbstractCommand;
+import com.anur.core.command.common.AbstractCommand;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;

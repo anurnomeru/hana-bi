@@ -1,4 +1,4 @@
-package com.anur.core.command.core;
+package com.anur.core.command.common;
 
 import java.nio.ByteBuffer;
 import com.anur.core.command.common.OperationTypeEnum;

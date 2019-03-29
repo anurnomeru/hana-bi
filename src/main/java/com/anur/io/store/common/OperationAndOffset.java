@@ -1,6 +1,6 @@
 package com.anur.io.store.common;
 
-import com.anur.core.command.core.Operation;
+import com.anur.core.command.modle.Operation;
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
  */
