@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import com.anur.core.command.coordinate.FetchResponse;
 import com.anur.core.command.coordinate.Fetcher;
 import com.anur.core.command.coordinate.Register;
 import com.anur.core.command.core.AbstractCommand;
@@ -23,7 +22,7 @@ public enum OperationTypeEnum {
     REGISTER(10000, Register.class),// 协调从节点向主节点注册
 
     FETCH(10001, Fetcher.class),// 拉取消息
-    FETCH_RESPONSE(10002, FetchResponse.class),// 返回拉取的消息
+//    FETCH_RESPONSE(10002, FetchResponse.class),// 返回拉取的消息
     ;
 
     public int byteSign;

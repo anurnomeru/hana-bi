@@ -97,23 +97,13 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
         });
     }
 
-    public void receive(ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
-        switch (typeEnum) {
-        case REGISTER:
-            Register register = new Register(msg);
-            logger.info("协调节点 {} 已注册到本节点", register.getServerName());
-            ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .register(register.getServerName(), channel);
-        }
-    }
-
     /**
      * 真正发送消息的方法，内置了重发机制
      */
     private void sendImpl(String serverName, AbstractCommand command, Response response, OperationTypeEnum operationTypeEnum) {
         this.readLockSupplier(() -> {
             if (!response.isComplete()) {
-                CoordinateSender.send(serverName, command.getByteBuffer(), command.size());
+                CoordinateSender.send(serverName, command);
 
                 if (RequestAndResponseType.get(operationTypeEnum)
                                           .equals(OperationTypeEnum.NONE)) {
@@ -130,5 +120,18 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
             }
             return null;
         });
+    }
+
+    /**
+     * 接收到消息如何处理
+     */
+    public void receive(ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
+        switch (typeEnum) {
+        case REGISTER:
+            Register register = new Register(msg);
+            logger.info("协调节点 {} 已注册到本节点", register.getServerName());
+            ChannelManager.getInstance(ChannelType.COORDINATE)
+                          .register(register.getServerName(), channel);
+        }
     }
 }

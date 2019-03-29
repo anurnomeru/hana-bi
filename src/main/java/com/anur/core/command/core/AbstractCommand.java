@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.util.ByteBufferUtil;
 import com.anur.exception.HanabiException;
+import io.netty.channel.Channel;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/28
@@ -15,7 +16,7 @@ import com.anur.exception.HanabiException;
  *
  * 所有的指令都满足 4位CRC + 4位类型
  */
-public class AbstractCommand {
+public abstract class AbstractCommand {
 
     public static final int CrcOffset = 0;
 
@@ -56,4 +57,14 @@ public class AbstractCommand {
     public OperationTypeEnum getOperationTypeEnum() {
         return OperationTypeEnum.parseByByteSign(buffer.getInt(TypeOffset));
     }
+
+    /**
+     * 如何写入 Channel
+     */
+    public abstract void writeIntoChannel(Channel channel);
+
+    /**
+     * 真正的 size，并不局限于维护的 buffer
+     */
+    public abstract int totalSize();
 }

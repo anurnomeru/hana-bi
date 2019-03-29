@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.anur.io.store.common.OffsetAndPosition;
 import com.anur.core.command.core.Operation;
 import com.anur.io.store.common.OperationAndOffset;
-import com.anur.core.command.common.OperationConstant;
 import com.anur.core.util.FileIOUtil;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;

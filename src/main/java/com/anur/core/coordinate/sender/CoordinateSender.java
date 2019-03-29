@@ -1,14 +1,13 @@
 package com.anur.core.coordinate.sender;
 
-import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import com.anur.core.command.core.AbstractCommand;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.util.ReferenceCounted;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/14
@@ -36,28 +35,13 @@ public class CoordinateSender {
     /**
      * 向某个服务发送东西~
      */
-    public static void send(String serverName, ByteBuffer body, int size) {
+    public static void send(String serverName, AbstractCommand body) {
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);
-            channel.write(Unpooled.copyInt(size));
-            channel.write(Unpooled.wrappedBuffer(body));
-            channel.flush();
-        }
-    }
-
-    /**
-     * 向某个服务发送东西~
-     */
-    public static void send(String serverName, ReferenceCounted body, int size) {
-
-        // 避免同个 channel 发生多线程问题
-        synchronized (getLock(serverName)) {
-            Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
-                                            .getChannel(serverName);
-            channel.write(Unpooled.copyInt(size));
-            channel.write(body);
+            channel.write(Unpooled.copyInt(body.totalSize()));
+            body.writeIntoChannel(channel);
             channel.flush();
         }
     }

@@ -3,6 +3,8 @@ package com.anur.core.command.core;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.command.common.OperationTypeEnum;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -108,5 +110,15 @@ public class Operation extends AbstractCommand {
             ", key='" + key + '\'' +
             ", value='" + value + '\'' +
             '}';
+    }
+
+    @Override
+    public void writeIntoChannel(Channel channel) {
+        channel.write(Unpooled.wrappedBuffer(buffer));
+    }
+
+    @Override
+    public int totalSize() {
+        return size();
     }
 }
