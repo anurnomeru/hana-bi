@@ -59,6 +59,8 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                                  clusters = cluster.getClusters();
                                  validCommitCountNeed = clusters.size() / 2 + 1;
                              } else {
+
+                                 // 当集群可用时，连接协调 leader
                                  CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
                                                          .tryStartWhileDisconnected();
                              }
@@ -72,6 +74,8 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                              isLeader = false;
                              clusters = null;
                              validCommitCountNeed = Integer.MAX_VALUE;
+
+                             // 当集群不可用时，与协调 leader 断开连接
                              CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
                              InFlightRequestManager.getINSTANCE()
                                                    .reboot();

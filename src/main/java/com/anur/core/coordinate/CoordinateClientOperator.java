@@ -14,7 +14,6 @@ import com.anur.core.command.coordinate.Register;
 import com.anur.core.command.core.AbstractCommand;
 import com.anur.core.coordinate.model.Response;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
-import com.anur.core.elect.ElectOperator;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
@@ -90,6 +89,7 @@ public class CoordinateClientOperator implements Runnable {
             Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
             InFlightRequestManager.getINSTANCE()
                                   .send(leader.getServerName(), operation, Response.REQUIRE_NESS);
+            logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
 
         @Override
@@ -98,6 +98,7 @@ public class CoordinateClientOperator implements Runnable {
 
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .unRegister(leader.getServerName());
+            logger.debug("与协调器 Leader {} [{}:{}] 的连接已断开", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
     }
 

@@ -16,6 +16,9 @@ public enum OperationTypeEnum {
 
     // 10000 开始的命令都是集群协调命令，不需要记录日志
     REGISTER(10000),// 协调从节点向主节点注册
+
+    FETCH(10001),// 拉取消息
+    FETCH_RESPONSE(10002),// 返回拉取的消息
     ;
 
     public int byteSign;
