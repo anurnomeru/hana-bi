@@ -1,7 +1,6 @@
 package com.anur.core.command.common;
 
 import java.nio.ByteBuffer;
-import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.util.ByteBufferUtil;
 import com.anur.exception.HanabiException;
 import io.netty.channel.Channel;

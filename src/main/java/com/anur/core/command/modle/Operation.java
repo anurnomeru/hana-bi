@@ -66,8 +66,8 @@ public class Operation extends AbstractCommand {
         byteBuffer.put(kBytes);
         byteBuffer.putInt(vSize);
         byteBuffer.put(vBytes);
-        this.buffer = byteBuffer;
 
+        this.buffer = byteBuffer;
         long crc = computeChecksum();
 
         byteBuffer.position(0);

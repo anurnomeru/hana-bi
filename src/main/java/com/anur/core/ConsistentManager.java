@@ -11,12 +11,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.command.modle.Fetcher;
 import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.io.store.OffsetManager;
+import com.anur.timewheel.TimedTask;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/26
@@ -33,6 +35,11 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
      * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterValid 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
      */
     private volatile boolean clusterValid = false;
+
+    /**
+     * Leader 节点
+     */
+    private volatile String leader = null;
 
     /**
      * 当前集群内有哪些机器
@@ -58,6 +65,20 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
      * 作为 Leader 时有效，记录了每个节点最近的一次 fetch
      */
     private Map<String, GenerationAndOffset> nodeFetchMap = new HashMap<>();
+
+    /**
+     * 作为 Follower 时有效，此任务不断从 Leader 节点获取 PreLog
+     */
+    private TimedTask fetchPreLogTask = null;
+
+    public void sendFetchPreLog() {
+        if (fetchPreLogTask != null) {
+            if (!fetchPreLogTask.isCancel()) {
+                InFlightRequestManager.getINSTANCE()
+                                      .send(leader,new Fetcher());
+            }
+        }
+    }
 
     /**
      * Follower 向 Leader 提交拉取到的最大的 GAO
@@ -128,8 +149,9 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                      .registerWhenClusterValid(
                          cluster -> writeLockSupplier(() -> {
                              clusterValid = true;
+                             leader = cluster.getLeader();
                              isLeader = InetSocketAddressConfigHelper.getServerName()
-                                                                     .equals(cluster.getLeader());
+                                                                     .equals(leader);
                              if (isLeader) {
                                  clusters = cluster.getClusters();
                                  validCommitCountNeed = clusters.size() / 2 + 1;
@@ -148,6 +170,7 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                              clusterValid = false;
                              isLeader = false;
                              clusters = null;
+                             leader = null;
                              validCommitCountNeed = Integer.MAX_VALUE;
 
                              // 当集群不可用时，与协调 leader 断开连接
