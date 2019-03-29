@@ -6,6 +6,8 @@ import com.anur.core.command.common.OperationTypeEnum;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/27
+ *
+ * 用于向协调 Leader 注册自己
  */
 public class Register extends Operation {
 
