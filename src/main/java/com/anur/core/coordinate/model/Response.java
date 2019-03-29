@@ -21,4 +21,9 @@ public class Response {
     public boolean isComplete() {
         return complete;
     }
+
+    public void complete() {
+        complete = true;
+        callBack.accept(null);
+    }
 }

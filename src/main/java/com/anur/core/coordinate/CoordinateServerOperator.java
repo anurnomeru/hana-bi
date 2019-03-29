@@ -15,6 +15,7 @@ import com.anur.core.command.core.Operation;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.coordinate.InFlightRequestManager;
 import com.anur.io.coordinate.server.CoordinateServer;
 import com.anur.core.command.common.OperationConstant;
 import com.anur.core.command.common.OperationTypeEnum;
@@ -61,13 +62,8 @@ public class CoordinateServerOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
         OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractCommand.TypeOffset));
-        switch (typeEnum) {
-        case REGISTER:
-            Register register = new Register(msg);
-            logger.debug("协调节点 {} 已注册到本节点", register.getServerName());
-            ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .register(register.getServerName(), ctx.channel());
-        }
+        InFlightRequestManager.getINSTANCE()
+                              .receive(msg, typeEnum, ctx.channel());
     };
 
     /**

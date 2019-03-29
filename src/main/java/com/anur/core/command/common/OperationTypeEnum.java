@@ -10,6 +10,8 @@ import com.anur.exception.HanabiException;
  * Created by Anur IjuoKaruKas on 2019/3/11
  */
 public enum OperationTypeEnum {
+    NONE(-1),// 无
+
     SETNX(1),// 请求 HASH SET
 
     // 10000 开始的命令都是集群协调命令，不需要记录日志
@@ -38,5 +40,4 @@ public enum OperationTypeEnum {
     public static OperationTypeEnum parseByByteSign(int byteSign) {
         return byteSignMap.get(byteSign);
     }
-
 }
