@@ -2,11 +2,8 @@ package com.anur.io.coordinate;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.command.coordinate.Register;
@@ -57,7 +54,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
     /**
      * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
      */
-    private void reboot() {
+    public void reboot() {
         this.writeLockSupplier(() -> {
             inFlight.forEach((s, m) -> m.forEach((o, t) -> t.cancel()));
             inFlight = new HashMap<>();

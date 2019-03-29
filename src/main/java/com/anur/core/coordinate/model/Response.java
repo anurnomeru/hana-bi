@@ -10,6 +10,9 @@ import java.util.function.Consumer;
  */
 public class Response {
 
+    public static Response REQUIRE_NESS = new Response(byteBuffer -> {
+    });
+
     private volatile boolean complete;
 
     private Consumer<ByteBuffer> callBack;

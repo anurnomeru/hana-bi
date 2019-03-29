@@ -14,6 +14,7 @@ import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
+import com.anur.io.coordinate.InFlightRequestManager;
 import com.anur.io.store.OffsetManager;
 import com.anur.io.store.common.OffsetAndPosition;
 
@@ -80,6 +81,8 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
             clusters = null;
             validCommitCountNeed = Integer.MAX_VALUE;
             CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
+            InFlightRequestManager.getINSTANCE()
+                                  .reboot();
             return null;
         });
     }
