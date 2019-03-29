@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.anur.core.util.ChannelManager;
+import com.anur.exception.HanabiException;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -15,7 +17,11 @@ public class InetSocketAddressConfigHelper extends ConfigHelper {
     private static HanabiNode me;
 
     static {
-        me = getNode(getConfig(ConfigEnum.SERVER_NAME, Function.identity()));
+        String name = getConfig(ConfigEnum.SERVER_NAME, Function.identity());
+        if (name.equals(ChannelManager.CoordinateLeaderSign)) {
+            throw new HanabiException(" 'Leader' 为关键词，节点不能命名为这个");
+        }
+        me = getNode(name);
     }
 
     public static Integer getServerElectionPort() {

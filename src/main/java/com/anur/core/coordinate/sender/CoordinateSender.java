@@ -51,8 +51,8 @@ public class CoordinateSender {
      * 向某个服务发送东西~
      */
     public static void send(String serverName, ReferenceCounted body, int size) {
-        // 避免同个 channel 发生多线程问题
 
+        // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);

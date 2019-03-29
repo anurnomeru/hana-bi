@@ -14,6 +14,8 @@ import io.netty.channel.Channel;
  */
 public class ChannelManager extends ReentrantReadWriteLocker {
 
+    public static final String CoordinateLeaderSign = "Leader";
+
     private Map<String/* serverName */, Channel> serverChannelMap;
 
     public ChannelManager() {
@@ -45,6 +47,9 @@ public class ChannelManager extends ReentrantReadWriteLocker {
         return this.readLockSupplier(() -> serverChannelMap.get(serverName));
     }
 
+    /**
+     * 向 channelManager 注册服务
+     */
     public void register(String serverName, Channel channel) {
         this.writeLockSupplier(() -> serverChannelMap.put(serverName, channel));
     }

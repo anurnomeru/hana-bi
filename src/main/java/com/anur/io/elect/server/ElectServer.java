@@ -2,6 +2,7 @@ package com.anur.io.elect.server;
 
 import java.util.function.BiConsumer;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.handle.ErrorHandler;
 import com.anur.io.core.handle.StrMsgConsumeHandler;
 import com.anur.io.core.server.Server;
 import io.netty.channel.ChannelHandlerContext;
@@ -25,10 +26,10 @@ public class ElectServer extends Server {
         this.msgConsumer = msgConsumer;
     }
 
-
     @Override
     public ChannelPipeline channelPipelineConsumer(ChannelPipeline channelPipeline) {
         return channelPipeline.addLast(new LineBasedFrameDecoder(Integer.MAX_VALUE))
-                              .addLast(new StrMsgConsumeHandler(msgConsumer));
+                              .addLast(new StrMsgConsumeHandler(msgConsumer))
+                              .addLast(new ErrorHandler());
     }
 }

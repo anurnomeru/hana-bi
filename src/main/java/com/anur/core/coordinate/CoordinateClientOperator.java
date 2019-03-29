@@ -68,24 +68,36 @@ public class CoordinateClientOperator implements Runnable {
     /**
      * 需要在 channelPipeline 上挂载什么
      */
-    private static Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter());
+    private Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter(hanabiNode));
 
     /**
      * Coordinate 初始化连接时的注册器
      */
     static class RegisterAdapter extends ChannelInboundHandlerAdapter {
 
+        private HanabiNode leader;
+
+        public RegisterAdapter(HanabiNode hanabiNode) {
+            this.leader = hanabiNode;
+        }
+
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
-            String leader = ElectOperator.getInstance()
-                                         .getLeaderServerName();
             ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .register(leader, ctx.channel());
+                          .register(leader.getServerName(), ctx.channel());
 
             Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
             InFlightRequestManager.getINSTANCE()
-                                  .send(leader, operation, Response.REQUIRE_NESS);
+                                  .send(leader.getServerName(), operation, Response.REQUIRE_NESS);
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            super.channelInactive(ctx);
+
+            ChannelManager.getInstance(ChannelType.COORDINATE)
+                          .unRegister(leader.getServerName());
         }
     }
 

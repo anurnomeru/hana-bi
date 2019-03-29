@@ -29,7 +29,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
 
     private static volatile InFlightRequestManager INSTANCE;
 
-    private static Map<OperationTypeEnum, OperationTypeEnum> RequestAndResponseType;
+    private static Map<OperationTypeEnum, OperationTypeEnum> RequestAndResponseType = new HashMap<>();
 
     static {
         RequestAndResponseType.put(OperationTypeEnum.REGISTER, OperationTypeEnum.NONE);
@@ -101,7 +101,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
         switch (typeEnum) {
         case REGISTER:
             Register register = new Register(msg);
-            logger.debug("协调节点 {} 已注册到本节点", register.getServerName());
+            logger.info("协调节点 {} 已注册到本节点", register.getServerName());
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(register.getServerName(), channel);
         }
