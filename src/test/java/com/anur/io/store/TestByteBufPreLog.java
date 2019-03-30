@@ -7,6 +7,7 @@ import com.anur.io.store.common.OperationAndOffset;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.anur.io.store.prelog.ByteBufPreLog;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/22
@@ -40,7 +41,8 @@ public class TestByteBufPreLog {
 
         preLog.append(new Operation(OperationTypeEnum.REGISTER, "123", "444"), 1);
 
-        ByteBuf byteBuf2 = preLog.getBefore(2);
+        CompositeByteBuf byteBuf2 = preLog.getBefore(2);
+
 
         Iterator<OperationAndOffset> iterator = new ByteBufferOperationSet(byteBuf2.nioBuffer()).iterator();
 

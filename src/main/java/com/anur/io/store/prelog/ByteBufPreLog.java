@@ -57,7 +57,7 @@ public class ByteBufPreLog extends ReentrantLocker {
     /**
      * 获取此消息之后的消息（不包括 targetOffset 这一条）
      */
-    public ByteBuf getAfter(long targetOffset) {
+    public CompositeByteBuf getAfter(long targetOffset) {
         ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.tailMap(targetOffset, true);
 
         if (result.size() == 0) {
@@ -108,7 +108,7 @@ public class ByteBufPreLog extends ReentrantLocker {
     /**
      * 获取此消息之前的消息（包括 targetOffset 这一条）
      */
-    public ByteBuf getBefore(long targetOffset) {
+    public CompositeByteBuf getBefore(long targetOffset) {
         ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.headMap(targetOffset, true);
 
         if (result.size() == 0) {
