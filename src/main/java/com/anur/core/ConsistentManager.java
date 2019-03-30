@@ -71,14 +71,14 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
      */
     private TimedTask fetchPreLogTask = null;
 
-    public void sendFetchPreLog() {
-        if (fetchPreLogTask != null) {
-            if (!fetchPreLogTask.isCancel()) {
-                InFlightRequestManager.getINSTANCE()
-                                      .send(leader,new Fetcher());
-            }
-        }
-    }
+//    public void sendFetchPreLog() {
+//        if (fetchPreLogTask != null) {
+//            if (!fetchPreLogTask.isCancel()) {
+//                InFlightRequestManager.getINSTANCE()
+//                                      .send(leader,new Fetcher());
+//            }
+//        }
+//    }
 
     /**
      * Follower 向 Leader 提交拉取到的最大的 GAO

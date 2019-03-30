@@ -49,6 +49,13 @@ public class Fetcher extends AbstractCommand {
         ensureValid();
     }
 
+    /**
+     * 时间戳用于防止同一次请求的 “多次请求”，保证幂等性
+     */
+    public long getTimestamp() {
+        return buffer.getLong(TimestampOffset);
+    }
+
     public GenerationAndOffset getGAO() {
         return new GenerationAndOffset(buffer.getLong(GenerationOffset), buffer.getLong(OffsetOffset));
     }

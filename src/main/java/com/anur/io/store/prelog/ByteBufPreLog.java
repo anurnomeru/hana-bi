@@ -106,7 +106,7 @@ public class ByteBufPreLog extends ReentrantLocker {
     }
 
     /**
-     * 获取此消息之前的消息（不包括 targetOffset 这一条）
+     * 获取此消息之前的消息（包括 targetOffset 这一条）
      */
     public ByteBuf getBefore(long targetOffset) {
         ConcurrentNavigableMap<Long, CompositeByteBuf> result = preLog.headMap(targetOffset, true);
@@ -132,7 +132,7 @@ public class ByteBufPreLog extends ReentrantLocker {
                 ByteBuf offsetAndSize = Unpooled.buffer(12);
 
                 long offset = -1;
-                int size = -1;
+                int size = 0;
 
                 while (offset != targetOffset) {
                     offsetAndSize.discardReadBytes();
@@ -149,7 +149,14 @@ public class ByteBufPreLog extends ReentrantLocker {
                     dup.readerIndex(dup.readerIndex() + size);
                 }
 
-                compositeByteBuf.addComponent(true, dup.slice(0, dup.readerIndex()));
+                int toPosition = dup.readerIndex();
+                if (offset == targetOffset) {
+                    if (toPosition > 12) {// 不减的话，无法拿到最后一条 offset
+                        toPosition = toPosition - 12 - size;
+                    }
+                }
+
+                compositeByteBuf.addComponent(true, dup.slice(0, toPosition));
             }
         }
 
