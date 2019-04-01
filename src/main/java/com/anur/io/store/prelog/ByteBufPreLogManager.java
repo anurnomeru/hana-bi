@@ -102,17 +102,16 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
 
         // 需要提交的进度小于等于preLogOffset
         if (compareResult <= 0) {
-            logger.debug("收到来自 Leader 节点的无效 Commit 请求 => {}，本地预日志 commit 进度 {} 已经大于此请求。", GAO.toString(), commitOffset.toString());
+            logger.debug("收到来自 Leader 节点的无效 Commit 请求 => {}，本地预日志 commit 进度 {} 已经大于等于此请求。", GAO.toString(), commitOffset.toString());
             return;
         } else {
-            logger.debug("收到来自 Leader 节点的有效 Commit 请求 => {}", GAO.toString());
 
             GenerationAndOffset canCommit = GAO.compareTo(preLogOffset) > 0 ? preLogOffset : GAO;
 
             if (canCommit.equals(commitOffset)) {
-                logger.debug("本地预日志最大为 {} ，所以可提交到 {} ，本地已经提交此进度。", preLogOffset.toString(), canCommit.toString());
+                logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {} ，但本地已经提交此进度。", preLogOffset.toString(), canCommit.toString());
             } else {
-                logger.debug("本地预日志最大为 {} ，所以可提交到 {}", preLogOffset.toString(), canCommit.toString());
+                logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {}", preLogOffset.toString(), canCommit.toString());
 
                 PreLogMeta preLogMeta = getBefore(canCommit);
                 if (preLogMeta == null) {
@@ -123,8 +122,9 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
                 LogManager.getINSTANCE()
                           .append(byteBufferOperationSet, GAO.getGeneration(), preLogMeta.startOffset, preLogMeta.endOffset);
 
-                logger.debug("本地预日志 commit 进度 由 {} 更新至 {}", commitOffset.toString(), canCommit.toString());
+                logger.debug("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString());
                 commitOffset = canCommit;
+                discardBefore(canCommit);
             }
         }
     }
@@ -150,7 +150,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     }
 
     /**
-     * 丢弃掉一些消息（批量丢弃，但是不会丢弃掉当前这一条）
+     * 丢弃掉一些消息（批量丢弃，包括这一条）
      */
     private void discardBefore(GenerationAndOffset GAO) {
         this.writeLockSupplier(() -> {

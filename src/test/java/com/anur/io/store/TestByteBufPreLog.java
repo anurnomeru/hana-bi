@@ -30,7 +30,13 @@ public class TestByteBufPreLog {
         }
 
         byteBufPreLogManager.commit(new GenerationAndOffset(0, 10));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 10));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 12));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 12));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 10));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 10));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 100));
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 100));
 
-        System.out.println();
     }
 }

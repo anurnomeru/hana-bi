@@ -54,9 +54,9 @@ public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
 
     @Override
     public String toString() {
-        return "GenerationAndOffset{" +
+        return "- {" +
             "generation=" + generation +
             ", offset=" + offset +
-            '}';
+            "} -";
     }
 }
