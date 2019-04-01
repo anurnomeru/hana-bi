@@ -40,7 +40,7 @@ public class ByteBufPreLog extends ReentrantLocker {
      * 获取此消息之前的消息（包括 targetOffset 这一条）
      */
     public PreLogMeta getBefore(long targetOffset) {
-        ConcurrentNavigableMap<Long, OperationAndOffset> result = preLog.tailMap(targetOffset, false);
+        ConcurrentNavigableMap<Long, OperationAndOffset> result = preLog.tailMap(targetOffset, true);
         return result.size() == 0 ? null : new PreLogMeta(result.firstKey(), result.lastKey(), result.values());
     }
 

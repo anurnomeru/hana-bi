@@ -5,6 +5,8 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.command.common.OperationTypeEnum;
+import com.anur.core.command.modle.Operation;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.exception.HanabiException;
@@ -50,6 +52,8 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
         this.commitOffset = LogManager.getINSTANCE()
                                       .getInitial();
         this.preLogOffset = commitOffset;
+
+        logger.info("预日志初始化成功，预日志将由 {} 开始", commitOffset.toString());
     }
 
     /**
@@ -57,13 +61,25 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
      */
     public void append(long generation, ByteBufferOperationSet byteBufferOperationSet) {
         this.writeLockSupplier(() -> {
+            if (generation < preLogOffset.getGeneration()) {
+                logger.error("追加到预日志的日志 generation 小于当前预日志 generation，追加失败！");
+                return null;
+            }
+
             ByteBufPreLog byteBufPreLog = preLog.compute(generation, (aLong, b) -> b == null ? new ByteBufPreLog(generation) : b);
             Iterator<OperationAndOffset> iterator = byteBufferOperationSet.iterator();
 
             long lastOffset = -1;
             while (iterator.hasNext()) {
                 OperationAndOffset operationAndOffset = iterator.next();
+
+                if (operationAndOffset.getOffset() <= preLogOffset.getOffset()) {
+                    logger.error("追加到预日志的日志 offset 小于当前预日志 offset，追加失败！！");
+                    break;
+                }
+
                 byteBufPreLog.append(operationAndOffset.getOperation(), operationAndOffset.getOffset());
+
                 lastOffset = operationAndOffset.getOffset();
             }
 
@@ -86,6 +102,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
 
         // 需要提交的进度小于等于preLogOffset
         if (compareResult <= 0) {
+            logger.debug("收到来自 Leader 节点的无效 Commit 请求 => {}，本地预日志 commit 进度 {} 已经大于此请求。", GAO.toString(), commitOffset.toString());
             return;
         } else {
             logger.debug("收到来自 Leader 节点的有效 Commit 请求 => {}", GAO.toString());
@@ -93,9 +110,9 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             GenerationAndOffset canCommit = GAO.compareTo(preLogOffset) > 0 ? preLogOffset : GAO;
 
             if (canCommit.equals(commitOffset)) {
-                logger.debug("本地预日志为 {} ，所以可提交到 {} ，本地已经提交此进度。", preLogOffset.toString(), canCommit.toString());
+                logger.debug("本地预日志最大为 {} ，所以可提交到 {} ，本地已经提交此进度。", preLogOffset.toString(), canCommit.toString());
             } else {
-                logger.debug("本地预日志为 {} ，所以可提交到 {}", preLogOffset.toString(), canCommit.toString());
+                logger.debug("本地预日志最大为 {} ，所以可提交到 {}", preLogOffset.toString(), canCommit.toString());
 
                 PreLogMeta preLogMeta = getBefore(canCommit);
                 if (preLogMeta == null) {
@@ -104,7 +121,10 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
 
                 ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(preLogMeta.offsets);
                 LogManager.getINSTANCE()
-                          .append(byteBufferOperationSet, preLogMeta.startOffset, preLogMeta.endOffset);
+                          .append(byteBufferOperationSet, GAO.getGeneration(), preLogMeta.startOffset, preLogMeta.endOffset);
+
+                logger.debug("本地预日志 commit 进度 由 {} 更新至 {}", commitOffset.toString(), canCommit.toString());
+                commitOffset = canCommit;
             }
         }
     }

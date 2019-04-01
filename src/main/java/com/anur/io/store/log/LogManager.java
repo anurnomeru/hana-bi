@@ -93,14 +93,12 @@ public class LogManager {
     /**
      * 添加多条操作日志到磁盘的入口
      */
-    public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
-        GenerationAndOffset operationId = ElectOperator.getInstance()
-                                                       .genOperationId();
+    public void append(ByteBufferOperationSet byteBufferOperationSet, long generation, long startOffset, long endOffset) {
 
-        currentOffset = operationId.getOffset();
-
-        Log log = maybeRoll(operationId.getGeneration());
+        Log log = maybeRoll(generation);
         log.append(byteBufferOperationSet, startOffset, endOffset);
+
+        currentOffset = endOffset;
     }
 
     /**
