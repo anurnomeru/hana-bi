@@ -134,6 +134,24 @@ public class Log extends ReentrantLocker {
     }
 
     /**
+     * 将多个操作添加到日志文件中
+     */
+    public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
+        if (startOffset < currentOffset) {
+            throw new HanabiException("一定是哪里有问题");
+        }
+
+        LogSegment logSegment = maybeRoll(byteBufferOperationSet.getByteBuffer()
+                                                                .limit());
+        try {
+            logSegment.append(startOffset, byteBufferOperationSet);
+        } catch (IOException e) {
+            throw new HanabiException("写入操作日志失败：" + startOffset + " => " + endOffset);
+        }
+        currentOffset = endOffset;
+    }
+
+    /**
      * 如果要 append 的日志过大，则需要滚动到下一个日志分片，如果滚动到下一个日志分片，则将上一个日志文件刷盘。
      */
     public LogSegment maybeRoll(int size) {

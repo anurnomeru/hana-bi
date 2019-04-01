@@ -20,11 +20,15 @@ package com.anur.io.store.operationset;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
 import com.anur.core.command.modle.Operation;
 import com.anur.io.store.common.OperationAndOffset;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -54,6 +58,10 @@ public class ByteBufferOperationSet extends OperationSet {
 
     public ByteBufferOperationSet(ByteBuffer byteBuffer) {
         this.byteBuffer = byteBuffer;
+    }
+
+    public ByteBufferOperationSet(Collection<OperationAndOffset> operations) {
+        this.byteBuffer = create(operations);
     }
 
     public int writeFullyTo(GatheringByteChannel gatheringByteChannel) throws IOException {
@@ -119,6 +127,27 @@ public class ByteBufferOperationSet extends OperationSet {
     }
 
     public ByteBuffer getByteBuffer() {
+        return byteBuffer;
+    }
+
+    private static ByteBuffer create(Collection<OperationAndOffset> operations) {
+        int count = operations.size();
+        int needToAllocate = operations.stream()
+                                       .map(operationAndOffset -> operationAndOffset.getOperation()
+                                                                                    .totalSize())
+                                       .reduce((i1, i2) -> i1 + i2)
+                                       .orElse(0);
+
+        ByteBuffer byteBuffer = ByteBuffer.allocate(needToAllocate + count * LogOverhead);
+        for (OperationAndOffset operation : operations) {
+            byteBuffer.putLong(operation.getOffset());
+            byteBuffer.putInt(operation.getOperation()
+                                       .totalSize());
+            byteBuffer.put(operation.getOperation()
+                                    .getByteBuffer());
+        }
+
+        byteBuffer.flip();
         return byteBuffer;
     }
 }

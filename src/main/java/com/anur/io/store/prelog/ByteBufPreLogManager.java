@@ -1,8 +1,5 @@
 package com.anur.io.store.prelog;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -14,7 +11,7 @@ import com.anur.exception.HanabiException;
 import com.anur.io.store.common.OperationAndOffset;
 import com.anur.io.store.log.LogManager;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
-import io.netty.buffer.ByteBuf;
+import com.anur.io.store.prelog.ByteBufPreLog.PreLogMeta;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/23
@@ -100,7 +97,14 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             } else {
                 logger.debug("本地预日志为 {} ，所以可提交到 {}", preLogOffset.toString(), canCommit.toString());
 
-                ByteBuf byteBuf = getBefore(canCommit);
+                PreLogMeta preLogMeta = getBefore(canCommit);
+                if (preLogMeta == null) {
+                    throw new HanabiException("有bug请注意排查！！，不应该出现这个情况");
+                }
+
+                ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(preLogMeta.offsets);
+                LogManager.getINSTANCE()
+                          .append(byteBufferOperationSet, preLogMeta.startOffset, preLogMeta.endOffset);
             }
         }
     }
@@ -108,7 +112,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     /**
      * 获取当前这一条之前的数据（包括这一条）
      */
-    private ByteBuf getBefore(GenerationAndOffset GAO) {
+    private PreLogMeta getBefore(GenerationAndOffset GAO) {
         return this.readLockSupplier(() -> {
             long gen = GAO.getGeneration();
             long offset = GAO.getOffset();

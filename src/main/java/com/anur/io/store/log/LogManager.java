@@ -11,6 +11,7 @@ import com.anur.exception.HanabiException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.common.LogCommon;
 import com.anur.core.command.modle.Operation;
+import com.anur.io.store.operationset.ByteBufferOperationSet;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18
@@ -87,6 +88,19 @@ public class LogManager {
 
         Log log = maybeRoll(operationId.getGeneration());
         log.append(operation, operationId.getOffset());
+    }
+
+    /**
+     * 添加多条操作日志到磁盘的入口
+     */
+    public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
+        GenerationAndOffset operationId = ElectOperator.getInstance()
+                                                       .genOperationId();
+
+        currentOffset = operationId.getOffset();
+
+        Log log = maybeRoll(operationId.getGeneration());
+        log.append(byteBufferOperationSet, startOffset, endOffset);
     }
 
     /**
