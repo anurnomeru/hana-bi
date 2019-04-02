@@ -16,10 +16,19 @@ public class ChannelManager extends ReentrantReadWriteLocker {
 
     public static final String CoordinateLeaderSign = "Leader";
 
+    /**
+     * 记录了服务名和 channel 的映射
+     */
     private Map<String/* serverName */, Channel> serverChannelMap;
+
+    /**
+     * 记录了 channel 和服务名的映射
+     */
+    private Map<Channel, String/* serverName */> channelServerMap;
 
     public ChannelManager() {
         this.serverChannelMap = new HashMap<>();
+        this.channelServerMap = new HashMap<>();
     }
 
     private static Map<ChannelType, ChannelManager> MANAGER_MAP = new ConcurrentHashMap<>();
@@ -48,17 +57,34 @@ public class ChannelManager extends ReentrantReadWriteLocker {
     }
 
     /**
+     * 如果还没连接上服务，是会返回空的
+     *
+     * TODO 如果后期服务多了最好改成双向映射，当然就连接十几台机器，循环几次也没关系
+     */
+    public String getChannelName(Channel channel) {
+        return this.readLockSupplier(() -> channelServerMap.get(channel));
+    }
+
+    /**
      * 向 channelManager 注册服务
      */
     public void register(String serverName, Channel channel) {
-        this.writeLockSupplier(() -> serverChannelMap.put(serverName, channel));
+        this.writeLockSupplier(() -> {
+            serverChannelMap.put(serverName, channel);
+            channelServerMap.put(channel, serverName);
+            return null;
+        });
     }
 
     /**
      * 根据服务名来注销服务
      */
     public void unRegister(String serverName) {
-        this.writeLockSupplier(() -> serverChannelMap.remove(serverName));
+        this.writeLockSupplier(() -> {
+            Channel channel = serverChannelMap.remove(serverName);
+            channelServerMap.remove(channel);
+            return null;
+        });
     }
 
     /**
@@ -66,13 +92,8 @@ public class ChannelManager extends ReentrantReadWriteLocker {
      */
     public void unRegister(Channel channel) {
         this.writeLockSupplier(() -> {
-            for (Entry<String, Channel> e : serverChannelMap.entrySet()) {
-                if (e.getValue()
-                     .equals(channel)) {
-                    this.unRegister(e.getKey());
-                    break;
-                }
-            }
+            String serverName = channelServerMap.remove(channel);
+            serverChannelMap.remove(serverName);
             return null;
         });
     }
@@ -82,6 +103,6 @@ public class ChannelManager extends ReentrantReadWriteLocker {
      */
     public enum ChannelType {
         ELECT,
-        COORDINATE;
+        COORDINATE,
     }
 }

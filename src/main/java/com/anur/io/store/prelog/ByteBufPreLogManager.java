@@ -57,6 +57,13 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     }
 
     /**
+     * 获取当前副本同步到的最新的 commitLog 数据
+     */
+    public GenerationAndOffset getPreLogOffset() {
+        return readLockSupplier(() -> preLogOffset);
+    }
+
+    /**
      * 此添加必须保证所有的操作日志都在同一个世代，实际上也确实如此
      */
     public void append(long generation, ByteBufferOperationSet byteBufferOperationSet) {
@@ -106,7 +113,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             return;
         } else {
 
-            GenerationAndOffset canCommit = GAO.compareTo(preLogOffset) > 0 ? preLogOffset : GAO;
+            GenerationAndOffset canCommit = readLockSupplier(() -> GAO.compareTo(preLogOffset) > 0 ? preLogOffset : GAO);
 
             if (canCommit.equals(commitOffset)) {
                 logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {} ，但本地已经提交此进度。", preLogOffset.toString(), canCommit.toString());

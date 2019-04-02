@@ -12,7 +12,7 @@ import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.command.modle.Register;
 import com.anur.core.command.common.AbstractCommand;
-import com.anur.core.coordinate.model.Response;
+import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -88,7 +88,7 @@ public class CoordinateClientOperator implements Runnable {
 
             Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
             InFlightRequestManager.getINSTANCE()
-                                  .send(leader.getServerName(), operation, Response.REQUIRE_NESS);
+                                  .send(leader.getServerName(), operation, RequestProcessor.REQUIRE_NESS);
             logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
 

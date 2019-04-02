@@ -18,6 +18,7 @@ import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.io.store.OffsetManager;
+import com.anur.io.store.prelog.ByteBufPreLogManager;
 import com.anur.timewheel.TimedTask;
 
 /**
@@ -71,14 +72,15 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
      */
     private TimedTask fetchPreLogTask = null;
 
-//    public void sendFetchPreLog() {
-//        if (fetchPreLogTask != null) {
-//            if (!fetchPreLogTask.isCancel()) {
-//                InFlightRequestManager.getINSTANCE()
-//                                      .send(leader,new Fetcher());
-//            }
-//        }
-//    }
+    public void sendFetchPreLog() {
+        if (fetchPreLogTask != null) {
+            if (!fetchPreLogTask.isCancel()) {
+                InFlightRequestManager.getINSTANCE()
+                                      .send(leader, new Fetcher(ByteBufPreLogManager.getINSTANCE()
+                                                                                    .getPreLogOffset()));
+            }
+        }
+    }
 
     /**
      * Follower 向 Leader 提交拉取到的最大的 GAO

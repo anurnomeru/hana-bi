@@ -4,11 +4,13 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ArrayBlockingQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.command.modle.FetchResponse;
 import com.anur.core.command.modle.Register;
 import com.anur.core.command.common.AbstractCommand;
-import com.anur.core.coordinate.model.Response;
+import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.util.ChannelManager;
@@ -33,6 +35,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
 
     static {
         RequestAndResponseType.put(OperationTypeEnum.REGISTER, OperationTypeEnum.NONE);
+        RequestAndResponseType.put(OperationTypeEnum.FETCH, OperationTypeEnum.FETCH_RESPONSE);
     }
 
     public static InFlightRequestManager getINSTANCE() {
@@ -46,9 +49,15 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
         return INSTANCE;
     }
 
+    public static void main(String[] args) {
+    }
+
     private final Logger logger = LoggerFactory.getLogger(InFlightRequestManager.class);
 
-    private volatile Map<String, Map<OperationTypeEnum, TimedTask>> inFlight = new HashMap<>();
+    /**
+     * 此 map 确保对一个服务发送某个消息，在收到回复之前，不可以再次对其发送消息。（有自动重发机制）
+     */
+    private volatile Map<String, Map<OperationTypeEnum, RequestProcessor>> inFlight = new HashMap<>();
 
     /**
      * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
@@ -57,67 +66,6 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
         this.writeLockSupplier(() -> {
             inFlight.forEach((s, m) -> m.forEach((o, t) -> t.cancel()));
             inFlight = new HashMap<>();
-            return null;
-        });
-    }
-
-    /**
-     * 此发送器保证【一个类型的消息】只能在收到回复前发送一次，类似于仅有 1 容量的Queue
-     */
-    public boolean send(String serverName, AbstractCommand command, Response response) {
-        OperationTypeEnum typeEnum = command.getOperationTypeEnum();
-
-        if (Optional.ofNullable(inFlight.get(serverName))
-                    .map(enums -> enums.containsKey(typeEnum))
-                    .orElse(false)) {
-            return false;
-        }
-
-        return this.writeLockSupplier(() -> {
-
-            if (Optional.ofNullable(inFlight.get(serverName))
-                        .map(enums -> enums.containsKey(typeEnum))
-                        .orElse(false)) {
-
-                logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到回复", serverName, typeEnum.name());
-                return false;
-            } else {
-                logger.debug("发送到节点 {} 的 {} 任务创建成功", serverName, typeEnum.name());
-                inFlight.compute(serverName, (s, enums) -> {
-                    if (enums == null) {
-                        enums = new HashMap<>();
-                    }
-                    enums.put(typeEnum, null);
-                    sendImpl(serverName, command, response, typeEnum);
-                    return enums;
-                });
-
-                return true;
-            }
-        });
-    }
-
-    /**
-     * 真正发送消息的方法，内置了重发机制
-     */
-    private void sendImpl(String serverName, AbstractCommand command, Response response, OperationTypeEnum operationTypeEnum) {
-        this.readLockSupplier(() -> {
-            if (!response.isComplete()) {
-                CoordinateSender.send(serverName, command);
-
-                if (RequestAndResponseType.get(operationTypeEnum)
-                                          .equals(OperationTypeEnum.NONE)) {
-                    // 是不需要回复的类型
-                    response.complete();
-                } else {
-                    TimedTask task = new TimedTask(1000, () -> sendImpl(serverName, command, response, operationTypeEnum));
-
-                    Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
-                         .addTask(task);
-                    inFlight.get(serverName)
-                            .put(operationTypeEnum, task);
-                }
-            }
             return null;
         });
     }
@@ -132,6 +80,83 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
             logger.info("协调节点 {} 已注册到本节点", register.getServerName());
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(register.getServerName(), channel);
+            break;
+
+        case FETCH:
+            break;
+
+        case FETCH_RESPONSE:
+            String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
+                                              .getChannelName(channel);
+
         }
+    }
+
+    /**
+     * 此发送器保证【一个类型的消息】只能在收到回复前发送一次，类似于仅有 1 容量的Queue
+     */
+    public boolean send(String serverName, AbstractCommand command, RequestProcessor requestProcessor) {
+        OperationTypeEnum typeEnum = command.getOperationTypeEnum();
+
+        // 第一次不锁检查
+        if (Optional.ofNullable(inFlight.get(serverName))
+                    .map(enums -> enums.containsKey(typeEnum))
+                    .orElse(false)) {
+            return false;
+        }
+
+        return this.writeLockSupplier(() -> {
+
+            // 双重锁检查
+            if (Optional.ofNullable(inFlight.get(serverName))
+                        .map(enums -> enums.containsKey(typeEnum))
+                        .orElse(false)) {
+
+                logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到回复", serverName, typeEnum.name());
+                return false;
+            } else {
+                logger.debug("发送到节点 {} 的 {} 任务创建成功", serverName, typeEnum.name());
+                inFlight.compute(serverName, (s, enums) -> {
+                    if (enums == null) {
+                        enums = new HashMap<>();
+                    }
+                    enums.put(typeEnum, requestProcessor);
+                    sendImpl(serverName, command, requestProcessor, typeEnum);
+                    return enums;
+                });
+
+                return true;
+            }
+        });
+    }
+
+    /**
+     * 真正发送消息的方法，内置了重发机制
+     */
+    private void sendImpl(String serverName, AbstractCommand command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
+        this.readLockSupplier(() -> {
+            if (!requestProcessor.isComplete()) {
+                CoordinateSender.send(serverName, command);
+
+                if (RequestAndResponseType.get(operationTypeEnum)
+                                          .equals(OperationTypeEnum.NONE)) {
+                    // 是不需要回复的类型
+                    requestProcessor.complete();
+                    writeLockSupplier(() -> inFlight.get(serverName)
+                                                    .remove(operationTypeEnum)
+                    );
+                } else {
+                    TimedTask task = new TimedTask(1000, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
+
+                    inFlight.get(serverName)
+                            .get(operationTypeEnum)
+                            .registerTask(task);
+
+                    Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
+                         .addTask(task);
+                }
+            }
+            return null;
+        });
     }
 }
