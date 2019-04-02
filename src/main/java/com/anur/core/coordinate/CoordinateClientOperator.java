@@ -9,7 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.struct.base.OperationTypeEnum;
+import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Register;
 import com.anur.core.struct.base.AbstractCommand;
 import com.anur.core.coordinate.model.RequestProcessor;

@@ -2,7 +2,7 @@ package com.anur.core.struct.coordinate;
 
 import java.nio.ByteBuffer;
 import com.anur.core.struct.base.AbstractCommand;
-import com.anur.core.struct.base.OperationTypeEnum;
+import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.elect.model.GenerationAndOffset;
 import io.netty.channel.Channel;
 

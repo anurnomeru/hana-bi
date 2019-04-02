@@ -2,8 +2,7 @@ package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import com.anur.core.struct.base.OperationTypeEnum;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.OperationTypeEnum;
 import com.anur.exception.HanabiException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;

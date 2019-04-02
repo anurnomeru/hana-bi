@@ -15,7 +15,7 @@ import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.server.CoordinateServer;
-import com.anur.core.struct.base.OperationTypeEnum;
+import com.anur.core.struct.OperationTypeEnum;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;

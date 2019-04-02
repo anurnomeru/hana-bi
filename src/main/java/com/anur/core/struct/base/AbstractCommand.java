@@ -1,6 +1,7 @@
 package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
+import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.util.ByteBufferUtil;
 import com.anur.exception.HanabiException;
 import io.netty.channel.Channel;

@@ -1,6 +1,6 @@
 package com.anur.io.store;
 
-import com.anur.core.struct.base.OperationTypeEnum;
+import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.util.HanabiExecutors;
