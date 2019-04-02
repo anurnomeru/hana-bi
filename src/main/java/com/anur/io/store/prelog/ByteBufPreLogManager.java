@@ -111,7 +111,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             if (canCommit.equals(commitOffset)) {
                 logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {} ，但本地已经提交此进度。", preLogOffset.toString(), canCommit.toString());
             } else {
-                logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {}", preLogOffset.toString(), canCommit.toString());
+                logger.info("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {}", preLogOffset.toString(), canCommit.toString());
 
                 PreLogMeta preLogMeta = getBefore(canCommit);
                 if (preLogMeta == null) {

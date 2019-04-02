@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.command.common.AbstractCommand;
+import com.anur.exception.HanabiException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
@@ -55,6 +56,11 @@ public class Operation extends AbstractCommand {
         int operationType = operationTypeEnum.byteSign;
         byte[] kBytes = key.getBytes(Charset.defaultCharset());
         int kSize = kBytes.length;
+
+        if (kSize == 0) {
+            throw new HanabiException("Operation Key的长度不合法，不能为0");
+        }
+
         byte[] vBytes = value.getBytes(Charset.defaultCharset());
         int vSize = vBytes.length;
 
