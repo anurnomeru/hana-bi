@@ -54,6 +54,19 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
     }
 
     /**
+     * 已经完成了此任务
+     */
+    public void complete(ByteBuffer byteBuffer) {
+        writeLockSupplier(() -> {
+            complete = true;
+            Optional.ofNullable(timedTask)
+                    .ifPresent(TimedTask::cancel);
+            HanabiExecutors.submit(() -> callBack.accept(byteBuffer));
+            return null;
+        });
+    }
+
+    /**
      * 取消此任务
      */
     public void cancel() {

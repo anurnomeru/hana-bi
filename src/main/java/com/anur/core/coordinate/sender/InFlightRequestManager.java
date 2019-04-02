@@ -15,9 +15,11 @@ import com.anur.core.command.common.OperationTypeEnum;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.exception.HanabiException;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
 import io.netty.channel.Channel;
+import io.netty.util.internal.StringUtil;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/27
@@ -33,9 +35,13 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
 
     private static Map<OperationTypeEnum, OperationTypeEnum> RequestAndResponseType = new HashMap<>();
 
+    private static Map<OperationTypeEnum, OperationTypeEnum> ResponseAndRequestType = new HashMap<>();
+
     static {
         RequestAndResponseType.put(OperationTypeEnum.REGISTER, OperationTypeEnum.NONE);
         RequestAndResponseType.put(OperationTypeEnum.FETCH, OperationTypeEnum.FETCH_RESPONSE);
+
+        RequestAndResponseType.forEach((ek, ev) -> ResponseAndRequestType.put(ev, ek));
     }
 
     public static InFlightRequestManager getINSTANCE() {
@@ -83,12 +89,36 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
             break;
 
         case FETCH:
-            break;
 
-        case FETCH_RESPONSE:
+            break;
+        /*
+         * DEFAULT 都当做 response 处理
+         */
+        default:
+            OperationTypeEnum requestType = ResponseAndRequestType.get(typeEnum);
             String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
                                               .getChannelName(channel);
+            if (StringUtil.isNullOrEmpty(serverName)) {
+                throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
+            }
 
+            this.readLockSupplier(() -> {
+                RequestProcessor requestProcessor = Optional.ofNullable(inFlight.get(serverName))
+                                                            .map(m -> m.get(requestType))
+                                                            .orElse(null);
+                if (requestProcessor == null || requestProcessor.isComplete()) {
+                    throw new HanabiException("收到了来自节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
+                }
+
+                this.writeLockSupplier(() -> {
+                    requestProcessor.complete(msg);
+                    inFlight.get(serverName)
+                            .remove(requestType);
+                    logger.info("成功收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
+                    return null;
+                });
+                return null;
+            });
         }
     }
 
@@ -112,7 +142,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
                         .map(enums -> enums.containsKey(typeEnum))
                         .orElse(false)) {
 
-                logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到回复", serverName, typeEnum.name());
+                logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name());
                 return false;
             } else {
                 logger.debug("发送到节点 {} 的 {} 任务创建成功", serverName, typeEnum.name());
