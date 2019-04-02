@@ -1,7 +1,7 @@
 package com.anur.io.store;
 
-import com.anur.core.struct.common.OperationTypeEnum;
-import com.anur.core.struct.coordinate.Operation;
+import com.anur.core.struct.base.OperationTypeEnum;
+import com.anur.core.struct.base.Operation;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.io.store.log.LogManager;

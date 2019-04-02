@@ -1,7 +1,8 @@
-package com.anur.core.struct.coordinate;
+package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
-import com.anur.core.struct.common.OperationTypeEnum;
+import com.anur.core.struct.base.Operation;
+import com.anur.core.struct.base.OperationTypeEnum;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/27

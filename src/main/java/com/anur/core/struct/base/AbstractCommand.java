@@ -1,4 +1,4 @@
-package com.anur.core.struct.common;
+package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
 import com.anur.core.util.ByteBufferUtil;

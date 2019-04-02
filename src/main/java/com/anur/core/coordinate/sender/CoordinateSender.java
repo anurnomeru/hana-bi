@@ -3,7 +3,7 @@ package com.anur.core.coordinate.sender;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import com.anur.core.struct.common.AbstractCommand;
+import com.anur.core.struct.base.AbstractCommand;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import io.netty.buffer.Unpooled;

@@ -25,7 +25,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.anur.io.store.common.OffsetAndPosition;
-import com.anur.core.struct.coordinate.Operation;
+import com.anur.core.struct.base.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 import com.anur.core.util.FileIOUtil;
 import com.anur.core.util.IteratorTemplate;

@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
-import com.anur.core.struct.coordinate.Operation;
+import com.anur.core.struct.base.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 
 /**

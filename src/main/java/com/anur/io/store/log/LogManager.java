@@ -10,7 +10,7 @@ import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.exception.HanabiException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.common.LogCommon;
-import com.anur.core.struct.coordinate.Operation;
+import com.anur.core.struct.base.Operation;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 
 /**

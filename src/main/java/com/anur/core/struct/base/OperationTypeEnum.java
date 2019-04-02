@@ -1,4 +1,4 @@
-package com.anur.core.struct.common;
+package com.anur.core.struct.base;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -6,8 +6,6 @@ import java.util.Map;
 import java.util.Set;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
-import com.anur.core.struct.coordinate.Register;
-import com.anur.core.struct.coordinate.Operation;
 import com.anur.exception.HanabiException;
 
 /**

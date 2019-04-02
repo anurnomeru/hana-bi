@@ -1,9 +1,9 @@
 package com.anur.io.store;
 
 import java.util.Iterator;
-import com.anur.core.struct.coordinate.Operation;
+import com.anur.core.struct.base.Operation;
 import com.anur.io.store.common.OperationAndOffset;
-import com.anur.core.struct.common.OperationTypeEnum;
+import com.anur.core.struct.base.OperationTypeEnum;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 
 /**
