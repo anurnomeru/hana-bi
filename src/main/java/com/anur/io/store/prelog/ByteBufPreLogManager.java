@@ -5,8 +5,6 @@ import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.command.common.OperationTypeEnum;
-import com.anur.core.command.modle.Operation;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.exception.HanabiException;

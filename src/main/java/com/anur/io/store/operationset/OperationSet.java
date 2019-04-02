@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
-import com.anur.core.command.modle.Operation;
+import com.anur.core.struct.coordinate.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 
 /**

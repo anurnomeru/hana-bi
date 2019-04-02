@@ -22,13 +22,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
-import com.anur.core.command.modle.Operation;
+import com.anur.core.struct.coordinate.Operation;
 import com.anur.io.store.common.OperationAndOffset;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019

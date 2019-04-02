@@ -1,7 +1,7 @@
-package com.anur.core.command.modle;
+package com.anur.core.struct.coordinate;
 
-import com.anur.core.command.common.OperationTypeEnum;
-import com.anur.core.command.common.AbstractCommand;
+import com.anur.core.struct.common.OperationTypeEnum;
+import com.anur.core.struct.common.AbstractCommand;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import io.netty.channel.Channel;
 

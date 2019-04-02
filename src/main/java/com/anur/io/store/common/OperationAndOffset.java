@@ -1,6 +1,6 @@
 package com.anur.io.store.common;
 
-import com.anur.core.command.modle.Operation;
+import com.anur.core.struct.coordinate.Operation;
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
  */

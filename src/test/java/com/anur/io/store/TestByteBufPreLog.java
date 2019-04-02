@@ -1,7 +1,7 @@
 package com.anur.io.store;
 
-import com.anur.core.command.common.OperationTypeEnum;
-import com.anur.core.command.modle.Operation;
+import com.anur.core.struct.common.OperationTypeEnum;
+import com.anur.core.struct.coordinate.Operation;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.io.store.log.LogManager;
@@ -22,7 +22,7 @@ public class TestByteBufPreLog {
 
         HanabiExecutors.submit(() -> {
             long start = System.currentTimeMillis();
-            for (int i = 3000000-1; i < 30000000; i++) {
+            for (int i = 30000000; i < 30000999; i++) {
                 byteBufPreLogManager
                     .append(0, new ByteBufferOperationSet(
                         new Operation(OperationTypeEnum.SETNX, "Asssssssss", "YYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSB"), i));
