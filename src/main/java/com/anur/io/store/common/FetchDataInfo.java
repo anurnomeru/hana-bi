@@ -1,6 +1,7 @@
 package com.anur.io.store.common;
 
 import com.anur.io.store.log.LogOffsetMetadata;
+import com.anur.io.store.operationset.FileOperationSet;
 import com.anur.io.store.operationset.OperationSet;
 
 /**
@@ -12,18 +13,18 @@ public class FetchDataInfo {
 
     private LogOffsetMetadata fetchOffsetMetadata;
 
-    private OperationSet operationSet;
+    private FileOperationSet fileOperationSet;
 
-    public FetchDataInfo(LogOffsetMetadata fetchOffsetMetadata, OperationSet operationSet) {
+    public FetchDataInfo(LogOffsetMetadata fetchOffsetMetadata, FileOperationSet fileOperationSet) {
         this.fetchOffsetMetadata = fetchOffsetMetadata;
-        this.operationSet = operationSet;
+        this.fileOperationSet = fileOperationSet;
     }
 
     public LogOffsetMetadata getFetchOffsetMetadata() {
         return fetchOffsetMetadata;
     }
 
-    public OperationSet getOperationSet() {
-        return operationSet;
+    public FileOperationSet getFileOperationSet() {
+        return fileOperationSet;
     }
 }

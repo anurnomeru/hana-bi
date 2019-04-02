@@ -5,7 +5,9 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.AbstractTimedStruct;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
+import com.anur.io.store.operationset.FileOperationSet;
 import io.netty.channel.Channel;
+import io.netty.channel.DefaultFileRegion;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/28
@@ -18,23 +20,23 @@ import io.netty.channel.Channel;
  */
 public class FetchResponse extends AbstractTimedStruct {
 
-    public static final int ByteBufferOperationSetSizeOffset = TimestampOffset + TimestampLength;
+    public static final int FileOperationSetSizeOffset = TimestampOffset + TimestampLength;
 
-    public static final int ByteBufferOperationSetLength = 4;
+    public static final int FileOperationSetSizeLength = 4;
 
     /**
      * 最基础的 FetchResponse 大小 ( 不包括byteBufferOperationSet )
      */
-    public static final int BaseMessageOverhead = ByteBufferOperationSetSizeOffset + ByteBufferOperationSetLength;
+    public static final int BaseMessageOverhead = FileOperationSetSizeOffset + FileOperationSetSizeLength;
 
-    private ByteBufferOperationSet byteBufferOperationSet;
+    private FileOperationSet fileOperationSet;
 
     public FetchResponse(FetchDataInfo fetchDataInfo) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
         init(byteBuffer, OperationTypeEnum.FETCH_RESPONSE);
 
-        fetchDataInfo.getOperationSet()
-        byteBuffer.putInt();
+        fileOperationSet = fetchDataInfo.getFileOperationSet();
+        byteBuffer.putInt(fileOperationSet.sizeInBytes());
 
         byteBuffer.rewind();
     }
@@ -43,13 +45,19 @@ public class FetchResponse extends AbstractTimedStruct {
         buffer = byteBuffer;
     }
 
+    public ByteBufferOperationSet read() {
+        buffer.position(BaseMessageOverhead);
+        return new ByteBufferOperationSet(buffer.slice());
+    }
+
     @Override
     public void writeIntoChannel(Channel channel) {
         channel.write(buffer);
+        channel.write(new DefaultFileRegion(fileOperationSet.getFileChannel(), fileOperationSet.getStart(), fileOperationSet.getEnd()));
     }
 
     @Override
     public int totalSize() {
-        return 0;
+        return size() + fileOperationSet.sizeInBytes();
     }
 }

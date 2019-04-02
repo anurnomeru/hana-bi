@@ -34,8 +34,8 @@ public class LogManager {
     /** 管理所有 Log */
     protected final ConcurrentSkipListMap<Long, Log> generationDirs;
 
-    /** 最新的那个 offset */
-    protected volatile long currentOffset;
+    /** 最新的那个 GAO */
+    protected volatile GenerationAndOffset currentGAO;
 
     /** 基础目录 */
     private final File baseDir;
@@ -47,6 +47,7 @@ public class LogManager {
         this.generationDirs = new ConcurrentSkipListMap<>();
         this.baseDir = path;
         this.initial = load();
+        this.currentGAO = initial;
     }
 
     /**
@@ -84,7 +85,7 @@ public class LogManager {
         GenerationAndOffset operationId = ElectOperator.getInstance()
                                                        .genOperationId();
 
-        currentOffset = operationId.getOffset();
+        currentGAO = operationId;
 
         Log log = maybeRoll(operationId.getGeneration());
         log.append(operation, operationId.getOffset());
@@ -98,7 +99,7 @@ public class LogManager {
         Log log = maybeRoll(generation);
         log.append(byteBufferOperationSet, startOffset, endOffset);
 
-        currentOffset = endOffset;
+        currentGAO = new GenerationAndOffset(generation, endOffset);
     }
 
     /**
@@ -154,11 +155,11 @@ public class LogManager {
         Log needLoad = tail.firstEntry()
                            .getValue();
 
-        Iterable<LogSegment> logSegmentIterable = needLoad.getLogSegments(offset, currentOffset);
+        Iterable<LogSegment> logSegmentIterable = needLoad.getLogSegments(offset, Long.MAX_VALUE);
         LogSegment logSegment = logSegmentIterable.iterator()
                                                   .next();
 
-        return logSegment.read(offset, currentOffset, Integer.MAX_VALUE);
+        return logSegment.read(offset, Long.MAX_VALUE, Integer.MAX_VALUE);
     }
 
     public GenerationAndOffset getInitial() {

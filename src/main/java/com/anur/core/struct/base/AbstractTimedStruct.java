@@ -15,6 +15,7 @@ public abstract class AbstractTimedStruct extends AbstractStruct {
     public static final int TimestampLength = 8;
 
     public void init(ByteBuffer byteBuffer, OperationTypeEnum operationTypeEnum) {
+        buffer = byteBuffer;
         byteBuffer.position(TypeOffset);
         byteBuffer.putInt(operationTypeEnum.byteSign);
         byteBuffer.putLong(System.currentTimeMillis());

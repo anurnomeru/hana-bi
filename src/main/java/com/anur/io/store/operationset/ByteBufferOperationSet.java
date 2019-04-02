@@ -36,7 +36,6 @@ public class ByteBufferOperationSet extends OperationSet {
 
     private ByteBuffer byteBuffer;
 
-    public static final ByteBufferOperationSet Empty = new ByteBufferOperationSet(ByteBuffer.allocate(0));
 
     /**
      * 一个日志将要被append到日志之前，需要进行的操作

@@ -335,4 +335,8 @@ public class FileOperationSet extends OperationSet {
             e.printStackTrace();
         }
     }
+
+    public FileChannel getFileChannel() {
+        return fileChannel;
+    }
 }
