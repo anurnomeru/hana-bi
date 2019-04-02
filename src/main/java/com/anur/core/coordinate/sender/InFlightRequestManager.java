@@ -7,7 +7,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.struct.base.Register;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.lock.ReentrantReadWriteLocker;
@@ -123,7 +123,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
     /**
      * 此发送器保证【一个类型的消息】只能在收到回复前发送一次，类似于仅有 1 容量的Queue
      */
-    public boolean send(String serverName, AbstractCommand command, RequestProcessor requestProcessor) {
+    public boolean send(String serverName, AbstractStruct command, RequestProcessor requestProcessor) {
         OperationTypeEnum typeEnum = command.getOperationTypeEnum();
 
         // 第一次不锁检查
@@ -161,7 +161,7 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
     /**
      * 真正发送消息的方法，内置了重发机制
      */
-    private void sendImpl(String serverName, AbstractCommand command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
+    private void sendImpl(String serverName, AbstractStruct command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
         this.readLockSupplier(() -> {
             if (!requestProcessor.isComplete()) {
                 CoordinateSender.send(serverName, command);

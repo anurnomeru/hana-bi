@@ -11,7 +11,7 @@ import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Register;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.core.util.ChannelManager;
@@ -59,7 +59,7 @@ public class CoordinateClientOperator implements Runnable {
      * 如何消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
-        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractCommand.TypeOffset));
+        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
         InFlightRequestManager.getINSTANCE()
                               .receive(msg, typeEnum, ctx.channel());
     };

@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.struct.base.Register;
 import com.anur.core.struct.coordinate.FetchResponse;
@@ -45,9 +45,9 @@ public enum OperationTypeEnum {
 
     public int byteSign;
 
-    public Class<? extends AbstractCommand> clazz;
+    public Class<? extends AbstractStruct> clazz;
 
-    OperationTypeEnum(int byteSign, Class<? extends AbstractCommand> clazz) {
+    OperationTypeEnum(int byteSign, Class<? extends AbstractStruct> clazz) {
         this.clazz = clazz;
         this.byteSign = byteSign;
     }

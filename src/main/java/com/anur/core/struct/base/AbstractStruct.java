@@ -16,7 +16,7 @@ import io.netty.channel.Channel;
  *
  * 所有的指令都满足 4位CRC + 4位类型
  */
-public abstract class AbstractCommand {
+public abstract class AbstractStruct {
 
     public static final int CrcOffset = 0;
 

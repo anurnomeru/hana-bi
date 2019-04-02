@@ -3,7 +3,7 @@ package com.anur.core.coordinate.sender;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import io.netty.buffer.Unpooled;
@@ -35,7 +35,7 @@ public class CoordinateSender {
     /**
      * 向某个服务发送东西~
      */
-    public static void send(String serverName, AbstractCommand body) {
+    public static void send(String serverName, AbstractStruct body) {
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)

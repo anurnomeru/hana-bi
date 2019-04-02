@@ -1,9 +1,10 @@
 package com.anur.core.struct.coordinate;
 
 import java.nio.ByteBuffer;
-import com.anur.core.struct.base.AbstractCommand;
-import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.elect.model.GenerationAndOffset;
+import com.anur.core.struct.OperationTypeEnum;
+import com.anur.core.struct.base.AbstractTimedStruct;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
 /**
@@ -11,11 +12,7 @@ import io.netty.channel.Channel;
  *
  * 用于向协调 Leader 拉取消息
  */
-public class Fetcher extends AbstractCommand {
-
-    public static final int TimestampOffset = TypeOffset + TypeLength;
-
-    public static final int TimestampLength = 8;
+public class Fetcher extends AbstractTimedStruct {
 
     public static final int GenerationOffset = TimestampOffset + TimestampLength;
 
@@ -29,31 +26,16 @@ public class Fetcher extends AbstractCommand {
 
     public Fetcher(GenerationAndOffset GAO) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
-        byteBuffer.position(TypeOffset);
-        byteBuffer.putInt(OperationTypeEnum.FETCH.byteSign);
-        byteBuffer.putLong(System.currentTimeMillis());
+        init(byteBuffer, OperationTypeEnum.FETCH);
+
         byteBuffer.putLong(GAO.getGeneration());
         byteBuffer.putLong(GAO.getOffset());
-
-        this.buffer = byteBuffer;
-        long crc = computeChecksum();
-
-        byteBuffer.position(0);
-        byteBuffer.putInt((int) crc);
 
         byteBuffer.rewind();
     }
 
     public Fetcher(ByteBuffer byteBuffer) {
         this.buffer = byteBuffer;
-        ensureValid();
-    }
-
-    /**
-     * 时间戳用于防止同一次请求的 “多次请求”，保证幂等性
-     */
-    public long getTimestamp() {
-        return buffer.getLong(TimestampOffset);
     }
 
     public GenerationAndOffset getGAO() {
@@ -62,11 +44,11 @@ public class Fetcher extends AbstractCommand {
 
     @Override
     public void writeIntoChannel(Channel channel) {
-
+        channel.write(Unpooled.wrappedBuffer(buffer));
     }
 
     @Override
     public int totalSize() {
-        return 0;
+        return size();
     }
 }

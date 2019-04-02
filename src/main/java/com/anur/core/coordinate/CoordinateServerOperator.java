@@ -9,7 +9,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -58,7 +58,7 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractCommand.TypeOffset));
+        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
         InFlightRequestManager.getINSTANCE()
                               .receive(msg, typeEnum, ctx.channel());
     };

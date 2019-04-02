@@ -1,7 +1,9 @@
 package com.anur.core.struct.coordinate;
 
+import java.nio.ByteBuffer;
 import com.anur.core.struct.OperationTypeEnum;
-import com.anur.core.struct.base.AbstractCommand;
+import com.anur.core.struct.base.AbstractTimedStruct;
+import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import io.netty.channel.Channel;
 
@@ -14,43 +16,36 @@ import io.netty.channel.Channel;
  *
  * 子类可以实现其 content 部分的内容拓展
  */
-public class FetchResponse extends AbstractCommand {
+public class FetchResponse extends AbstractTimedStruct {
 
-    public static final int TimestampOffset = TypeOffset + TypeLength;
+    public static final int ByteBufferOperationSetSizeOffset = TimestampOffset + TimestampLength;
 
-    public static final int TimestampLength = 8;
-
-    public static final int ContentSizeOffset = TimestampOffset + TimestampLength;
-
-    public static final int ContentSizeLength = 4;
+    public static final int ByteBufferOperationSetLength = 4;
 
     /**
      * 最基础的 FetchResponse 大小 ( 不包括byteBufferOperationSet )
      */
-    public static final int BaseMessageOverhead = ContentSizeOffset + ContentSizeLength;
-
-    // =================================================================
-
-    private long timestamp;
-
-    private int contentLength;
+    public static final int BaseMessageOverhead = ByteBufferOperationSetSizeOffset + ByteBufferOperationSetLength;
 
     private ByteBufferOperationSet byteBufferOperationSet;
 
-    public FetchResponse(OperationTypeEnum operationTypeEnum, long timestamp, int contentLength, ByteBufferOperationSet byteBufferOperationSet) {
-        this.timestamp = timestamp;
-        this.contentLength = contentLength;
+    public FetchResponse(FetchDataInfo fetchDataInfo) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
+        init(byteBuffer, OperationTypeEnum.FETCH_RESPONSE);
 
-        int crc = 0; // FetchResponse 不需要 CRC
-        int operationType = operationTypeEnum.byteSign;
-        int size = byteBufferOperationSet.sizeInBytes();
+        fetchDataInfo.getOperationSet()
+        byteBuffer.putInt();
 
-        //        ByteBuf byteBuf = ByteBuffer.allocate(BaseMessageOverhead);
+        byteBuffer.rewind();
+    }
+
+    public FetchResponse(ByteBuffer byteBuffer) {
+        buffer = byteBuffer;
     }
 
     @Override
     public void writeIntoChannel(Channel channel) {
-
+        channel.write(buffer);
     }
 
     @Override

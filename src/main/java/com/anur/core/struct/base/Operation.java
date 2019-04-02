@@ -17,7 +17,7 @@ import io.netty.channel.Channel;
  * 　4　   +   4    +    4      + key +    4        +  v
  * CRC32  +  type  + keyLength + key + valueLength +  v
  */
-public class Operation extends AbstractCommand {
+public class Operation extends AbstractStruct {
 
     public static final int KeySizeOffset = TypeOffset + TypeLength;
 
