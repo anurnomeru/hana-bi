@@ -13,13 +13,12 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
-import com.anur.core.coordinate.sender.InFlightRequestManager;
+import com.anur.core.coordinate.sender.InFlightApisManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.client.CoordinateClient;
-import com.anur.core.struct.base.Operation;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
@@ -60,8 +59,8 @@ public class CoordinateClientOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        InFlightRequestManager.getINSTANCE()
-                              .receive(msg, typeEnum, ctx.channel());
+        InFlightApisManager.getINSTANCE()
+                           .receive(msg, typeEnum, ctx.channel());
     };
 
     /**
@@ -87,8 +86,8 @@ public class CoordinateClientOperator implements Runnable {
                           .register(leader.getServerName(), ctx.channel());
 
             Register register = new Register(InetSocketAddressConfigHelper.getServerName());
-            InFlightRequestManager.getINSTANCE()
-                                  .send(leader.getServerName(), register, RequestProcessor.REQUIRE_NESS);
+            InFlightApisManager.getINSTANCE()
+                               .send(leader.getServerName(), register, RequestProcessor.REQUIRE_NESS);
             logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
 

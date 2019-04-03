@@ -42,11 +42,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
-    private static final long ELECTION_TIMEOUT_MS = 1500;// 为了测试方便，所以这里将时间扩大10倍
+    private static final long ELECTION_TIMEOUT_MS = 150;// 为了测试方便，所以这里将时间扩大10倍
 
-    private static final long VOTES_BACK_OFF_MS = 700;
+    private static final long VOTES_BACK_OFF_MS = 70;
 
-    private static final long HEART_BEAT_MS = 700;
+    private static final long HEART_BEAT_MS = 70;
 
     /**
      * 协调器独享线程
@@ -344,7 +344,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
             // 世代大于当前世代
             if (generation >= this.generation) {
-                logger.debug(msg);
+                //                logger.debug(msg);
 
                 if (this.leaderServerName == null) {
                     logger.info("集群中，节点 {} 已经成功在世代 {} 上位成为 Leader，本节点将成为 Follower，直到与 Leader 的网络通讯出现问题", leaderServerName, generation);
@@ -497,7 +497,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 Optional.ofNullable(ChannelManager.getInstance(ChannelType.ELECT)
                                                   .getChannel(hanabiNode.getServerName()))
                         .ifPresent(channel -> {
-                            logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的心跳...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
+                            //                            logger.debug("正向节点 {} [{}:{}] 发送世代 {} 的心跳...", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort(), this.generation);
                             channel.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT, heartBeat));
                         });
             }
@@ -524,7 +524,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             Timer.getInstance()
                  .addTask(timedTask);
 
-//            logger.debug("本节点将于 {} ms 后重新发起下一轮选举", electionTimeout);
+            //            logger.debug("本节点将于 {} ms 后重新发起下一轮选举", electionTimeout);
             taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
             return null;
         });
@@ -538,7 +538,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
             Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
                     .ifPresent(timedTask -> {
-//                        logger.debug(msg);
+                        //                        logger.debug(msg);
                         timedTask.cancel();
                     });
             return null;

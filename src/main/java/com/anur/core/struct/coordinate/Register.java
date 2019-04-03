@@ -1,6 +1,5 @@
 package com.anur.core.struct.coordinate;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.struct.OperationTypeEnum;

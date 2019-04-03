@@ -20,7 +20,7 @@ import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
-import com.anur.core.coordinate.sender.InFlightRequestManager;
+import com.anur.core.coordinate.sender.InFlightApisManager;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.io.store.OffsetManager;
@@ -101,14 +101,16 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                 if (!fetchPreLogTask.isCancel()) {
                     GenerationAndOffset GAO = ByteBufPreLogManager.getINSTANCE()
                                                                   .getPreLogOffset();
-                    logger.debug("向 Leader {} 发送 FETCH 请求，当前预日志进度为 {}", leader, GAO);
-                    InFlightRequestManager.getINSTANCE()
-                                          .send(
-                                              leader,
-                                              new Fetcher(GAO),
-                                              new RequestProcessor(byteBuffer ->
-                                                  CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer))
-                                              ));
+                    if (InFlightApisManager.getINSTANCE()
+                                           .send(
+                                               leader,
+                                               new Fetcher(GAO),
+                                               new RequestProcessor(byteBuffer ->
+                                                   CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer))
+                                               ))) {
+
+                        logger.debug("向 Leader {} 发送 FETCH 请求，当前预日志进度为 {}", leader, GAO);
+                    }
                     fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
                     Timer.getInstance()
                          .addTask(fetchPreLogTask);
@@ -187,18 +189,22 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
         ElectOperator.getInstance()
                      .registerWhenClusterValid(
                          cluster -> writeLockSupplier(() -> {
-                             fetchLock.lock();
-                             try {
-                                 Optional.ofNullable(fetchPreLogTask)
-                                         .ifPresent(TimedTask::cancel);
-                             } finally {
-                                 fetchLock.unlock();
-                             }
-
                              clusterValid = true;
                              leader = cluster.getLeader();
                              isLeader = InetSocketAddressConfigHelper.getServerName()
                                                                      .equals(leader);
+
+                             fetchLock.lock();
+                             try {
+                                 if (!isLeader) {
+                                     fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
+                                     Timer.getInstance()
+                                          .addTask(fetchPreLogTask);
+                                 }
+                             } finally {
+                                 fetchLock.unlock();
+                             }
+
                              if (isLeader) {
                                  clusters = cluster.getClusters();
                                  validCommitCountNeed = clusters.size() / 2 + 1;
@@ -216,9 +222,8 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                          () -> writeLockSupplier(() -> {
                              fetchLock.lock();
                              try {
-                                 fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
-                                 Timer.getInstance()
-                                      .addTask(fetchPreLogTask);
+                                 Optional.ofNullable(fetchPreLogTask)
+                                         .ifPresent(TimedTask::cancel);
                              } finally {
                                  fetchLock.unlock();
                              }
@@ -231,8 +236,8 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
 
                              // 当集群不可用时，与协调 leader 断开连接
                              CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
-                             InFlightRequestManager.getINSTANCE()
-                                                   .reboot();
+                             InFlightApisManager.getINSTANCE()
+                                                .reboot();
                              return null;
                          }));
     }

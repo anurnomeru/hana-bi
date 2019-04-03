@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
@@ -22,14 +23,14 @@ import io.netty.util.internal.StringUtil;
 /**
  * Created by Anur IjuoKaruKas on 2019/3/27
  *
- * 此管理器负责消息的重发、并保证这种消息类型，在收到回复之前，无法继续发同一种类型的消息
+ * 此管理器负责大部分协调器的业务处理逻辑、并负责消息的重发、且保证这种消息类型，在收到回复之前，无法继续发同一种类型的消息
  *
  * 1、消息在没有收到回复之前，会定时重发。
  * 2、那么如何保证数据不被重复消费：我们以时间戳作为 key 的一部分，应答方需要在消费消息后，需要记录此时间戳，并不再消费比此时间戳小的消息。
  */
-public class InFlightRequestManager extends ReentrantReadWriteLocker {
+public class InFlightApisManager extends ReentrantReadWriteLocker {
 
-    private static volatile InFlightRequestManager INSTANCE;
+    private static volatile InFlightApisManager INSTANCE;
 
     private static Map<OperationTypeEnum, OperationTypeEnum> RequestAndResponseType = new HashMap<>();
 
@@ -42,21 +43,18 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
         RequestAndResponseType.forEach((ek, ev) -> ResponseAndRequestType.put(ev, ek));
     }
 
-    public static InFlightRequestManager getINSTANCE() {
+    public static InFlightApisManager getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (InFlightRequestManager.class) {
+            synchronized (InFlightApisManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new InFlightRequestManager();
+                    INSTANCE = new InFlightApisManager();
                 }
             }
         }
         return INSTANCE;
     }
 
-    public static void main(String[] args) {
-    }
-
-    private final Logger logger = LoggerFactory.getLogger(InFlightRequestManager.class);
+    private final Logger logger = LoggerFactory.getLogger(InFlightApisManager.class);
 
     /**
      * 此 map 确保对一个服务发送某个消息，在收到回复之前，不可以再次对其发送消息。（有自动重发机制）
@@ -78,21 +76,21 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
      * 接收到消息如何处理
      */
     public void receive(ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
-        switch (typeEnum) {
-        case REGISTER:
-            Register register = new Register(msg);
-            logger.info("协调节点 {} 已注册到本节点", register.getServerName());
-            ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .register(register.getServerName(), channel);
-            break;
-
-        case FETCH:
-
-            break;
-        /*
-         * DEFAULT 都当做 response 处理
-         */
-        default:
+        if (RequestAndResponseType.containsKey(typeEnum)) {
+            switch (typeEnum) {
+            case REGISTER:
+                handleRegisterRequest(msg, channel);
+                break;
+            case FETCH:
+                handleFetchRequest(msg, channel);
+                break;
+            default:
+                throw new HanabiException("不可能存在这种情况!!!");
+            }
+        } else {
+            /*
+             *  response 处理
+             */
             OperationTypeEnum requestType = ResponseAndRequestType.get(typeEnum);
             String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
                                               .getChannelName(channel);
@@ -118,6 +116,35 @@ public class InFlightRequestManager extends ReentrantReadWriteLocker {
                 return null;
             });
         }
+
+        switch (typeEnum) {
+        case REGISTER:
+
+            break;
+
+        case FETCH:
+
+            break;
+        default:
+        }
+    }
+
+    /**
+     * 协调子节点向父节点注册自己
+     */
+    private void handleRegisterRequest(ByteBuffer msg, Channel channel) {
+        Register register = new Register(msg);
+        logger.info("协调节点 {} 已注册到本节点", register.getServerName());
+        ChannelManager.getInstance(ChannelType.COORDINATE)
+                      .register(register.getServerName(), channel);
+    }
+
+    /**
+     * 协调子节点向父节点请求 Fetch 消息
+     */
+    private void handleFetchRequest(ByteBuffer msg, Channel channel) {
+        Fetcher fetcher = new Fetcher(msg);
+        logger.info("协调节点 {} 的 Fetch来啦~~", fetcher.getGAO());
     }
 
     /**
