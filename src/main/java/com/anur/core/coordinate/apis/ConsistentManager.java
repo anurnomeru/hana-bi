@@ -86,6 +86,14 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
     private Consumer<FetchResponse> CONSUME_FETCH_RESPONSE = fetchResponse -> {
         logger.debug("收到 Leader {} 返回的 FETCH_RESPONSE", leader);
 
+        if (isLeader) {
+            logger.error("出现了不应该出现的情况！");
+        }
+
+        if (fetchResponse.size() == 0) {
+            return;
+        }
+
         ByteBufPreLogManager.getINSTANCE()
                             .append(fetchResponse.getGeneration(), fetchResponse.read());
     };
@@ -129,6 +137,10 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
         logger.debug("收到了来自节点 {} 的 fetch 进度提交，此阶段进度为 {}", node, GAO.toString());
 
         GenerationAndOffset canCommit = readLockSupplier(() -> {
+            if (!isLeader) {
+                logger.error("出现了不应该出现的情况！");
+            }
+
             GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
                                                          .load();
             if (GAOLatest.compareTo(GAO) > 0) {// 小于已经 commit 的 GAO 无需记录

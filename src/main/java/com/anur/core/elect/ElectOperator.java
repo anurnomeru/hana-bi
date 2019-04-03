@@ -42,11 +42,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
-    private static final long ELECTION_TIMEOUT_MS = 150;// 为了测试方便，所以这里将时间扩大10倍
+    private static final long ELECTION_TIMEOUT_MS = 1500;// 为了测试方便，所以这里将时间扩大10倍
 
-    private static final long VOTES_BACK_OFF_MS = 70;
+    private static final long VOTES_BACK_OFF_MS = 700;
 
-    private static final long HEART_BEAT_MS = 70;
+    private static final long HEART_BEAT_MS = 700;
 
     /**
      * 协调器独享线程

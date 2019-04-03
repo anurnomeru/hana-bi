@@ -47,4 +47,20 @@ public class LogOffsetMetadata {
         this.segmentBaseOffset = segmentBaseOffset;
         this.relativePositionInSegment = relativePositionInSegment;
     }
+
+    public long getGeneration() {
+        return generation;
+    }
+
+    public long getMessageOffset() {
+        return messageOffset;
+    }
+
+    public long getSegmentBaseOffset() {
+        return segmentBaseOffset;
+    }
+
+    public int getRelativePositionInSegment() {
+        return relativePositionInSegment;
+    }
 }

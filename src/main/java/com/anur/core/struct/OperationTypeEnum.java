@@ -33,6 +33,11 @@ public enum OperationTypeEnum {
     REGISTER(10000, Register.class),
 
     /**
+     * 注册 ACK
+     */
+    REGISTER_RESPONSE(10001, Register.class),
+
+    /**
      * 协调节点从主节点拉取消息
      */
     FETCH(10001, Fetcher.class),// 拉取消息

@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.core.struct.coordinate.Register;
@@ -14,6 +15,7 @@ import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.lock.ReentrantReadWriteLocker;
+import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.exception.HanabiException;
@@ -39,7 +41,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
     private static Map<OperationTypeEnum, OperationTypeEnum> ResponseAndRequestType = new HashMap<>();
 
     static {
-        RequestAndResponseType.put(OperationTypeEnum.REGISTER, OperationTypeEnum.NONE);
+        RequestAndResponseType.put(OperationTypeEnum.REGISTER, OperationTypeEnum.REGISTER_RESPONSE);
         RequestAndResponseType.put(OperationTypeEnum.FETCH, OperationTypeEnum.FETCH_RESPONSE);
 
         RequestAndResponseType.forEach((ek, ev) -> ResponseAndRequestType.put(ev, ek));
@@ -128,6 +130,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
         logger.info("协调节点 {} 已注册到本节点", register.getServerName());
         ChannelManager.getInstance(ChannelType.COORDINATE)
                       .register(register.getServerName(), channel);
+        send(register.getServerName(), new RegisterResponse(InetSocketAddressConfigHelper.getServerName()), RequestProcessor.REQUIRE_NESS);
     }
 
     /**

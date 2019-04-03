@@ -20,18 +20,20 @@ import io.netty.channel.DefaultFileRegion;
  */
 public class FetchResponse extends AbstractTimedStruct {
 
-    public static final int FileOperationSetSizeOffset = TimestampOffset + TimestampLength;
-
-    public static final int FileOperationSetSizeLength = 4;
-
-    public static final int GenerationOffset = FileOperationSetSizeOffset + FileOperationSetSizeLength;
+    public static final int GenerationOffset = TimestampOffset + TimestampLength;
 
     public static final int GenerationLength = 8;
+
+    public static final int FileOperationSetSizeOffset = GenerationOffset + GenerationLength;
+
+    public static final int FileOperationSetSizeLength = 4;
 
     /**
      * 最基础的 FetchResponse 大小 ( 不包括byteBufferOperationSet )
      */
-    public static final int BaseMessageOverhead = GenerationOffset + GenerationLength;
+    public static final int BaseMessageOverhead = FileOperationSetSizeOffset + FileOperationSetSizeLength;
+
+    private final int fileOperationSetSize;
 
     private FileOperationSet fileOperationSet;
 
@@ -39,14 +41,25 @@ public class FetchResponse extends AbstractTimedStruct {
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
         init(byteBuffer, OperationTypeEnum.FETCH_RESPONSE);
 
-        fileOperationSet = fetchDataInfo.getFileOperationSet();
-        byteBuffer.putInt(fileOperationSet.sizeInBytes());
+        // 为空代表已无更多更新的消息
+        if (fetchDataInfo == null) {
+            fileOperationSetSize = 0;
+            byteBuffer.putLong(-1);
+            byteBuffer.putInt(0);
+        } else {
+            fileOperationSet = fetchDataInfo.getFileOperationSet();
+            fileOperationSetSize = fileOperationSet.sizeInBytes();
+            byteBuffer.putLong(fetchDataInfo.getFetchOffsetMetadata()
+                                            .getGeneration());
+            byteBuffer.putInt(fileOperationSetSize);
+        }
 
         byteBuffer.rewind();
     }
 
     public FetchResponse(ByteBuffer byteBuffer) {
         buffer = byteBuffer;
+        fileOperationSetSize = buffer.getInt(BaseMessageOverhead);
     }
 
     public long getGeneration() {
@@ -61,11 +74,13 @@ public class FetchResponse extends AbstractTimedStruct {
     @Override
     public void writeIntoChannel(Channel channel) {
         channel.write(buffer);
-        channel.write(new DefaultFileRegion(fileOperationSet.getFileChannel(), fileOperationSet.getStart(), fileOperationSet.getEnd()));
+        if (fileOperationSetSize > 0) {
+            channel.write(new DefaultFileRegion(fileOperationSet.getFileChannel(), fileOperationSet.getStart(), fileOperationSet.getEnd()));
+        }
     }
 
     @Override
     public int totalSize() {
-        return size() + fileOperationSet.sizeInBytes();
+        return size() + fileOperationSetSize;
     }
 }
