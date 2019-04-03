@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.struct.base.Register;
+import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.struct.OperationTypeEnum;

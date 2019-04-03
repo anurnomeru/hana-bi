@@ -2,6 +2,7 @@ package com.anur.io.store.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import com.anur.config.LogConfigHelper;
@@ -152,14 +153,16 @@ public class LogManager {
             throw new HanabiException("获取预日志时：世代过大或者此世代还未有预日志");
         }
 
-        Log needLoad = tail.firstEntry()
-                           .getValue();
+        Entry<Long, Log> firstEntry = tail.firstEntry();
+
+        long needLoadGen = firstEntry.getKey();
+        Log needLoad = firstEntry.getValue();
 
         Iterable<LogSegment> logSegmentIterable = needLoad.getLogSegments(offset, Long.MAX_VALUE);
         LogSegment logSegment = logSegmentIterable.iterator()
                                                   .next();
 
-        return logSegment.read(offset, Long.MAX_VALUE, Integer.MAX_VALUE);
+        return logSegment.read(needLoadGen, offset, Long.MAX_VALUE, Integer.MAX_VALUE);
     }
 
     public GenerationAndOffset getInitial() {

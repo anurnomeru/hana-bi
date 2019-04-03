@@ -128,8 +128,8 @@ public class LogSegment {
         return fileOperationSet.searchFor(offset, Math.max(offsetAndPosition.getPosition(), startingPosition));
     }
 
-    public FetchDataInfo read(long startOffset, Long maxOffset, int maxSize) throws IOException {
-        return read(startOffset, maxOffset, maxSize, fileOperationSet.sizeInBytes());
+    public FetchDataInfo read(long generation, long startOffset, Long maxOffset, int maxSize) throws IOException {
+        return read(generation, startOffset, maxOffset, maxSize, fileOperationSet.sizeInBytes());
     }
 
     /**
@@ -150,7 +150,7 @@ public class LogSegment {
      * 返回获取到的数据以及 第一个 offset 相关的元数据，这个 offset >= startOffset。
      * 如果 startOffset 大于这个日志文件存储的最大的 offset ，将返回 null
      */
-    public FetchDataInfo read(long startOffset, Long maxOffset, int maxSize, long maxPosition) throws IOException {
+    public FetchDataInfo read(long generation, long startOffset, Long maxOffset, int maxSize, long maxPosition) throws IOException {
         if (maxSize < 0) {
             throw new IllegalArgumentException(String.format("Invalid max size for log read (%d)", maxSize));
         }
@@ -162,7 +162,7 @@ public class LogSegment {
             return null;// 代表 fileOperationSet 里最大的 offset 也没startOffset大
         }
 
-        LogOffsetMetadata logOffsetMetadata = new LogOffsetMetadata(startOffset, this.baseOffset, startPosition.getPosition());
+        LogOffsetMetadata logOffsetMetadata = new LogOffsetMetadata(generation, startOffset, this.baseOffset, startPosition.getPosition());
 
         // if the size is zero, still return a log segment but with zero size
         if (maxSize == 0) {
@@ -270,8 +270,8 @@ public class LogSegment {
      *
      * 然后取最后一个
      */
-    public long lastOffset() throws IOException {
-        FetchDataInfo fetchDataInfo = read(offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
+    public long lastOffset(long gen) throws IOException {
+        FetchDataInfo fetchDataInfo = read(gen, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
         if (fetchDataInfo == null) {
             return baseOffset;
         } else {

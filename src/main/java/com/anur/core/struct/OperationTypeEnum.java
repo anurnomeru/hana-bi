@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.struct.base.Operation;
-import com.anur.core.struct.base.Register;
+import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.exception.HanabiException;

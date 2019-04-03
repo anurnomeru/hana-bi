@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.struct.OperationTypeEnum;
-import com.anur.core.struct.base.Register;
+import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.coordinate.sender.InFlightRequestManager;
@@ -86,9 +86,9 @@ public class CoordinateClientOperator implements Runnable {
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(leader.getServerName(), ctx.channel());
 
-            Operation operation = new Register(InetSocketAddressConfigHelper.getServerName());
+            Register register = new Register(InetSocketAddressConfigHelper.getServerName());
             InFlightRequestManager.getINSTANCE()
-                                  .send(leader.getServerName(), operation, RequestProcessor.REQUIRE_NESS);
+                                  .send(leader.getServerName(), register, RequestProcessor.REQUIRE_NESS);
             logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
 

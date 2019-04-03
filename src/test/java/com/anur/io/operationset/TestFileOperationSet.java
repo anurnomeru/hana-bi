@@ -3,17 +3,17 @@ package com.anur.io.operationset;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.function.BiConsumer;
 import com.anur.core.coordinate.CoordinateClientOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
-import com.anur.core.struct.base.Register;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.io.core.coder.CoordinateDecoder;
 import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;
 import com.anur.io.core.handle.ErrorHandler;
 import com.anur.io.store.common.FetchDataInfo;
+import com.anur.io.store.common.OperationAndOffset;
 import com.anur.io.store.log.LogManager;
-import com.anur.io.store.operationset.FileOperationSet;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -43,6 +43,13 @@ public class TestFileOperationSet {
                                                                    .getFileChannel(), fetchDataInfo.getFileOperationSet()
                                                                                                    .getStart(), fetchDataInfo.getFileOperationSet()
                                                                                                                              .getEnd());
+        Iterator<OperationAndOffset> iterator = fetchDataInfo.getFileOperationSet()
+                                                             .iterator();
+
+        while (iterator.hasNext()) {
+            OperationAndOffset next = iterator.next();
+            next.getOffset();
+        }
 
         ByteBuf size = Unpooled.buffer(4);
         size.writeInt(fetchResponse.totalSize());

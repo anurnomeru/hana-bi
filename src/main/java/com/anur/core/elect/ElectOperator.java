@@ -524,7 +524,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             Timer.getInstance()
                  .addTask(timedTask);
 
-            logger.debug("本节点将于 {} ms 后重新发起下一轮选举", electionTimeout);
+//            logger.debug("本节点将于 {} ms 后重新发起下一轮选举", electionTimeout);
             taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
             return null;
         });
@@ -538,7 +538,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
             Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
                     .ifPresent(timedTask -> {
-                        logger.debug(msg);
+//                        logger.debug(msg);
                         timedTask.cancel();
                     });
             return null;

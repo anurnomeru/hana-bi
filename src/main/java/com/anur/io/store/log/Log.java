@@ -103,7 +103,7 @@ public class Log extends ReentrantLocker {
             logger.info("当前世代 {} 目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", generation, dir.getAbsolutePath());
             segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
         } else {
-            currentOffset = activeSegment().lastOffset();
+            currentOffset = activeSegment().lastOffset(generation);
         }
     }
 

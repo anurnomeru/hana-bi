@@ -24,10 +24,14 @@ public class FetchResponse extends AbstractTimedStruct {
 
     public static final int FileOperationSetSizeLength = 4;
 
+    public static final int GenerationOffset = FileOperationSetSizeOffset + FileOperationSetSizeLength;
+
+    public static final int GenerationLength = 8;
+
     /**
      * 最基础的 FetchResponse 大小 ( 不包括byteBufferOperationSet )
      */
-    public static final int BaseMessageOverhead = FileOperationSetSizeOffset + FileOperationSetSizeLength;
+    public static final int BaseMessageOverhead = GenerationOffset + GenerationLength;
 
     private FileOperationSet fileOperationSet;
 
@@ -43,6 +47,10 @@ public class FetchResponse extends AbstractTimedStruct {
 
     public FetchResponse(ByteBuffer byteBuffer) {
         buffer = byteBuffer;
+    }
+
+    public long getGeneration() {
+        return buffer.getLong(GenerationOffset);
     }
 
     public ByteBufferOperationSet read() {

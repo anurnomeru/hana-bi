@@ -91,7 +91,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             if (lastOffset != -1) {
                 GenerationAndOffset before = preLogOffset;
                 preLogOffset = new GenerationAndOffset(generation, lastOffset);
-                logger.debug("本地预日志由 {} 更新至 {}", before.toString(), preLogOffset.toString());
+                logger.debug("本地预日志由 {} 更新至 {}，追加了日志", before.toString(), preLogOffset.toString());
             }
             return null;
         });
