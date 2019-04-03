@@ -1,6 +1,8 @@
 package com.anur.core.coordinate;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
@@ -9,11 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.coordinate.model.Cluster;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.coordinate.apis.InFlightApisManager;
+import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
@@ -54,6 +58,10 @@ public class CoordinateClientOperator implements Runnable {
 
     private static volatile CoordinateClientOperator INSTANCE;
 
+    private List<Runnable> doWhenConnectToLeader = new ArrayList<>();
+
+    private List<Runnable> doWhenDisconnectToLeader = new ArrayList<>();
+
     /**
      * 如何消费消息
      */
@@ -66,7 +74,7 @@ public class CoordinateClientOperator implements Runnable {
     /**
      * 需要在 channelPipeline 上挂载什么
      */
-    private Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter(hanabiNode));
+    private Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter(hanabiNode, doWhenConnectToLeader, doWhenDisconnectToLeader));
 
     /**
      * Coordinate 初始化连接时的注册器
@@ -75,8 +83,14 @@ public class CoordinateClientOperator implements Runnable {
 
         private HanabiNode leader;
 
-        public RegisterAdapter(HanabiNode hanabiNode) {
-            this.leader = hanabiNode;
+        private List<Runnable> doWhenConnectToLeader;
+
+        private List<Runnable> doWhenDisconnectToLeader;
+
+        public RegisterAdapter(HanabiNode leader, List<Runnable> doWhenConnectToLeader, List<Runnable> doWhenDisconnectToLeader) {
+            this.leader = leader;
+            this.doWhenConnectToLeader = doWhenConnectToLeader;
+            this.doWhenDisconnectToLeader = doWhenDisconnectToLeader;
         }
 
         @Override
@@ -87,7 +101,15 @@ public class CoordinateClientOperator implements Runnable {
 
             Register register = new Register(InetSocketAddressConfigHelper.getServerName());
             InFlightApisManager.getINSTANCE()
-                               .send(leader.getServerName(), register, RequestProcessor.REQUIRE_NESS);
+                               .send(leader.getServerName(), register, new RequestProcessor(byteBuffer -> {
+                                   RegisterResponse registerResponse = new RegisterResponse(byteBuffer);
+                                   if (registerResponse.serverName.equals(leader.getServerName())) {
+                                       doWhenConnectToLeader.forEach(HanabiExecutors::submit);
+                                   } else {
+                                       logger.error(String.format("出现了异常的情况，向 Leader %s 发送了注册请求，却受到了 %s 的回复", leader.getServerName(), registerResponse.serverName));
+                                   }
+                               }
+                               ));
             logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
 
@@ -97,6 +119,8 @@ public class CoordinateClientOperator implements Runnable {
 
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .unRegister(leader.getServerName());
+
+            doWhenDisconnectToLeader.forEach(HanabiExecutors::submit);
             logger.debug("与协调器 Leader {} [{}:{}] 的连接已断开", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
     }
@@ -178,5 +202,13 @@ public class CoordinateClientOperator implements Runnable {
         }
         logger.debug("正在建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort());
         coordinateClient.start();
+    }
+
+    public void registerWhenConnectToLeader(Runnable runnable) {
+        this.doWhenConnectToLeader.add(runnable);
+    }
+
+    public void registerWhenDisconnectToLeader(Runnable runnable) {
+        this.doWhenDisconnectToLeader.add(runnable);
     }
 }

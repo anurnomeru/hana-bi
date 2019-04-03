@@ -32,11 +32,11 @@ import com.anur.timewheel.Timer;
  *
  * 日志一致性控制器
  */
-public class ConsistentManager extends ReentrantReadWriteLocker {
+public class CoordinateConsistentManager extends ReentrantReadWriteLocker {
 
-    private static volatile ConsistentManager INSTANCE;
+    private static volatile CoordinateConsistentManager INSTANCE;
 
-    private Logger logger = LoggerFactory.getLogger(ConsistentManager.class);
+    private Logger logger = LoggerFactory.getLogger(CoordinateConsistentManager.class);
 
     /**
      * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterValid 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
@@ -83,19 +83,26 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
      */
     private Lock fetchLock = new ReentrantLock();
 
+    /**
+     * 如何消费 Fetch response
+     */
     private Consumer<FetchResponse> CONSUME_FETCH_RESPONSE = fetchResponse -> {
-        logger.debug("收到 Leader {} 返回的 FETCH_RESPONSE", leader);
+        readLockSupplier(() -> {
+            logger.debug("收到 Leader {} 返回的 FETCH_RESPONSE", leader);
 
-        if (isLeader) {
-            logger.error("出现了不应该出现的情况！");
-        }
+            if (isLeader) {
+                logger.error("出现了不应该出现的情况！");
+            }
 
-        if (fetchResponse.size() == 0) {
-            return;
-        }
+            if (fetchResponse.size() == 0) {
+                return null;
+            }
 
-        ByteBufPreLogManager.getINSTANCE()
-                            .append(fetchResponse.getGeneration(), fetchResponse.read());
+            ByteBufPreLogManager.getINSTANCE()
+                                .append(fetchResponse.getGeneration(), fetchResponse.read());
+
+            return null;
+        });
     };
 
     /**
@@ -136,47 +143,43 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
     public GenerationAndOffset fetchReport(String node, GenerationAndOffset GAO) {
         logger.debug("收到了来自节点 {} 的 fetch 进度提交，此阶段进度为 {}", node, GAO.toString());
 
-        GenerationAndOffset canCommit = readLockSupplier(() -> {
-            if (!isLeader) {
-                logger.error("出现了不应该出现的情况！");
+        if (!isLeader) {
+            logger.error("出现了不应该出现的情况！");
+        }
+
+        GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
+                                                     .load();
+        if (GAOLatest.compareTo(GAO) > 0) {// 小于已经 commit 的 GAO 无需记录
+            return GAOLatest;
+        }
+
+        GenerationAndOffset GAOCommitBefore = readLockSupplier(() -> nodeFetchMap.get(node));
+        if (GAOCommitBefore != null && GAOCommitBefore.compareTo(GAO) > 0) {// 小于之前提交记录的无需记录
+            return GAOLatest;
+        }
+
+        GenerationAndOffset canCommit = writeLockSupplier(() -> {
+            if (GAOCommitBefore != null) {// 移除之前的 commit 记录
+                offsetFetchMap.get(GAOCommitBefore)
+                              .remove(node);
             }
 
-            GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
-                                                         .load();
-            if (GAOLatest.compareTo(GAO) > 0) {// 小于已经 commit 的 GAO 无需记录
-                return GAOLatest;
-            }
-
-            GenerationAndOffset GAOCommitBefore = nodeFetchMap.get(node);
-            if (GAOCommitBefore != null && GAOCommitBefore.compareTo(GAO) > 0) {// 小于之前提交记录的无需记录
-                return GAOLatest;
-            }
-
-            writeLockSupplier(() -> {
-                if (GAOCommitBefore != null) {// 移除之前的 commit 记录
-                    offsetFetchMap.get(GAOCommitBefore)
-                                  .remove(node);
+            nodeFetchMap.put(node, GAO);// 更新新的 commit 记录
+            offsetFetchMap.compute(GAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
+                if (strings == null) {
+                    strings = new HashSet<>();
                 }
-
-                nodeFetchMap.put(node, GAO);// 更新新的 commit 记录
-                offsetFetchMap.compute(GAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
-                    if (strings == null) {
-                        strings = new HashSet<>();
-                    }
-                    strings.add(node);
-                    return strings;
-                });
-
-                GenerationAndOffset approach = null;
-                for (Entry<GenerationAndOffset, Set<String>> entry : offsetFetchMap.entrySet()) {
-                    if (entry.getValue()
-                             .size() >= validCommitCountNeed) {
-                        approach = entry.getKey();
-                    }
-                }
-
-                return approach;
+                strings.add(node);
+                return strings;
             });
+
+            GenerationAndOffset approach = null;
+            for (Entry<GenerationAndOffset, Set<String>> entry : offsetFetchMap.entrySet()) {
+                if (entry.getValue()
+                         .size() >= validCommitCountNeed) {
+                    approach = entry.getKey();
+                }
+            }
 
             return null;
         });
@@ -185,52 +188,67 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
         return canCommit;
     }
 
-    public static ConsistentManager getINSTANCE() {
+    public static CoordinateConsistentManager getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (ConsistentManager.class) {
+            synchronized (CoordinateConsistentManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new ConsistentManager();
+                    INSTANCE = new CoordinateConsistentManager();
                 }
             }
         }
         return INSTANCE;
     }
 
-    public ConsistentManager() {
+    public CoordinateConsistentManager() {
         ElectOperator.getInstance()
                      .registerWhenClusterValid(
                          cluster -> writeLockSupplier(() -> {
-                             clusterValid = true;
                              leader = cluster.getLeader();
                              isLeader = InetSocketAddressConfigHelper.getServerName()
                                                                      .equals(leader);
 
-                             fetchLock.lock();
-                             try {
-                                 if (!isLeader) {
-                                     fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
-                                     Timer.getInstance()
-                                          .addTask(fetchPreLogTask);
-                                 }
-                             } finally {
-                                 fetchLock.unlock();
-                             }
-
                              if (isLeader) {
+                                 clusterValid = true;
                                  clusters = cluster.getClusters();
                                  validCommitCountNeed = clusters.size() / 2 + 1;
                              } else {
 
                                  // 当集群可用时，连接协调 leader
-                                 CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
-                                                         .tryStartWhileDisconnected();
+                                 CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()));
+                                 client.registerWhenConnectToLeader(() -> {
+                                     fetchLock.lock();
+                                     try {
+                                         fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
+                                         Timer.getInstance()
+                                              .addTask(fetchPreLogTask);
+                                     } finally {
+                                         fetchLock.unlock();
+                                     }
+                                     clusterValid = true;
+                                 });
+                                 client.tryStartWhileDisconnected();
                              }
+
                              return null;
                          }));
 
         ElectOperator.getInstance()
                      .registerWhenClusterInvalid(
                          () -> writeLockSupplier(() -> {
+
+                             if (!isLeader) {
+                                 CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(leader))
+                                                         .registerWhenDisconnectToLeader(() -> {
+                                                             fetchLock.lock();
+                                                             try {
+                                                                 Optional.ofNullable(fetchPreLogTask)
+                                                                         .ifPresent(TimedTask::cancel);
+                                                             } finally {
+                                                                 fetchLock.unlock();
+                                                             }
+                                                         });
+                             }
+
                              fetchLock.lock();
                              try {
                                  Optional.ofNullable(fetchPreLogTask)

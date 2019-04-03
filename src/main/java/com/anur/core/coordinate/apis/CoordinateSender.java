@@ -41,7 +41,6 @@ public class CoordinateSender {
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);
 
-            System.out.println(channel);
             channel.write(Unpooled.copyInt(body.totalSize()));
             body.writeIntoChannel(channel);
             channel.flush();

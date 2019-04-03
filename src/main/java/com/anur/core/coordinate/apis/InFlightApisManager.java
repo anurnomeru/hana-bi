@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
@@ -102,7 +103,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
             }
 
-            this.readLockSupplier(() -> {
+            this.writeLockSupplier(() -> {
                 RequestProcessor requestProcessor = Optional.ofNullable(inFlight.get(serverName))
                                                             .map(m -> m.get(requestType))
                                                             .orElse(null);
@@ -110,13 +111,10 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                     throw new HanabiException("收到了来自节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
                 }
 
-                this.writeLockSupplier(() -> {
-                    requestProcessor.complete(msg);
-                    inFlight.get(serverName)
-                            .remove(requestType);
-                    logger.info("成功收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
-                    return null;
-                });
+                requestProcessor.complete(msg);
+                inFlight.get(serverName)
+                        .remove(requestType);
+                logger.info("成功收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
                 return null;
             });
         }
@@ -201,12 +199,16 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
             if (!requestProcessor.isComplete()) {
                 CoordinateSender.send(serverName, command);
 
-                if (RequestAndResponseType.get(operationTypeEnum)
-                                          .equals(OperationTypeEnum.NONE)) {
+                if (RequestAndResponseType.get(operationTypeEnum) == null) {
                     // 是不需要回复的类型
                     requestProcessor.complete();
-                    writeLockSupplier(() -> inFlight.get(serverName)
-                                                    .remove(operationTypeEnum)
+                    writeLockSupplier(() -> inFlight.compute(serverName, (s, enums) -> {
+                            if (enums == null) {
+                                enums = new HashMap<>();
+                            }
+                            enums.remove(operationTypeEnum);
+                            return enums;
+                        })
                     );
                 } else {
                     //                    TimedTask task = new TimedTask(1000, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));

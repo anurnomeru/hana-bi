@@ -40,12 +40,12 @@ public enum OperationTypeEnum {
     /**
      * 协调节点从主节点拉取消息
      */
-    FETCH(10001, Fetcher.class),// 拉取消息
+    FETCH(10002, Fetcher.class),// 拉取消息
 
     /**
      * 协调节点从主节点拉取消息的回复，返回拉取的消息
      */
-    FETCH_RESPONSE(10002, FetchResponse.class),// 返回拉取的消息
+    FETCH_RESPONSE(10003, FetchResponse.class),// 返回拉取的消息
     ;
 
     public int byteSign;

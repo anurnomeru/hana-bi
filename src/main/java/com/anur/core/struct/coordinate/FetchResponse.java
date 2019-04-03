@@ -6,6 +6,7 @@ import com.anur.core.struct.base.AbstractTimedStruct;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.anur.io.store.operationset.FileOperationSet;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.DefaultFileRegion;
 
@@ -55,6 +56,7 @@ public class FetchResponse extends AbstractTimedStruct {
         }
 
         byteBuffer.rewind();
+        byteBuffer.limit(BaseMessageOverhead);
     }
 
     public FetchResponse(ByteBuffer byteBuffer) {
@@ -73,7 +75,7 @@ public class FetchResponse extends AbstractTimedStruct {
 
     @Override
     public void writeIntoChannel(Channel channel) {
-        channel.write(buffer);
+        channel.write(Unpooled.wrappedBuffer(buffer));
         if (fileOperationSetSize > 0) {
             channel.write(new DefaultFileRegion(fileOperationSet.getFileChannel(), fileOperationSet.getStart(), fileOperationSet.getEnd()));
         }

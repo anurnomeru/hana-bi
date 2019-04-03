@@ -32,6 +32,7 @@ public class Fetcher extends AbstractTimedStruct {
         byteBuffer.putLong(GAO.getOffset());
 
         byteBuffer.rewind();
+        byteBuffer.limit(BaseMessageOverhead);
     }
 
     public Fetcher(ByteBuffer byteBuffer) {

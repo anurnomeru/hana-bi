@@ -1,6 +1,6 @@
 package com.anur;
 
-import com.anur.core.coordinate.apis.ConsistentManager;
+import com.anur.core.coordinate.apis.CoordinateConsistentManager;
 import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
@@ -23,7 +23,7 @@ public class Bootstrap {
             /**
              * 日志一致性控制器
              */
-            ConsistentManager.getINSTANCE();
+            CoordinateConsistentManager.getINSTANCE();
 
             /**
              * 初始化日志管理

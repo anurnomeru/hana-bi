@@ -4,6 +4,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.AbstractTimedStruct;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.util.internal.StringUtil;
 
@@ -45,7 +46,8 @@ public class Register extends AbstractTimedStruct {
         buffer.get(bytes);
         this.serverName = new String(bytes);
 
-        buffer.rewind();
+        byteBuffer.rewind();
+        byteBuffer.limit(ContentOffset);
     }
 
     public String getServerName() {
@@ -54,7 +56,7 @@ public class Register extends AbstractTimedStruct {
 
     @Override
     public void writeIntoChannel(Channel channel) {
-        channel.write(buffer);
+        channel.write(Unpooled.wrappedBuffer(buffer));
     }
 
     @Override
