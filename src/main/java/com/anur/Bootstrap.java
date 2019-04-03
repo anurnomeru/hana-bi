@@ -1,6 +1,6 @@
 package com.anur;
 
-import com.anur.core.ConsistentManager;
+import com.anur.core.coordinate.apis.ConsistentManager;
 import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;

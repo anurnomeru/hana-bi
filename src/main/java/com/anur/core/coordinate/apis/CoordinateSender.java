@@ -1,4 +1,4 @@
-package com.anur.core.coordinate.sender;
+package com.anur.core.coordinate.apis;
 
 import java.util.HashMap;
 import java.util.Map;

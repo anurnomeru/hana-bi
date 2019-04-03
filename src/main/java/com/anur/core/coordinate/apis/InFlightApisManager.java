@@ -1,11 +1,13 @@
-package com.anur.core.coordinate.sender;
+package com.anur.core.coordinate.apis;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
@@ -15,8 +17,8 @@ import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.exception.HanabiException;
-import com.anur.timewheel.TimedTask;
-import com.anur.timewheel.Timer;
+import com.anur.io.store.common.FetchDataInfo;
+import com.anur.io.store.log.LogManager;
 import io.netty.channel.Channel;
 import io.netty.util.internal.StringUtil;
 
@@ -116,17 +118,6 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 return null;
             });
         }
-
-        switch (typeEnum) {
-        case REGISTER:
-
-            break;
-
-        case FETCH:
-
-            break;
-        default:
-        }
     }
 
     /**
@@ -144,7 +135,19 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
      */
     private void handleFetchRequest(ByteBuffer msg, Channel channel) {
         Fetcher fetcher = new Fetcher(msg);
-        logger.info("协调节点 {} 的 Fetch来啦~~", fetcher.getGAO());
+        String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
+                                          .getChannelName(channel);
+
+        logger.info("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.getGAO());
+        try {
+            FetchDataInfo fetchDataInfo = LogManager.getINSTANCE()
+                                                    .getAfter(fetcher.getGAO());
+
+            FetchResponse fetchResponse = new FetchResponse(fetchDataInfo);
+            send(serverName, fetchResponse, RequestProcessor.REQUIRE_NESS);
+        } catch (IOException e) {
+            throw new HanabiException("Fetch " + fetcher.getGAO() + " 之后的消息失败");
+        }
     }
 
     /**
@@ -187,6 +190,8 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
 
     /**
      * 真正发送消息的方法，内置了重发机制
+     *
+     * TODO 先不进行重发，讲道理消息应该不会丢失
      */
     private void sendImpl(String serverName, AbstractStruct command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
         this.readLockSupplier(() -> {
@@ -201,14 +206,14 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                                                     .remove(operationTypeEnum)
                     );
                 } else {
-                    TimedTask task = new TimedTask(1000, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
-
-                    inFlight.get(serverName)
-                            .get(operationTypeEnum)
-                            .registerTask(task);
-
-                    Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
-                         .addTask(task);
+                    //                    TimedTask task = new TimedTask(1000, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
+                    //
+                    //                    inFlight.get(serverName)
+                    //                            .get(operationTypeEnum)
+                    //                            .registerTask(task);
+                    //
+                    //                    Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
+                    //                         .addTask(task);
                 }
             }
             return null;

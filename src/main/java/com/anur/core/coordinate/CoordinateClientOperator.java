@@ -13,7 +13,7 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
-import com.anur.core.coordinate.sender.InFlightApisManager;
+import com.anur.core.coordinate.apis.InFlightApisManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;

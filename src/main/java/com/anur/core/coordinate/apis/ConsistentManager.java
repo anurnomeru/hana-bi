@@ -1,4 +1,4 @@
-package com.anur.core;
+package com.anur.core.coordinate.apis;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -20,7 +20,6 @@ import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
-import com.anur.core.coordinate.sender.InFlightApisManager;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.io.store.OffsetManager;
@@ -104,7 +103,7 @@ public class ConsistentManager extends ReentrantReadWriteLocker {
                     if (InFlightApisManager.getINSTANCE()
                                            .send(
                                                leader,
-                                               new Fetcher(GAO),
+                                               new Fetcher(GAO.next()),
                                                new RequestProcessor(byteBuffer ->
                                                    CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer))
                                                ))) {

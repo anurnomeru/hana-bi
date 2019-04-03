@@ -1,6 +1,7 @@
 package com.anur.core.elect.model;
 
 import java.util.Optional;
+
 /**
  * Created by Anur IjuoKaruKas on 2019/3/12
  */
@@ -23,6 +24,14 @@ public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
 
     public long getOffset() {
         return offset;
+    }
+
+    public GenerationAndOffset next() {
+        if (offset == Long.MAX_VALUE) {
+            return new GenerationAndOffset(generation + 1, 1);
+        } else {
+            return new GenerationAndOffset(generation, offset + 1);
+        }
     }
 
     @Override
