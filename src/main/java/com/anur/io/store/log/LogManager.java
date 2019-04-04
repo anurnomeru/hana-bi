@@ -87,7 +87,6 @@ public class LogManager {
      * 添加一条操作日志到磁盘的入口
      */
     public void append(Operation operation) {
-        logger.debug("append called");
         GenerationAndOffset operationId = ElectOperator.getInstance()
                                                        .genOperationId();
 
@@ -149,19 +148,24 @@ public class LogManager {
     /**
      * 只返回某个 segment 的往后所有消息，需要客户端轮询拉数据（包括拉取本身这条消息）
      */
-    public FetchDataInfo getAfter(GenerationAndOffset GAO) throws IOException {
+    public FetchDataInfo getAfter(GenerationAndOffset GAO) {
         long gen = GAO.getGeneration();
         long offset = GAO.getOffset();
 
         ConcurrentNavigableMap<Long, Log> tail = generationDirs.tailMap(gen, true);
         if (tail == null || tail.size() == 0) {
-            throw new HanabiException("获取预日志时：世代过大或者此世代还未有预日志");
+            // 世代过大或者此世代还未有预日志
+            return null;
         }
 
         Entry<Long, Log> firstEntry = tail.firstEntry();
 
         long needLoadGen = firstEntry.getKey();
         Log needLoad = firstEntry.getValue();
+
+        if (needLoad.getCurrentOffset() == 0) {
+            return getAfter(new GenerationAndOffset(needLoadGen + 1, 0));
+        }
 
         Iterable<LogSegment> logSegmentIterable = needLoad.getLogSegments(offset, Long.MAX_VALUE);
         LogSegment logSegment = logSegmentIterable.iterator()

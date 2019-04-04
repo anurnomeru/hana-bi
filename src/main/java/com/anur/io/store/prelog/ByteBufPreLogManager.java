@@ -85,6 +85,8 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
 
                 byteBufPreLog.append(operationAndOffset.getOperation(), operationAndOffset.getOffset());
 
+                System.out.println(operationAndOffset.getOffset() + "      =====================");
+
                 lastOffset = operationAndOffset.getOffset();
             }
 

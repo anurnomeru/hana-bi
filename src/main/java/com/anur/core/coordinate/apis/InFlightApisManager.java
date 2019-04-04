@@ -93,6 +93,9 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 throw new HanabiException("不可能存在这种情况!!!");
             }
         } else {
+
+            // todo 需要加入重试机制，在失败时回复发送方，否则发送方会一直等待
+            // todo 需要加入防重复请求机制
             /*
              *  response 处理
              */
@@ -140,15 +143,11 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                                           .getChannelName(channel);
 
         logger.info("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.getGAO());
-        try {
-            FetchDataInfo fetchDataInfo = LogManager.getINSTANCE()
-                                                    .getAfter(fetcher.getGAO());
+        FetchDataInfo fetchDataInfo = LogManager.getINSTANCE()
+                                                .getAfter(fetcher.getGAO());
 
-            FetchResponse fetchResponse = new FetchResponse(fetchDataInfo);
-            send(serverName, fetchResponse, RequestProcessor.REQUIRE_NESS());
-        } catch (IOException e) {
-            throw new HanabiException("Fetch " + fetcher.getGAO() + " 之后的消息失败");
-        }
+        FetchResponse fetchResponse = new FetchResponse(fetchDataInfo);
+        send(serverName, fetchResponse, RequestProcessor.REQUIRE_NESS());
     }
 
     /**

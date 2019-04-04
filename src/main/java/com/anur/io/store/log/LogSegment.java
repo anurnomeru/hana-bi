@@ -19,6 +19,7 @@ package com.anur.io.store.log;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.io.store.common.FetchDataInfo;
@@ -127,7 +128,7 @@ public class LogSegment {
         return fileOperationSet.searchFor(offset, Math.max(offsetAndPosition.getPosition(), startingPosition));
     }
 
-    public FetchDataInfo read(long generation, long startOffset, Long maxOffset, int maxSize) throws IOException {
+    public FetchDataInfo read(long generation, long startOffset, Long maxOffset, int maxSize) {
         return read(generation, startOffset, maxOffset, maxSize, fileOperationSet.sizeInBytes());
     }
 
@@ -149,13 +150,19 @@ public class LogSegment {
      * 返回获取到的数据以及 第一个 offset 相关的元数据，这个 offset >= startOffset。
      * 如果 startOffset 大于这个日志文件存储的最大的 offset ，将返回 null
      */
-    public FetchDataInfo read(long generation, long startOffset, Long maxOffset, int maxSize, long maxPosition) throws IOException {
+    public FetchDataInfo read(long generation, long startOffset, Long maxOffset, int maxSize, long maxPosition) {
         if (maxSize < 0) {
             throw new IllegalArgumentException(String.format("Invalid max size for log read (%d)", maxSize));
         }
 
         int logSize = fileOperationSet.sizeInBytes(); // this may change, need to save a consistent copy
-        OffsetAndPosition startPosition = translateOffset(startOffset);// 查找第一个大于等于 startOffset 的 Offset 和 Position
+        OffsetAndPosition startPosition = null;// 查找第一个大于等于 startOffset 的 Offset 和 Position
+
+        try {
+            startPosition = translateOffset(startOffset);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         if (startPosition == null) {
             return null;// 代表 fileOperationSet 里最大的 offset 也没startOffset大
@@ -178,7 +185,12 @@ public class LogSegment {
                 return null;
             }
             // 查找第一个大于等于 maxOffset 的 Offset 和 Position
-            OffsetAndPosition end = translateOffset(maxOffset, startPosition.getPosition());
+            OffsetAndPosition end = null;
+            try {
+                end = translateOffset(maxOffset, startPosition.getPosition());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             int endPosition;
             if (end == null) {
                 endPosition = logSize;// end最大只能取到logSize
@@ -192,7 +204,14 @@ public class LogSegment {
             );
         }
 
-        return new FetchDataInfo(logOffsetMetadata, fileOperationSet.read(startPosition.getPosition(), length));
+        FetchDataInfo fetchDataInfo = null;
+        try {
+            fetchDataInfo = new FetchDataInfo(logOffsetMetadata, fileOperationSet.read(startPosition.getPosition(), length));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return fetchDataInfo;
     }
 
     /**

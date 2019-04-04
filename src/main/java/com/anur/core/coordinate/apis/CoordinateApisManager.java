@@ -95,7 +95,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                 logger.error("出现了不应该出现的情况！");
             }
 
-            if (fetchResponse.size() == 0) {
+            if (fetchResponse.getFileOperationSetSize() == 0) {
                 return null;
             }
 

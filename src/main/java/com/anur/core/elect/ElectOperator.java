@@ -334,6 +334,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     public void receiveHeatBeatInfection(String leaderServerName, long generation, String msg) {
+        System.out.println(leaderServerName);
         if (leaderServerName.equals(this.leaderServerName) && generation == this.generation) {
             return;
         } else {

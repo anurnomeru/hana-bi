@@ -36,7 +36,6 @@ public class ByteBufferOperationSet extends OperationSet {
 
     private ByteBuffer byteBuffer;
 
-
     /**
      * 一个日志将要被append到日志之前，需要进行的操作
      */
@@ -97,7 +96,6 @@ public class ByteBufferOperationSet extends OperationSet {
 
             @Override
             protected OperationAndOffset makeNext() {
-                byteBuffer.mark();
 
                 if (location + LogOverhead >= sizeInBytes()) {// 如果已经到了末尾，返回空
                     return allDone();
@@ -110,6 +108,7 @@ public class ByteBufferOperationSet extends OperationSet {
                     return allDone();
                 }
 
+                byteBuffer.mark();
                 byteBuffer.position(location + LogOverhead);
                 byteBuffer.limit(location + LogOverhead + size);
                 ByteBuffer operation = byteBuffer.slice();

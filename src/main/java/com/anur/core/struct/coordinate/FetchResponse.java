@@ -1,8 +1,10 @@
 package com.anur.core.struct.coordinate;
 
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.AbstractTimedStruct;
+import com.anur.core.util.FileIOUtil;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.anur.io.store.operationset.FileOperationSet;
@@ -72,11 +74,19 @@ public class FetchResponse extends AbstractTimedStruct {
         return new ByteBufferOperationSet(buffer.slice());
     }
 
+    public int getFileOperationSetSize() {
+        return fileOperationSetSize;
+    }
+
     @Override
     public void writeIntoChannel(Channel channel) {
         channel.write(Unpooled.wrappedBuffer(buffer));
         if (fileOperationSetSize > 0) {
-            channel.write(new DefaultFileRegion(fileOperationSet.getFileChannel(), fileOperationSet.getStart(), fileOperationSet.getEnd()));
+            try {
+                channel.write(new DefaultFileRegion(FileIOUtil.openChannel(fileOperationSet.getFile(), true), fileOperationSet.getStart(), fileOperationSet.getEnd()));
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
     }
 
