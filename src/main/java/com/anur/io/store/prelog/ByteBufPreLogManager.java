@@ -67,7 +67,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     public void append(long generation, ByteBufferOperationSet byteBufferOperationSet) {
         this.writeLockSupplier(() -> {
             if (generation < preLogOffset.getGeneration()) {
-                logger.error("追加到预日志的日志 generation 小于当前预日志 generation，追加失败！");
+                logger.error("追加到预日志的日志 generation {} 小于当前预日志 generation {}，追加失败！", generation, preLogOffset.getGeneration());
                 return null;
             }
 

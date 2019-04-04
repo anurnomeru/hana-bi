@@ -60,7 +60,7 @@ public class FetchResponse extends AbstractTimedStruct {
 
     public FetchResponse(ByteBuffer byteBuffer) {
         buffer = byteBuffer;
-        fileOperationSetSize = buffer.getInt(BaseMessageOverhead);
+        fileOperationSetSize = buffer.getInt(FileOperationSetSizeOffset);
     }
 
     public long getGeneration() {

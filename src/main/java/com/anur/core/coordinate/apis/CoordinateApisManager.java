@@ -33,11 +33,11 @@ import com.anur.timewheel.Timer;
  *
  * 日志一致性控制器
  */
-public class CoordinateConsistentManager extends ReentrantReadWriteLocker {
+public class CoordinateApisManager extends ReentrantReadWriteLocker {
 
-    private static volatile CoordinateConsistentManager INSTANCE;
+    private static volatile CoordinateApisManager INSTANCE;
 
-    private Logger logger = LoggerFactory.getLogger(CoordinateConsistentManager.class);
+    private Logger logger = LoggerFactory.getLogger(CoordinateApisManager.class);
 
     /**
      * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterValid 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
@@ -187,18 +187,18 @@ public class CoordinateConsistentManager extends ReentrantReadWriteLocker {
         return canCommit;
     }
 
-    public static CoordinateConsistentManager getINSTANCE() {
+    public static CoordinateApisManager getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (CoordinateConsistentManager.class) {
+            synchronized (CoordinateApisManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new CoordinateConsistentManager();
+                    INSTANCE = new CoordinateApisManager();
                 }
             }
         }
         return INSTANCE;
     }
 
-    public CoordinateConsistentManager() {
+    public CoordinateApisManager() {
         ElectOperator.getInstance()
                      .registerWhenClusterValid(
                          cluster -> writeLockSupplier(() -> {

@@ -1,6 +1,6 @@
 package com.anur;
 
-import com.anur.core.coordinate.apis.CoordinateConsistentManager;
+import com.anur.core.coordinate.apis.CoordinateApisManager;
 import com.anur.core.coordinate.CoordinateServerOperator;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.ElectServerOperator;
@@ -23,7 +23,7 @@ public class Bootstrap {
             /**
              * 日志一致性控制器
              */
-            CoordinateConsistentManager.getINSTANCE();
+            CoordinateApisManager.getINSTANCE();
 
             /**
              * 初始化日志管理
@@ -50,10 +50,11 @@ public class Bootstrap {
                          .start();
 
             try {
-                Thread.sleep(5000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
             for (int i = 0; i < 1000; i++) {
                 Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                 LogManager.getINSTANCE()

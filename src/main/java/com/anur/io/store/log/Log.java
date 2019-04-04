@@ -118,6 +118,7 @@ public class Log extends ReentrantLocker {
      * 将一个操作添加到日志文件中
      */
     public void append(Operation operation, long offset) {
+        logger.debug("append called");
         if (offset < currentOffset) {
             throw new HanabiException("一定是哪里有问题");
         }

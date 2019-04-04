@@ -8,6 +8,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.core.coordinate.sender.CoordinateSender;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.core.struct.coordinate.Register;

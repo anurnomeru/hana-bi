@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
@@ -20,6 +22,8 @@ import com.anur.io.store.operationset.ByteBufferOperationSet;
 public class LogManager {
 
     public static volatile LogManager INSTANCE;
+
+    private static Logger logger = LoggerFactory.getLogger(LogManager.class);
 
     public static LogManager getINSTANCE() {
         if (INSTANCE == null) {
@@ -83,6 +87,7 @@ public class LogManager {
      * 添加一条操作日志到磁盘的入口
      */
     public void append(Operation operation) {
+        logger.debug("append called");
         GenerationAndOffset operationId = ElectOperator.getInstance()
                                                        .genOperationId();
 
