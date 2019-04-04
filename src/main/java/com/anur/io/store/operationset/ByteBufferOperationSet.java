@@ -20,8 +20,11 @@ package com.anur.io.store.operationset;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.exception.HanabiException;
 import com.anur.core.struct.base.Operation;
@@ -108,12 +111,12 @@ public class ByteBufferOperationSet extends OperationSet {
                     return allDone();
                 }
 
-                byteBuffer.mark();
+                int limitTmp = byteBuffer.limit();
                 byteBuffer.position(location + LogOverhead);
                 byteBuffer.limit(location + LogOverhead + size);
                 ByteBuffer operation = byteBuffer.slice();
+                byteBuffer.limit(limitTmp);
 
-                byteBuffer.reset();
                 location += LogOverhead + size;
 
                 return new OperationAndOffset(new Operation(operation), offset);

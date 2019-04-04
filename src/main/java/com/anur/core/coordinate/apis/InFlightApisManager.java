@@ -118,6 +118,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 inFlight.get(serverName)
                         .remove(requestType);
                 logger.info("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
+                requestProcessor.afterCompleteReceive();
                 return null;
             });
         }

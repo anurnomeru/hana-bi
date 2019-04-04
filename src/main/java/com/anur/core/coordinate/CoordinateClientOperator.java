@@ -108,7 +108,7 @@ public class CoordinateClientOperator implements Runnable {
                                    } else {
                                        logger.error(String.format("出现了异常的情况，向 Leader %s 发送了注册请求，却受到了 %s 的回复", leader.getServerName(), registerResponse.serverName));
                                    }
-                               }
+                               }, null
                                ));
             logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }

@@ -1,6 +1,8 @@
 package com.anur.io.store;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import com.anur.core.struct.base.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 import com.anur.core.struct.OperationTypeEnum;
@@ -13,6 +15,7 @@ public class TestByteBufferOperationSet {
 
     public static void main(String[] args) {
         testIterator();
+        testIterator1();
     }
 
     public static void testIterator() {
@@ -24,6 +27,25 @@ public class TestByteBufferOperationSet {
             System.out.println(iterator.next()
                                        .getOperation()
                                        .toString());
+        }
+    }
+
+    public static void testIterator1() {
+        List<OperationAndOffset> operations = new ArrayList<>();
+        for (int i = 0; i < 100; i++) {
+            Operation operation = new Operation(OperationTypeEnum.SETNX, "123", "2342342352345");
+
+            operations.add(new OperationAndOffset(operation, i));
+        }
+
+        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operations);
+
+        ByteBufferOperationSet byteBufferOperationSet1 = new ByteBufferOperationSet(byteBufferOperationSet.getByteBuffer());
+
+        Iterator<OperationAndOffset> iterator = byteBufferOperationSet1.iterator();
+        while (iterator.hasNext()) {
+            System.out.println(iterator.next()
+                                       .getOffset());
         }
     }
 }

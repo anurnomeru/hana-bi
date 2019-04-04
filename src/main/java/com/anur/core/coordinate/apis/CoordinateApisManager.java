@@ -101,7 +101,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
 
             ByteBufPreLogManager.getINSTANCE()
                                 .append(fetchResponse.getGeneration(), fetchResponse.read());
-
             return null;
         });
     };
@@ -121,12 +120,14 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                                leader,
                                                new Fetcher(GAO.next()),
                                                new RequestProcessor(byteBuffer ->
-                                                   CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer))
-                                               ))) {
+                                                   CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
+                                                   () -> {
+                                                       fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
+                                                       System.out.println("111111111111111111111111111111111");
+                                                       Timer.getInstance()
+                                                            .addTask(fetchPreLogTask);
+                                                   }))) {
                     }
-                    fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
-                    Timer.getInstance()
-                         .addTask(fetchPreLogTask);
                 }
             }
         } finally {

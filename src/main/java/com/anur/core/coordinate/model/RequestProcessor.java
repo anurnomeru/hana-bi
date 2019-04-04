@@ -18,10 +18,8 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
 
     public static RequestProcessor REQUIRE_NESS() {
         return new RequestProcessor(byteBuffer -> {
-        });
+        }, null);
     }
-
-    private Logger logger = LoggerFactory.getLogger(RequestProcessor.class);
 
     /**
      * 是否已经完成了这个请求过程（包括接收response）
@@ -34,12 +32,18 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
     private Consumer<ByteBuffer> callBack;
 
     /**
+     * 在完全收到消息回调后做什么，用于重启定时任务
+     */
+    private Runnable afterCompleteReceive;
+
+    /**
      * 重新请求的定时任务
      */
     private TimedTask timedTask;
 
-    public RequestProcessor(Consumer<ByteBuffer> callBack) {
+    public RequestProcessor(Consumer<ByteBuffer> callBack, Runnable afterCompleteReceive) {
         this.callBack = callBack;
+        this.afterCompleteReceive = afterCompleteReceive;
     }
 
     public boolean isComplete() {
@@ -71,6 +75,15 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
             });
             return null;
         });
+    }
+
+    /**
+     * 完成回调后调用
+     */
+    public void afterCompleteReceive() {
+        if (afterCompleteReceive != null) {
+            HanabiExecutors.submit(() -> afterCompleteReceive);
+        }
     }
 
     /**
