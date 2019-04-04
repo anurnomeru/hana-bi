@@ -13,6 +13,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.CoordinateConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coordinate.CoordinateClientOperator;
@@ -123,7 +124,7 @@ public class CoordinateConsistentManager extends ReentrantReadWriteLocker {
                                                    CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer))
                                                ))) {
                     }
-                    fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
+                    fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
                     Timer.getInstance()
                          .addTask(fetchPreLogTask);
                 }

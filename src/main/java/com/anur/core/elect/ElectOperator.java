@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
+import com.anur.config.ElectConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coordinate.model.Cluster;
@@ -42,11 +43,11 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
-    private static final long ELECTION_TIMEOUT_MS = 1500;// 为了测试方便，所以这里将时间扩大10倍
+    private static final long ELECTION_TIMEOUT_MS = ElectConfigHelper.getElectionTimeoutMs();
 
-    private static final long VOTES_BACK_OFF_MS = 700;
+    private static final long VOTES_BACK_OFF_MS = ElectConfigHelper.getVotesBackOffMs();
 
-    private static final long HEART_BEAT_MS = 700;
+    private static final long HEART_BEAT_MS = ElectConfigHelper.getHeartBeatMs();
 
     /**
      * 协调器独享线程

@@ -67,9 +67,7 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
             Optional.ofNullable(timedTask)
                     .ifPresent(TimedTask::cancel);
             HanabiExecutors.submit(() -> {
-                logger.debug("before callback");
                 callBack.accept(byteBuffer);
-                logger.debug("after callback");
             });
             return null;
         });

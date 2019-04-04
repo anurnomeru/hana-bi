@@ -113,7 +113,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 requestProcessor.complete(msg);
                 inFlight.get(serverName)
                         .remove(requestType);
-                logger.info("成功收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
+                logger.info("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
                 return null;
             });
         }
@@ -173,7 +173,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name());
                 return false;
             } else {
-                logger.debug("正在创建向 {} 发送 {} 的任务", serverName, typeEnum.name());
+                //                logger.debug("正在创建向 {} 发送 {} 的任务", serverName, typeEnum.name());
                 inFlight.compute(serverName, (s, enums) -> {
                     if (enums == null) {
                         enums = new HashMap<>();

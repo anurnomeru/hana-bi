@@ -133,7 +133,19 @@ public class ConfigHelper {
 
         LOG_MAX_MESSAGE_SIZE("log.maxMessageSize", "log.maxMessageSize 是操作日志最大的大小，它也影响我们的操作 key + value 最大的大小"),
 
-        LOG_MAX_SEGMENT_SIZE("log.maxSegmentSize", "log.maxSegmentSize 日志分片文件大小");
+        LOG_MAX_SEGMENT_SIZE("log.maxSegmentSize", "log.maxSegmentSize 日志分片文件大小"),
+
+        ////////////////////// ElectConfigHelper
+
+        ELECT_ELECTION_TIMEOUT_MS("elect.electionTimeoutMs", "超过 ms 没收取到 leader 的心跳就会发起选举"),
+
+        ELECT_VOTES_BACK_OFF_MS("elect.votesBackOffMs", "选举期间拉票频率，建议为 electionTimeoutMs 的一半"),
+
+        ELECT_HEART_BEAT_MS("elect.heartBeatMs", "心跳包，建议为 electionTimeoutMs 的一半"),
+
+        ////////////////////// CoordinateConfigHelper
+
+        COORDINATE_FETCH_BACK_OFF_MS("coordinate.fetchBackOffMs", "间隔 ms 去 leader 拉取最新的日志");
 
         ConfigEnum(String key, String adv) {
             this.key = key;

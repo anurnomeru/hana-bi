@@ -42,8 +42,8 @@ public class CoordinateSender {
     public static void send(String serverName, AbstractStruct body) {
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
-            logger.debug("正在向节点 {} 发送 {}", serverName, body.getOperationTypeEnum()
-                                                           .name());
+            logger.debug("正向节点发送 {} 关于 {} 的 request", serverName, body.getOperationTypeEnum()
+                                                                   .name());
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);
 
