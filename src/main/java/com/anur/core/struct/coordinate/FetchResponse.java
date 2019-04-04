@@ -55,8 +55,7 @@ public class FetchResponse extends AbstractTimedStruct {
             byteBuffer.putInt(fileOperationSetSize);
         }
 
-        byteBuffer.rewind();
-        byteBuffer.limit(BaseMessageOverhead);
+        byteBuffer.flip();
     }
 
     public FetchResponse(ByteBuffer byteBuffer) {

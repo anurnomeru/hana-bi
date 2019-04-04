@@ -3,6 +3,8 @@ package com.anur.core.coordinate.apis;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -15,6 +17,8 @@ import io.netty.channel.Channel;
  * 本来准备使用 MessageToByteEncoder，但是这个类貌似无法和零拷贝结合在一起，故采用工具类的形式来进行协议封装
  */
 public class CoordinateSender {
+
+    private static Logger logger = LoggerFactory.getLogger(CoordinateSender.class);
 
     private static Map<String, ReentrantLock> lockerMap = new HashMap<>();
 
@@ -38,6 +42,8 @@ public class CoordinateSender {
     public static void send(String serverName, AbstractStruct body) {
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
+            logger.debug("正在向节点 {} 发送 {}", serverName, body.getOperationTypeEnum()
+                                                           .name());
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);
 

@@ -3,6 +3,8 @@ package com.anur.core.coordinate.model;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.timewheel.TimedTask;
@@ -14,8 +16,12 @@ import com.anur.timewheel.TimedTask;
  */
 public class RequestProcessor extends ReentrantReadWriteLocker {
 
-    public static RequestProcessor REQUIRE_NESS = new RequestProcessor(byteBuffer -> {
-    });
+    public static RequestProcessor REQUIRE_NESS() {
+        return new RequestProcessor(byteBuffer -> {
+        });
+    }
+
+    private Logger logger = LoggerFactory.getLogger(RequestProcessor.class);
 
     /**
      * 是否已经完成了这个请求过程（包括接收response）
@@ -48,7 +54,6 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
             complete = true;
             Optional.ofNullable(timedTask)
                     .ifPresent(TimedTask::cancel);
-            HanabiExecutors.submit(() -> callBack.accept(null));
             return null;
         });
     }
@@ -61,7 +66,11 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
             complete = true;
             Optional.ofNullable(timedTask)
                     .ifPresent(TimedTask::cancel);
-            HanabiExecutors.submit(() -> callBack.accept(byteBuffer));
+            HanabiExecutors.submit(() -> {
+                logger.debug("before callback");
+                callBack.accept(byteBuffer);
+                logger.debug("after callback");
+            });
             return null;
         });
     }

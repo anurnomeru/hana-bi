@@ -5,7 +5,6 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
@@ -128,7 +127,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
         logger.info("协调节点 {} 已注册到本节点", register.getServerName());
         ChannelManager.getInstance(ChannelType.COORDINATE)
                       .register(register.getServerName(), channel);
-        send(register.getServerName(), new RegisterResponse(InetSocketAddressConfigHelper.getServerName()), RequestProcessor.REQUIRE_NESS);
+        send(register.getServerName(), new RegisterResponse(InetSocketAddressConfigHelper.getServerName()), RequestProcessor.REQUIRE_NESS());
     }
 
     /**
@@ -145,7 +144,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                                                     .getAfter(fetcher.getGAO());
 
             FetchResponse fetchResponse = new FetchResponse(fetchDataInfo);
-            send(serverName, fetchResponse, RequestProcessor.REQUIRE_NESS);
+            send(serverName, fetchResponse, RequestProcessor.REQUIRE_NESS());
         } catch (IOException e) {
             throw new HanabiException("Fetch " + fetcher.getGAO() + " 之后的消息失败");
         }
@@ -174,7 +173,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name());
                 return false;
             } else {
-                logger.debug("发送到节点 {} 的 {} 任务创建成功", serverName, typeEnum.name());
+                logger.debug("正在创建向 {} 发送 {} 的任务", serverName, typeEnum.name());
                 inFlight.compute(serverName, (s, enums) -> {
                     if (enums == null) {
                         enums = new HashMap<>();
@@ -196,7 +195,9 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
      */
     private void sendImpl(String serverName, AbstractStruct command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
         this.readLockSupplier(() -> {
+
             if (!requestProcessor.isComplete()) {
+
                 CoordinateSender.send(serverName, command);
 
                 if (RequestAndResponseType.get(operationTypeEnum) == null) {

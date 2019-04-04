@@ -122,8 +122,6 @@ public class CoordinateConsistentManager extends ReentrantReadWriteLocker {
                                                new RequestProcessor(byteBuffer ->
                                                    CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer))
                                                ))) {
-
-                        logger.debug("向 Leader {} 发送 FETCH 请求，当前预日志进度为 {}", leader, GAO);
                     }
                     fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
                     Timer.getInstance()
