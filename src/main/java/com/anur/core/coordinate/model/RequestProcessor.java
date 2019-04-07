@@ -41,6 +41,11 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
      */
     private TimedTask timedTask;
 
+    public static void main(String[] args) {
+        Runnable runnable = null;
+        HanabiExecutors.submit(runnable);
+    }
+
     public RequestProcessor(Consumer<ByteBuffer> callBack, Runnable afterCompleteReceive) {
         this.callBack = callBack;
         this.afterCompleteReceive = afterCompleteReceive;

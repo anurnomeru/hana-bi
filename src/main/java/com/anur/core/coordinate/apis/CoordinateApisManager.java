@@ -88,6 +88,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
      * 如何消费 Fetch response
      */
     private Consumer<FetchResponse> CONSUME_FETCH_RESPONSE = fetchResponse -> {
+        System.out.println("12312333333333333333333333");
         readLockSupplier(() -> {
             logger.debug("收到 Leader {} 返回的 FETCH_RESPONSE", leader);
 
@@ -122,6 +123,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                                new RequestProcessor(byteBuffer ->
                                                    CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
                                                    () -> {
+                                                       System.out.println("111111111111111111111111111111111");
                                                        fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
                                                        System.out.println("111111111111111111111111111111111");
                                                        Timer.getInstance()
@@ -202,7 +204,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     public CoordinateApisManager() {
         ElectOperator.getInstance()
                      .registerWhenClusterValid(
-                         cluster -> writeLockSupplier(() -> {
+                         cluster -> {
                              leader = cluster.getLeader();
                              isLeader = InetSocketAddressConfigHelper.getServerName()
                                                                      .equals(leader);
@@ -216,9 +218,10 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                  // 当集群可用时，连接协调 leader
                                  CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()));
                                  client.registerWhenConnectToLeader(() -> {
+                                     System.out.println("registerWhenConnectToLeader");
                                      fetchLock.lock();
                                      try {
-                                         fetchPreLogTask = new TimedTask(100, this::sendFetchPreLog);
+                                         fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
                                          Timer.getInstance()
                                               .addTask(fetchPreLogTask);
                                      } finally {
@@ -226,29 +229,23 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                      }
                                      clusterValid = true;
                                  });
+
+                                 client.registerWhenDisconnectToLeader(() -> {
+                                     fetchLock.lock();
+                                     try {
+                                         Optional.ofNullable(fetchPreLogTask)
+                                                 .ifPresent(TimedTask::cancel);
+                                     } finally {
+                                         fetchLock.unlock();
+                                     }
+                                 });
                                  client.tryStartWhileDisconnected();
                              }
-
-                             return null;
-                         }));
+                         });
 
         ElectOperator.getInstance()
                      .registerWhenClusterInvalid(
-                         () -> writeLockSupplier(() -> {
-
-                             if (!isLeader) {
-                                 CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(leader))
-                                                         .registerWhenDisconnectToLeader(() -> {
-                                                             fetchLock.lock();
-                                                             try {
-                                                                 Optional.ofNullable(fetchPreLogTask)
-                                                                         .ifPresent(TimedTask::cancel);
-                                                             } finally {
-                                                                 fetchLock.unlock();
-                                                             }
-                                                         });
-                             }
-
+                         () -> {
                              fetchLock.lock();
                              try {
                                  Optional.ofNullable(fetchPreLogTask)
@@ -267,7 +264,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                              CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
                              InFlightApisManager.getINSTANCE()
                                                 .reboot();
-                             return null;
-                         }));
+                         });
     }
 }

@@ -52,17 +52,17 @@ public class Bootstrap {
                          .resetGenerationAndOffset(logManager.getInitial())
                          .start();
 
-            try {
-                Thread.sleep(10000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-            for (int i = 0; i < 1000; i++) {
-                Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
-                LogManager.getINSTANCE()
-                          .append(operation);
-            }
+//            try {
+//                Thread.sleep(10000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//
+//            for (int i = 0; i < 1000; i++) {
+//                Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
+//                LogManager.getINSTANCE()
+//                          .append(operation);
+//            }
         });
 
         while (RUNNING) {

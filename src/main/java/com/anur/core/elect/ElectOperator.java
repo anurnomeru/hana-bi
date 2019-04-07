@@ -147,6 +147,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.heartBeat = new HeartBeat(InetSocketAddressConfigHelper.getServerName());
         this.clusters = InetSocketAddressConfigHelper.getCluster();
         this.clusterValid = false;
+        this.leaderServerName = null;
         this.doWhenClusterValid = new ArrayList<>();
         this.doWhenClusterInvalid = new ArrayList<>();
 
@@ -334,7 +335,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     public void receiveHeatBeatInfection(String leaderServerName, long generation, String msg) {
-        if (leaderServerName.equals(this.leaderServerName) && generation == this.generation) {
+        if ((leaderServerName.equals(this.leaderServerName)) && generation == this.generation) {
             return;
         } else {
             receiveHeatBeat(leaderServerName, generation, msg);
@@ -640,7 +641,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             this.clusterValid = valid;
 
             if (valid) {
-                logger.info("集群状态 => 可用");
+                logger.info("集群状态 => 可用，当前 leader 为 {}", leaderServerName);
                 Cluster cluster = new Cluster(leaderServerName, clusters);
                 this.doWhenClusterValid.forEach(c -> HanabiExecutors.submit(() -> c.accept(cluster)));
             } else {

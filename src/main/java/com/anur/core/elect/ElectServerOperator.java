@@ -18,6 +18,7 @@ import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.server.ElectServer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.internal.StringUtil;
 
 /**
  * Created by Anur IjuoKaruKas on 2/1/2019
@@ -87,9 +88,12 @@ public class ElectServerOperator implements Runnable {
                          .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration(),
                              String.format("收到了来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), decodeWrapper.getGeneration()));
 
-            heartBeat = new HeartBeat(ElectOperator.getInstance()
-                                                   .getLeaderServerName());
-            ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat));
+            String nowLeader = ElectOperator.getInstance()
+                                            .getLeaderServerName();
+            heartBeat = new HeartBeat(nowLeader);
+            if (!StringUtil.isNullOrEmpty(nowLeader)) {
+                ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat));
+            }
         default:
             break;
         }

@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
@@ -34,6 +36,13 @@ import io.netty.util.internal.StringUtil;
  * 2、那么如何保证数据不被重复消费：我们以时间戳作为 key 的一部分，应答方需要在消费消息后，需要记录此时间戳，并不再消费比此时间戳小的消息。
  */
 public class InFlightApisManager extends ReentrantReadWriteLocker {
+
+    public static void main(String[] args) {
+        ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
+
+        Lock rl = reentrantReadWriteLock.readLock();
+        Lock wl = reentrantReadWriteLock.writeLock();
+    }
 
     private static volatile InFlightApisManager INSTANCE;
 
@@ -106,7 +115,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
             }
 
-            this.writeLockSupplier(() -> {
+            RequestProcessor rp = this.writeLockSupplier(() -> {
                 RequestProcessor requestProcessor = Optional.ofNullable(inFlight.get(serverName))
                                                             .map(m -> m.get(requestType))
                                                             .orElse(null);
@@ -114,13 +123,19 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                     throw new HanabiException("收到了来自节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
                 }
 
-                requestProcessor.complete(msg);
+                if (typeEnum.equals(OperationTypeEnum.REGISTER_RESPONSE)) {
+
+                }
                 inFlight.get(serverName)
                         .remove(requestType);
                 logger.info("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
-                requestProcessor.afterCompleteReceive();
-                return null;
+                return requestProcessor;
             });
+            System.out.println("11111compl");
+            rp.complete(msg);
+            System.out.println("22222compl");
+            rp.afterCompleteReceive();
+            System.out.println("33333compl");
         }
     }
 
@@ -174,7 +189,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name());
                 return false;
             } else {
-                //                logger.debug("正在创建向 {} 发送 {} 的任务", serverName, typeEnum.name());
+                logger.debug("正在创建向 {} 发送 {} 的任务", serverName, typeEnum.name());
                 inFlight.compute(serverName, (s, enums) -> {
                     if (enums == null) {
                         enums = new HashMap<>();
