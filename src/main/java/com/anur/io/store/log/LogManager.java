@@ -2,6 +2,7 @@ package com.anur.io.store.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -147,6 +148,12 @@ public class LogManager {
 
     /**
      * 只返回某个 segment 的往后所有消息，需要客户端轮询拉数据（包括拉取本身这条消息）
+     *
+     * 先获取符合此世代的首个 Log ，称为 needLoad
+     *
+     * == >      循环 needLoad，直到拿到首个有数据的 LogSegment，称为 needToRead
+     *
+     * 如果拿不到 needToRead，则进行递归
      */
     public FetchDataInfo getAfter(GenerationAndOffset GAO) {
         long gen = GAO.getGeneration();
@@ -163,15 +170,23 @@ public class LogManager {
         long needLoadGen = firstEntry.getKey();
         Log needLoad = firstEntry.getValue();
 
-        if (needLoad.getCurrentOffset() == 0) {
-            return getAfter(new GenerationAndOffset(needLoadGen + 1, 0));
+        Iterator<LogSegment> logSegmentIterable = needLoad.getLogSegments(offset, Long.MAX_VALUE)
+                                                          .iterator();
+
+        LogSegment needToRead = null;
+        while (logSegmentIterable.hasNext()) {
+            LogSegment tmp = logSegmentIterable.next();
+            if (needLoad.getCurrentOffset() != tmp.getBaseOffset()) {// 代表这个 LogSegment 一条数据都没 append
+                needToRead = tmp;
+                break;
+            }
         }
 
-        Iterable<LogSegment> logSegmentIterable = needLoad.getLogSegments(offset, Long.MAX_VALUE);
-        LogSegment logSegment = logSegmentIterable.iterator()
-                                                  .next();
+        if (needToRead == null) {
+            return getAfter(new GenerationAndOffset(needLoadGen + 1, offset));
+        }
 
-        return logSegment.read(needLoadGen, offset, Long.MAX_VALUE, Integer.MAX_VALUE);
+        return needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Integer.MAX_VALUE);
     }
 
     public GenerationAndOffset getInitial() {

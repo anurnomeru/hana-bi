@@ -31,12 +31,16 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
         buffer.markReaderIndex();
         int maybeLength = buffer.readInt();
 
+        logger.debug("maybeLength => " + maybeLength);
+
         if (maybeLength > LogConfigHelper.getMaxLogMessageSize()) {
             buffer.discardReadBytes();
             return null;
         }
 
         int remain = buffer.readableBytes();
+
+        logger.debug("remain => " + remain);
 
         if (remain < maybeLength) {
             logger.debug("消息解析异常，remain {} 但是 maybeLength {}", remain, maybeLength);

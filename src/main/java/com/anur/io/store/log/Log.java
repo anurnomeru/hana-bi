@@ -38,7 +38,7 @@ public class Log extends ReentrantLocker {
     /** 此 offset 之前的数据都已经刷盘 */
     public long recoveryPoint = 0L;
 
-    /** 最近一个添加到 append 到日志文件中的 offset */
+    /** 最近一个添加到 append 到日志文件中的 offset，默认取 baseOffset */
     private long currentOffset = 0L;
 
     public Log(long generation, File dir, long recoveryPoint) throws IOException {
@@ -102,9 +102,9 @@ public class Log extends ReentrantLocker {
         if (segments.size() == 0) {
             logger.info("当前世代 {} 目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", generation, dir.getAbsolutePath());
             segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
-        } else {
-            currentOffset = activeSegment().lastOffset(generation);
         }
+
+        currentOffset = activeSegment().lastOffset(generation);
     }
 
     /**

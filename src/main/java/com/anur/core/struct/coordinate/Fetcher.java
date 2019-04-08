@@ -51,4 +51,9 @@ public class Fetcher extends AbstractTimedStruct {
     public int totalSize() {
         return size();
     }
+
+    @Override
+    public String toString() {
+        return "Fetcher{ GAO => " + getGAO().toString() + "}";
+    }
 }

@@ -57,6 +57,15 @@ public class Bootstrap {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+            try {
+                for (int i = 0; i < 100000; i++) {
+                    Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
+                    LogManager.getINSTANCE()
+                              .append(operation);
+                }
+            } catch (Exception e) {
+            }
         });
 
         while (RUNNING) {

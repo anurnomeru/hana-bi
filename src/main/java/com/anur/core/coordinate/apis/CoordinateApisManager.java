@@ -99,8 +99,10 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                 return null;
             }
 
+            logger.debug("before ByteBufPreLogManager append");
             ByteBufPreLogManager.getINSTANCE()
                                 .append(fetchResponse.getGeneration(), fetchResponse.read());
+            logger.debug("after ByteBufPreLogManager append");
             return null;
         });
     };
@@ -122,7 +124,8 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                                new RequestProcessor(byteBuffer ->
                                                    CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
                                                    () -> {
-                                                       fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), CoordinateApisManager.this::sendFetchPreLog);
+                                                       logger.debug("rebuild fetchPreLogTask task");
+                                                       fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
                                                        Timer.getInstance()
                                                             .addTask(fetchPreLogTask);
                                                    }))) {
@@ -219,6 +222,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                          fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
                                          Timer.getInstance()
                                               .addTask(fetchPreLogTask);
+                                         logger.debug("init fetchPreLogTask task");
                                      } finally {
                                          fetchLock.unlock();
                                      }
@@ -230,6 +234,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                      try {
                                          Optional.ofNullable(fetchPreLogTask)
                                                  .ifPresent(TimedTask::cancel);
+                                         logger.debug("cancel fetchPreLogTask task");
                                      } finally {
                                          fetchLock.unlock();
                                      }
@@ -245,6 +250,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                              try {
                                  Optional.ofNullable(fetchPreLogTask)
                                          .ifPresent(TimedTask::cancel);
+                                 logger.debug("cancel fetchPreLogTask task");
                              } finally {
                                  fetchLock.unlock();
                              }

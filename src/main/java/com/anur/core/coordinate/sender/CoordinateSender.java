@@ -50,6 +50,9 @@ public class CoordinateSender {
             channel.write(Unpooled.copyInt(body.totalSize()));
             body.writeIntoChannel(channel);
             channel.flush();
+
+            logger.debug("send => {}", body.toString());
+            logger.debug("request flush");
         }
     }
 }

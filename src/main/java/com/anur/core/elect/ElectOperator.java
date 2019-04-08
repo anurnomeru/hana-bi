@@ -404,6 +404,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 this.voteRecord = null;
                 this.box = new HashMap<>();
                 this.leaderServerName = null;
+                this.changeClusterState(false);
 
                 // 4、新增成为Candidate的定时任务
                 this.becomeCandidateAndBeginElectTask(this.generation);

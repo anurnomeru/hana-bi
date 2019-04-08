@@ -40,8 +40,6 @@ import com.anur.timewheel.Timer;
  */
 public class LogSegment {
 
-    private Logger logger = LoggerFactory.getLogger(LogSegment.class);
-
     /**
      * 管理的那个日志截片
      */
@@ -288,7 +286,7 @@ public class LogSegment {
      *
      * 然后取最后一个
      */
-    public long lastOffset(long gen) throws IOException {
+    public long lastOffset(long gen)  {
         FetchDataInfo fetchDataInfo = read(gen, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
         if (fetchDataInfo == null) {
             return baseOffset;
@@ -304,6 +302,8 @@ public class LogSegment {
             return lastOffset;
         }
     }
+
+
 
     public long getBaseOffset() {
         return baseOffset;
