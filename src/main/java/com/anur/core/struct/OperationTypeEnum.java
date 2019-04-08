@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.struct.base.Operation;
+import com.anur.core.struct.coordinate.Commiter;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
@@ -40,12 +41,22 @@ public enum OperationTypeEnum {
     /**
      * 协调节点从主节点拉取消息
      */
-    FETCH(10002, Fetcher.class),// 拉取消息
+    FETCH(10002, Fetcher.class),
 
     /**
      * 协调节点从主节点拉取消息的回复，返回拉取的消息
      */
-    FETCH_RESPONSE(10003, FetchResponse.class),// 返回拉取的消息
+    FETCH_RESPONSE(10003, FetchResponse.class),
+
+    /**
+     * 主节点告知协调节点可以提交了
+     */
+    COMMIT(10004, Commiter.class),
+
+    /**
+     * 协调节点告诉主节点自己提交到了哪里
+     */
+    COMMIT_RESPONSE(10005, Commiter.class),
     ;
 
     public int byteSign;

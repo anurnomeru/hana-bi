@@ -84,6 +84,17 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
      */
     private Lock fetchLock = new ReentrantLock();
 
+    public static CoordinateApisManager getINSTANCE() {
+        if (INSTANCE == null) {
+            synchronized (CoordinateApisManager.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new CoordinateApisManager();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+
     /**
      * 如何消费 Fetch response
      */
@@ -99,10 +110,8 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                 return null;
             }
 
-            logger.debug("before ByteBufPreLogManager append");
             ByteBufPreLogManager.getINSTANCE()
                                 .append(fetchResponse.getGeneration(), fetchResponse.read());
-            logger.debug("after ByteBufPreLogManager append");
             return null;
         });
     };
@@ -115,20 +124,21 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
         try {
             if (fetchPreLogTask != null) {
                 if (!fetchPreLogTask.isCancel()) {
-                    GenerationAndOffset GAO = ByteBufPreLogManager.getINSTANCE()
-                                                                  .getPreLogOffset();
-                    if (InFlightApisManager.getINSTANCE()
-                                           .send(
-                                               leader,
-                                               new Fetcher(GAO.next()),
-                                               new RequestProcessor(byteBuffer ->
-                                                   CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
-                                                   () -> {
-                                                       logger.debug("rebuild fetchPreLogTask task");
-                                                       fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
-                                                       Timer.getInstance()
-                                                            .addTask(fetchPreLogTask);
-                                                   }))) {
+                    if (ApisManager.getINSTANCE()
+                                   .send(
+                                       leader,
+                                       new Fetcher(
+                                           ByteBufPreLogManager.getINSTANCE()
+                                                               .getPreLogGAO()
+                                       ),
+                                       new RequestProcessor(byteBuffer ->
+                                           CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
+                                           () -> {
+                                               logger.debug("rebuild fetchPreLogTask task");
+                                               fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
+                                               Timer.getInstance()
+                                                    .addTask(fetchPreLogTask);
+                                           }))) {
                     }
                 }
             }
@@ -143,8 +153,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
      * 如果某个最大的 GAO 已经达到了 commit 条件，将返回此 GAO。
      */
     public GenerationAndOffset fetchReport(String node, GenerationAndOffset GAO) {
-        logger.debug("收到了来自节点 {} 的 fetch 进度提交，此阶段进度为 {}", node, GAO.toString());
-
         if (!isLeader) {
             logger.error("出现了不应该出现的情况！");
         }
@@ -156,14 +164,17 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
         }
 
         GenerationAndOffset GAOCommitBefore = readLockSupplier(() -> nodeFetchMap.get(node));
-        if (GAOCommitBefore != null && GAOCommitBefore.compareTo(GAO) > 0) {// 小于之前提交记录的无需记录
+        if (GAOCommitBefore != null && GAOCommitBefore.compareTo(GAO) >= 0) {// 小于之前提交记录的无需记录
             return GAOLatest;
         }
 
-        GenerationAndOffset canCommit = writeLockSupplier(() -> {
+        return writeLockSupplier(() -> {
             if (GAOCommitBefore != null) {// 移除之前的 commit 记录
+                logger.debug("节点 {} 已经 fetch 进度由 {} 更新到了进度 {}", node, GAOCommitBefore.toString(), GAO.toString());
                 offsetFetchMap.get(GAOCommitBefore)
                               .remove(node);
+            } else {
+                logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString());
             }
 
             nodeFetchMap.put(node, GAO);// 更新新的 commit 记录
@@ -178,27 +189,18 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
             GenerationAndOffset approach = null;
             for (Entry<GenerationAndOffset, Set<String>> entry : offsetFetchMap.entrySet()) {
                 if (entry.getValue()
-                         .size() >= validCommitCountNeed) {
+                         .size() + 1 >= validCommitCountNeed) {// +1 为自己的一票
                     approach = entry.getKey();
                 }
             }
 
-            return null;
-        });
-
-        logger.debug("进度 {} 已可提交 ~", node, GAO.toString());
-        return canCommit;
-    }
-
-    public static CoordinateApisManager getINSTANCE() {
-        if (INSTANCE == null) {
-            synchronized (CoordinateApisManager.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new CoordinateApisManager();
-                }
+            if (approach == null) {
+                return GAOLatest;
+            } else {
+                logger.debug("进度 {} 已可提交 ~", GAO.toString());
+                return approach;
             }
-        }
-        return INSTANCE;
+        });
     }
 
     public CoordinateApisManager() {
@@ -263,8 +265,8 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
 
                              // 当集群不可用时，与协调 leader 断开连接
                              CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
-                             InFlightApisManager.getINSTANCE()
-                                                .reboot();
+                             ApisManager.getINSTANCE()
+                                        .reboot();
                          });
     }
 }

@@ -55,10 +55,17 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     }
 
     /**
-     * 获取当前副本同步到的最新的 commitLog 数据
+     * 获取当前副本同步到的最新的 preLog GAO
      */
-    public GenerationAndOffset getPreLogOffset() {
+    public GenerationAndOffset getPreLogGAO() {
         return readLockSupplier(() -> preLogOffset);
+    }
+
+    /**
+     * 获取当前副本同步到的最新的 commit GAO
+     */
+    public GenerationAndOffset getCommitGAO() {
+        return readLockSupplier(() -> commitOffset);
     }
 
     /**

@@ -10,26 +10,26 @@ import io.netty.channel.Channel;
 /**
  * Created by Anur IjuoKaruKas on 2019/3/29
  *
- * 用于向协调 Leader 拉取消息
+ * 用于向协调 Leader 拉取消息，并告知自己的提交进度
  */
 public class Fetcher extends AbstractTimedStruct {
 
-    public static final int GenerationOffset = TimestampOffset + TimestampLength;
+    public static final int FetchGenerationOffset = TimestampOffset + TimestampLength;
 
-    public static final int GenerationLength = 8;
+    public static final int FetchGenerationLength = 8;
 
-    public static final int OffsetOffset = GenerationOffset + GenerationLength;
+    public static final int FetchOffsetOffset = FetchGenerationOffset + FetchGenerationLength;
 
-    public static final int OffsetLength = 8;
+    public static final int FetchOffsetLength = 8;
 
-    public static final int BaseMessageOverhead = OffsetOffset + OffsetLength;
+    public static final int BaseMessageOverhead = FetchOffsetOffset + FetchOffsetLength;
 
-    public Fetcher(GenerationAndOffset GAO) {
+    public Fetcher(GenerationAndOffset fetchGAO) {
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
         init(byteBuffer, OperationTypeEnum.FETCH);
 
-        byteBuffer.putLong(GAO.getGeneration());
-        byteBuffer.putLong(GAO.getOffset());
+        byteBuffer.putLong(fetchGAO.getGeneration());
+        byteBuffer.putLong(fetchGAO.getOffset());
 
         byteBuffer.flip();
     }
@@ -38,8 +38,8 @@ public class Fetcher extends AbstractTimedStruct {
         this.buffer = byteBuffer;
     }
 
-    public GenerationAndOffset getGAO() {
-        return new GenerationAndOffset(buffer.getLong(GenerationOffset), buffer.getLong(OffsetOffset));
+    public GenerationAndOffset getFetchGAO() {
+        return new GenerationAndOffset(buffer.getLong(FetchGenerationOffset), buffer.getLong(FetchOffsetOffset));
     }
 
     @Override
@@ -54,6 +54,6 @@ public class Fetcher extends AbstractTimedStruct {
 
     @Override
     public String toString() {
-        return "Fetcher{ GAO => " + getGAO().toString() + "}";
+        return "Fetcher{ GAO => " + getFetchGAO().toString() + "}";
     }
 }

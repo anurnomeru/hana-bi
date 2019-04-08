@@ -1,6 +1,5 @@
 package com.anur.core.coordinate.apis;
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
@@ -11,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.coordinate.sender.CoordinateSender;
+import com.anur.core.elect.model.GenerationAndOffset;
+import com.anur.core.struct.coordinate.CommitResponse;
+import com.anur.core.struct.coordinate.Commiter;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.core.struct.coordinate.Register;
@@ -24,6 +26,7 @@ import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.exception.HanabiException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.log.LogManager;
+import com.anur.io.store.prelog.ByteBufPreLogManager;
 import io.netty.channel.Channel;
 import io.netty.util.internal.StringUtil;
 
@@ -35,40 +38,30 @@ import io.netty.util.internal.StringUtil;
  * 1、消息在没有收到回复之前，会定时重发。
  * 2、那么如何保证数据不被重复消费：我们以时间戳作为 key 的一部分，应答方需要在消费消息后，需要记录此时间戳，并不再消费比此时间戳小的消息。
  */
-public class InFlightApisManager extends ReentrantReadWriteLocker {
+public class ApisManager extends ReentrantReadWriteLocker {
 
-    public static void main(String[] args) {
-        ReentrantReadWriteLock reentrantReadWriteLock = new ReentrantReadWriteLock();
-
-        Lock rl = reentrantReadWriteLock.readLock();
-        Lock wl = reentrantReadWriteLock.writeLock();
-    }
-
-    private static volatile InFlightApisManager INSTANCE;
-
-    private static Map<OperationTypeEnum, OperationTypeEnum> RequestAndResponseType = new HashMap<>();
+    private static volatile ApisManager INSTANCE;
 
     private static Map<OperationTypeEnum, OperationTypeEnum> ResponseAndRequestType = new HashMap<>();
 
     static {
-        RequestAndResponseType.put(OperationTypeEnum.REGISTER, OperationTypeEnum.REGISTER_RESPONSE);
-        RequestAndResponseType.put(OperationTypeEnum.FETCH, OperationTypeEnum.FETCH_RESPONSE);
-
-        RequestAndResponseType.forEach((ek, ev) -> ResponseAndRequestType.put(ev, ek));
+        ResponseAndRequestType.put(OperationTypeEnum.REGISTER_RESPONSE, OperationTypeEnum.REGISTER);
+        ResponseAndRequestType.put(OperationTypeEnum.FETCH_RESPONSE, OperationTypeEnum.FETCH);
+        ResponseAndRequestType.put(OperationTypeEnum.COMMIT_RESPONSE, OperationTypeEnum.COMMIT);
     }
 
-    public static InFlightApisManager getINSTANCE() {
+    public static ApisManager getINSTANCE() {
         if (INSTANCE == null) {
-            synchronized (InFlightApisManager.class) {
+            synchronized (ApisManager.class) {
                 if (INSTANCE == null) {
-                    INSTANCE = new InFlightApisManager();
+                    INSTANCE = new ApisManager();
                 }
             }
         }
         return INSTANCE;
     }
 
-    private final Logger logger = LoggerFactory.getLogger(InFlightApisManager.class);
+    private final Logger logger = LoggerFactory.getLogger(ApisManager.class);
 
     /**
      * 此 map 确保对一个服务发送某个消息，在收到回复之前，不可以再次对其发送消息。（有自动重发机制）
@@ -90,18 +83,17 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
      * 接收到消息如何处理
      */
     public void receive(ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
-        if (RequestAndResponseType.containsKey(typeEnum)) {
-            switch (typeEnum) {
-            case REGISTER:
-                handleRegisterRequest(msg, channel);
-                break;
-            case FETCH:
-                handleFetchRequest(msg, channel);
-                break;
-            default:
-                throw new HanabiException("不可能存在这种情况!!!");
-            }
-        } else {
+        switch (typeEnum) {
+        case REGISTER:
+            handleRegisterRequest(msg, channel);
+            break;
+        case FETCH:
+            handleFetchRequest(msg, channel);
+            break;
+        case COMMIT:
+            handleCommitRequest(msg, channel);
+            break;
+        default:
             logger.debug("receive responseness request");
 
             // todo 需要加入重试机制，在失败时回复发送方，否则发送方会一直等待
@@ -129,7 +121,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 }
                 inFlight.get(serverName)
                         .remove(requestType);
-                logger.info("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
+                logger.debug("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
                 return requestProcessor;
             });
             rp.complete(msg);
@@ -145,7 +137,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
         logger.info("协调节点 {} 已注册到本节点", register.getServerName());
         ChannelManager.getInstance(ChannelType.COORDINATE)
                       .register(register.getServerName(), channel);
-        send(register.getServerName(), new RegisterResponse(InetSocketAddressConfigHelper.getServerName()), RequestProcessor.REQUIRE_NESS());
+        send(register.getServerName(), new RegisterResponse(InetSocketAddressConfigHelper.getServerName()), RequestProcessor.REQUIRE_NESS);
     }
 
     /**
@@ -156,12 +148,44 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
         String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
                                           .getChannelName(channel);
 
-        logger.info("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.getGAO());
-        FetchDataInfo fetchDataInfo = LogManager.getINSTANCE()
-                                                .getAfter(fetcher.getGAO());
+        logger.debug("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.getFetchGAO());
 
-        FetchResponse fetchResponse = new FetchResponse(fetchDataInfo);
-        send(serverName, fetchResponse, RequestProcessor.REQUIRE_NESS());
+        GenerationAndOffset canCommit = CoordinateApisManager.getINSTANCE()
+                                                             .fetchReport(serverName, fetcher.getFetchGAO());
+
+        send(serverName, new Commiter(canCommit), new RequestProcessor(
+            byteBuffer -> {
+                CommitResponse commitResponse = new CommitResponse(byteBuffer);
+                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
+                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
+                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
+                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
+            }, null));
+
+        // 为什么要。next，因为 fetch 过来的是客户端最新的 GAO 进度，而获取的要从 GAO + 1开始
+        FetchDataInfo fetchDataInfo = LogManager.getINSTANCE()
+                                                .getAfter(fetcher.getFetchGAO()
+                                                                 .next());
+
+        send(serverName, new FetchResponse(fetchDataInfo), RequestProcessor.REQUIRE_NESS);
+    }
+
+    /**
+     * 子节点处理 commit 请求
+     */
+    private void handleCommitRequest(ByteBuffer msg, Channel channel) {
+        Commiter commiter = new Commiter(msg);
+        String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
+                                          .getChannelName(channel);
+
+        logger.debug("收到来自协调 Leader {} 的 commit 请求 {} ", serverName, commiter.getCanCommitGAO());
+
+        ByteBufPreLogManager.getINSTANCE()
+                            .commit(commiter.getCanCommitGAO());
+
+        GenerationAndOffset commitGAO = ByteBufPreLogManager.getINSTANCE()
+                                                            .getCommitGAO();
+        send(serverName, new CommitResponse(commitGAO), RequestProcessor.REQUIRE_NESS);
     }
 
     /**
@@ -174,6 +198,7 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
         if (Optional.ofNullable(inFlight.get(serverName))
                     .map(enums -> enums.containsKey(typeEnum))
                     .orElse(false)) {
+            logger.error("不应该出现这种情况，同时创建发送任务！" + typeEnum);
             return false;
         }
 
@@ -210,13 +235,12 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
     private void sendImpl(String serverName, AbstractStruct command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
         this.readLockSupplier(() -> {
 
-            if (!requestProcessor.isComplete()) {
+            if (requestProcessor == null || !requestProcessor.isComplete()) {
 
                 CoordinateSender.send(serverName, command);
 
-                if (RequestAndResponseType.get(operationTypeEnum) == null) {
-                    // 是不需要回复的类型
-                    requestProcessor.complete();
+                if (requestProcessor == null) { // 是不需要回复的类型
+
                     writeLockSupplier(() -> inFlight.compute(serverName, (s, enums) -> {
                             if (enums == null) {
                                 enums = new HashMap<>();

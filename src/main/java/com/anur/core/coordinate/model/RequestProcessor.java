@@ -16,15 +16,12 @@ import com.anur.timewheel.TimedTask;
  */
 public class RequestProcessor extends ReentrantReadWriteLocker {
 
-    public static RequestProcessor REQUIRE_NESS() {
-        return new RequestProcessor(byteBuffer -> {
-        }, null);
-    }
+    public static RequestProcessor REQUIRE_NESS = null;
 
     /**
      * 是否已经完成了这个请求过程（包括接收response）
      */
-    private volatile boolean complete;
+    private volatile boolean complete = false;
 
     /**
      * 如何消费回调

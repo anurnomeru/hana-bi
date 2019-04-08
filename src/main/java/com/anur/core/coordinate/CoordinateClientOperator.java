@@ -11,12 +11,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.coordinate.model.Cluster;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.model.RequestProcessor;
-import com.anur.core.coordinate.apis.InFlightApisManager;
+import com.anur.core.coordinate.apis.ApisManager;
 import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -67,8 +66,8 @@ public class CoordinateClientOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        InFlightApisManager.getINSTANCE()
-                           .receive(msg, typeEnum, ctx.channel());
+        ApisManager.getINSTANCE()
+                   .receive(msg, typeEnum, ctx.channel());
     };
 
     /**
@@ -100,8 +99,8 @@ public class CoordinateClientOperator implements Runnable {
                           .register(leader.getServerName(), ctx.channel());
 
             Register register = new Register(InetSocketAddressConfigHelper.getServerName());
-            InFlightApisManager.getINSTANCE()
-                               .send(leader.getServerName(), register, new RequestProcessor(byteBuffer -> {
+            ApisManager.getINSTANCE()
+                       .send(leader.getServerName(), register, new RequestProcessor(byteBuffer -> {
                                    RegisterResponse registerResponse = new RegisterResponse(byteBuffer);
                                    if (registerResponse.serverName.equals(leader.getServerName())) {
                                        doWhenConnectToLeader.forEach(HanabiExecutors::excute);

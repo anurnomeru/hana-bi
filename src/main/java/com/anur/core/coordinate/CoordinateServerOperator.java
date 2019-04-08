@@ -10,7 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.struct.base.AbstractStruct;
-import com.anur.core.coordinate.apis.InFlightApisManager;
+import com.anur.core.coordinate.apis.ApisManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.ShutDownHooker;
@@ -59,8 +59,8 @@ public class CoordinateServerOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
         OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        InFlightApisManager.getINSTANCE()
-                           .receive(msg, typeEnum, ctx.channel());
+        ApisManager.getINSTANCE()
+                   .receive(msg, typeEnum, ctx.channel());
     };
 
     /**
