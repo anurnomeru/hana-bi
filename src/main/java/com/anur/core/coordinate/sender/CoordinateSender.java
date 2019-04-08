@@ -43,7 +43,7 @@ public class CoordinateSender {
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
             logger.debug("正向节点发送 {} 关于 {} 的 request", serverName, body.getOperationTypeEnum()
-                                                                   .name());
+                                                                      .name());
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);
 

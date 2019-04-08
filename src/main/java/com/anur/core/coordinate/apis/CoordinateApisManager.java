@@ -211,7 +211,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                  clusters = cluster.getClusters();
                                  validCommitCountNeed = clusters.size() / 2 + 1;
                              } else {
-
                                  // 当集群可用时，连接协调 leader
                                  CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()));
                                  client.registerWhenConnectToLeader(() -> {

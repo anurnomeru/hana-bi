@@ -83,7 +83,7 @@ public class FetchResponse extends AbstractTimedStruct {
         channel.write(Unpooled.wrappedBuffer(buffer));
         if (fileOperationSetSize > 0) {
             try {
-                channel.write(new DefaultFileRegion(FileIOUtil.openChannel(fileOperationSet.getFile(), true), fileOperationSet.getStart(), fileOperationSet.getEnd()));
+                channel.write(new DefaultFileRegion(FileIOUtil.openChannel(fileOperationSet.getFile(), false), fileOperationSet.getStart(), fileOperationSet.getEnd()));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
             }
