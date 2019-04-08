@@ -7,9 +7,5 @@ import com.anur.core.util.HanabiExecutors;
 public class TestExecutor {
 
     public static void main(String[] args) {
-        while (true) {
-            HanabiExecutors.submit(() -> {
-            });
-        }
     }
 }

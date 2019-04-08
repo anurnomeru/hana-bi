@@ -41,11 +41,6 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
      */
     private TimedTask timedTask;
 
-    public static void main(String[] args) {
-        Runnable runnable = null;
-        HanabiExecutors.submit(runnable);
-    }
-
     public RequestProcessor(Consumer<ByteBuffer> callBack, Runnable afterCompleteReceive) {
         this.callBack = callBack;
         this.afterCompleteReceive = afterCompleteReceive;
@@ -75,7 +70,7 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
             complete = true;
             Optional.ofNullable(timedTask)
                     .ifPresent(TimedTask::cancel);
-            HanabiExecutors.submit(() -> {
+            HanabiExecutors.excute(() -> {
                 callBack.accept(byteBuffer);
             });
             return null;
@@ -85,9 +80,9 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
     /**
      * 完成回调后调用
      */
-    public void afterCompleteReceive() {
+    public void afterCompleteReceive(String msg) {
         if (afterCompleteReceive != null) {
-            HanabiExecutors.submit(() -> afterCompleteReceive);
+            HanabiExecutors.excute(afterCompleteReceive);
         }
     }
 

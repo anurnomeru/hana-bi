@@ -131,11 +131,8 @@ public class InFlightApisManager extends ReentrantReadWriteLocker {
                 logger.info("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
                 return requestProcessor;
             });
-            System.out.println("11111compl");
             rp.complete(msg);
-            System.out.println("22222compl");
-            rp.afterCompleteReceive();
-            System.out.println("33333compl");
+            rp.afterCompleteReceive(typeEnum.name());
         }
     }
 

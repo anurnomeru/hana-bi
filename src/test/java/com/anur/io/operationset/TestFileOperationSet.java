@@ -33,7 +33,6 @@ public class TestFileOperationSet {
 
         read.lock();
         read.lock();
-        System.out.println();
 
         Field field = CoordinateClientOperator.class.getDeclaredField("CLIENT_MSG_CONSUMER");
         field.setAccessible(true);

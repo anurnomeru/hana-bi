@@ -51,7 +51,7 @@ public abstract class ReconnectableClient {
 
     public void start() {
 
-        HanabiExecutors.submit(() -> {
+        HanabiExecutors.excute(() -> {
             try {
                 reconnectLatch.await();
             } catch (InterruptedException e) {

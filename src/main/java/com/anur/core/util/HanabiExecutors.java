@@ -48,12 +48,16 @@ public class HanabiExecutors {
                                                                                                                                 .build());
     }
 
-    public static Future<?> submit(Runnable runnable) {
-        return Pool.submit(runnable);
+    public static void excute(Runnable runnable) {
+        Pool.execute(runnable);
     }
 
     public static <T> Future<T> submit(Callable<T> task) {
         return Pool.submit(task);
+    }
+
+    public static int getBlockSize() {
+        return MissionQueue.size();
     }
 
     public static class _HanabiExecutors extends ThreadPoolExecutor {
