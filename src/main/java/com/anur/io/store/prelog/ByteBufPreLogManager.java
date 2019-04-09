@@ -134,7 +134,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
                 LogManager.getINSTANCE()
                           .append(byteBufferOperationSet, GAO.getGeneration(), preLogMeta.startOffset, preLogMeta.endOffset);
 
-                logger.debug("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString());
+                logger.info("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString());
                 commitOffset = canCommit;
                 discardBefore(canCommit);
             }

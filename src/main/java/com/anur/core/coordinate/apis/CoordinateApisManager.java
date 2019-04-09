@@ -127,37 +127,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     };
 
     /**
-     * 定时 Fetch 消息
-     */
-    public void sendFetchPreLog() {
-        fetchLock.lock();
-        try {
-            if (fetchPreLogTask != null) {
-                if (!fetchPreLogTask.isCancel()) {
-                    if (ApisManager.getINSTANCE()
-                                   .send(
-                                       leader,
-                                       new Fetcher(
-                                           ByteBufPreLogManager.getINSTANCE()
-                                                               .getPreLogGAO()
-                                       ),
-                                       new RequestProcessor(byteBuffer ->
-                                           CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
-                                           () -> {
-                                               logger.debug("rebuild fetchPreLogTask task");
-                                               fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
-                                               Timer.getInstance()
-                                                    .addTask(fetchPreLogTask);
-                                           }))) {
-                    }
-                }
-            }
-        } finally {
-            fetchLock.unlock();
-        }
-    }
-
-    /**
      * Follower 向 Leader 提交拉取到的最大的 GAO
      *
      * 如果某个最大的 GAO 已经达到了 commit 条件，将返回此 GAO。
@@ -268,66 +237,103 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
         ElectOperator.getInstance()
                      .registerWhenClusterValid(
                          cluster -> {
-                             leader = cluster.getLeader();
-                             isLeader = InetSocketAddressConfigHelper.getServerName()
-                                                                     .equals(leader);
+                             writeLockSupplier(() -> {
 
-                             if (isLeader) {
-                                 clusterValid = true;
-                                 clusters = cluster.getClusters();
-                                 validCommitCountNeed = clusters.size() / 2 + 1;
-                             } else {
-                                 // 当集群可用时，连接协调 leader
-                                 CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()));
-                                 client.registerWhenConnectToLeader(() -> {
-                                     fetchLock.lock();
-                                     try {
-                                         fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
-                                         Timer.getInstance()
-                                              .addTask(fetchPreLogTask);
-                                         logger.debug("init fetchPreLogTask task");
-                                     } finally {
-                                         fetchLock.unlock();
-                                     }
+                                 leader = cluster.getLeader();
+                                 isLeader = InetSocketAddressConfigHelper.getServerName()
+                                                                         .equals(leader);
+
+                                 if (isLeader) {
                                      clusterValid = true;
-                                 });
+                                     clusters = cluster.getClusters();
+                                     validCommitCountNeed = clusters.size() / 2 + 1;
+                                 } else {
+                                     CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()));
+                                     // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
+                                     // 当集群可用时，连接协调 leader
+                                     client.registerWhenConnectToLeader(() -> {
+                                         fetchLock.lock();
+                                         try {
+                                             rebuildFetchTask();
+                                         } finally {
+                                             fetchLock.unlock();
+                                         }
+                                         clusterValid = true;
+                                     });
 
-                                 client.registerWhenDisconnectToLeader(() -> {
-                                     fetchLock.lock();
-                                     try {
-                                         Optional.ofNullable(fetchPreLogTask)
-                                                 .ifPresent(TimedTask::cancel);
-                                         logger.debug("cancel fetchPreLogTask task");
-                                     } finally {
-                                         fetchLock.unlock();
-                                     }
-                                 });
-                                 client.tryStartWhileDisconnected();
-                             }
+                                     client.registerWhenDisconnectToLeader(() -> {
+                                         fetchLock.lock();
+                                         try {
+                                             cancelFetchTask();
+                                         } finally {
+                                             fetchLock.unlock();
+                                         }
+                                     });
+                                     client.tryStartWhileDisconnected();
+                                 }
+
+                                 return null;
+                             });
                          });
 
         ElectOperator.getInstance()
                      .registerWhenClusterInvalid(
-                         () -> {
-                             fetchLock.lock();
-                             try {
-                                 Optional.ofNullable(fetchPreLogTask)
-                                         .ifPresent(TimedTask::cancel);
-                                 logger.debug("cancel fetchPreLogTask task");
-                             } finally {
-                                 fetchLock.unlock();
-                             }
+                         () ->
+                             writeLockSupplier(() -> {
+                                 ApisManager.getINSTANCE()
+                                            .reboot();
 
-                             clusterValid = false;
-                             isLeader = false;
-                             clusters = null;
-                             leader = null;
-                             validCommitCountNeed = Integer.MAX_VALUE;
+                                 cancelFetchTask();
 
-                             // 当集群不可用时，与协调 leader 断开连接
-                             CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
-                             ApisManager.getINSTANCE()
-                                        .reboot();
-                         });
+                                 clusterValid = false;
+                                 isLeader = false;
+                                 clusters = null;
+                                 leader = null;
+                                 validCommitCountNeed = Integer.MAX_VALUE;
+
+                                 // 当集群不可用时，与协调 leader 断开连接
+                                 CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
+                                 return null;
+                             })
+                     );
+    }
+
+    private void cancelFetchTask() {
+        Optional.ofNullable(fetchPreLogTask)
+                .ifPresent(TimedTask::cancel);
+        logger.debug("cancel fetchPreLogTask task");
+    }
+
+    private void rebuildFetchTask() {
+        fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
+        Timer.getInstance()
+             .addTask(fetchPreLogTask);
+        logger.debug("rebuild fetchPreLogTask task");
+    }
+
+    /**
+     * 定时 Fetch 消息
+     */
+    public void sendFetchPreLog() {
+        fetchLock.lock();
+        try {
+            Optional.ofNullable(fetchPreLogTask)
+                    .filter(fetchTask -> !fetchTask.isCancel())
+                    .ifPresent(fetchTask -> {
+                        if (ApisManager.getINSTANCE()
+                                       .send(
+                                           leader,
+                                           new Fetcher(
+                                               ByteBufPreLogManager.getINSTANCE()
+                                                                   .getPreLogGAO()
+                                           ),
+                                           new RequestProcessor(byteBuffer ->
+                                               CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
+                                               this::rebuildFetchTask))) {
+                        }
+                    });
+        } finally {
+            fetchLock.unlock();
+        }
     }
 }

@@ -400,6 +400,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 3、重置本地变量
                 logger.debug("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
+//                this.offset = Long.MAX_VALUE - 100;
                 this.offset = 0;
                 this.voteRecord = null;
                 this.box = new HashMap<>();
@@ -588,6 +589,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 当流水号达到最大时，进行世代的自增，
                 if (offset == Long.MAX_VALUE) {
                     logger.warn("流水号 offset 已达最大值，节点将更新自身世代 {} => {}", this.generation, this.generation + 1);
+//                    offset = Long.MAX_VALUE - 10;
+                    offset = 0;
                     this.generation++;
                 }
 

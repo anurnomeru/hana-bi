@@ -59,7 +59,7 @@ public class Bootstrap {
             }
 
             try {
-                for (int i = 0; i < 100; i++) {
+                for (int i = 0; i < 10000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                     LogManager.getINSTANCE()
                               .append(operation);
