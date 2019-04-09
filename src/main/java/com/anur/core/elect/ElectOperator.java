@@ -603,10 +603,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 设置本节点的世代和位移，仅有未启动时才可设置，已经启动则无法再设置
      */
-    public ElectOperator resetGenerationAndOffset(GenerationAndOffset gennerationAndOffset) {
+    public ElectOperator resetGenerationAndOffset(GenerationAndOffset generationAndOffset) {
         if (startLatch.getCount() > 0) {
-            this.generation = gennerationAndOffset.getGeneration();
-            this.offset = gennerationAndOffset.getOffset();
+            this.generation = generationAndOffset.getGeneration();
+            this.offset = generationAndOffset.getOffset();
         }
         return this;
     }
