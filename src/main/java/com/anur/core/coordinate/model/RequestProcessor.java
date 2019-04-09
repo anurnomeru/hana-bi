@@ -64,23 +64,15 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
      */
     public void complete(ByteBuffer byteBuffer) {
         writeLockSupplier(() -> {
-            complete = true;
-            Optional.ofNullable(timedTask)
-                    .ifPresent(TimedTask::cancel);
-            HanabiExecutors.excute(() -> {
-                callBack.accept(byteBuffer);
-            });
+            if (!complete) {
+                complete = true;
+                Optional.ofNullable(timedTask)
+                        .ifPresent(TimedTask::cancel);
+                HanabiExecutors.excute(() -> callBack.accept(byteBuffer));
+                HanabiExecutors.excute(afterCompleteReceive);
+            }
             return null;
         });
-    }
-
-    /**
-     * 完成回调后调用
-     */
-    public void afterCompleteReceive(String msg) {
-        if (afterCompleteReceive != null) {
-            HanabiExecutors.excute(afterCompleteReceive);
-        }
     }
 
     /**

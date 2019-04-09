@@ -25,6 +25,7 @@ import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.HanabiException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.log.LogManager;
@@ -75,23 +76,6 @@ public class ApisManager extends ReentrantReadWriteLocker {
     private volatile Map<String, Map<OperationTypeEnum, RequestProcessor>> inFlight = new HashMap<>();
 
     /**
-     * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
-     */
-    public void reboot() {
-        this.writeLockSupplier(() -> {
-            for (Entry<String, Map<OperationTypeEnum, RequestProcessor>> mmE : inFlight.entrySet()) {
-                for (Entry<OperationTypeEnum, RequestProcessor> entry : mmE.getValue()
-                                                                           .entrySet()) {
-                    entry.getValue()
-                         .cancel();
-                }
-            }
-            inFlight = new HashMap<>();
-            return null;
-        });
-    }
-
-    /**
      * 接收到消息如何处理
      */
     public void receive(ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
@@ -136,6 +120,7 @@ public class ApisManager extends ReentrantReadWriteLocker {
     }
 
     private void doReceive(String serverName, ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
+
         switch (typeEnum) {
         case REGISTER:
             handleRegisterRequest(msg, channel);
@@ -149,8 +134,6 @@ public class ApisManager extends ReentrantReadWriteLocker {
         default:
             logger.debug("receive responseness request");
 
-            // todo 需要加入重试机制，在失败时回复发送方，否则发送方会一直等待
-            // todo 需要加入防重复请求机制
             /*
              *  response 处理
              */
@@ -159,24 +142,12 @@ public class ApisManager extends ReentrantReadWriteLocker {
                 throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
             }
 
-            RequestProcessor rp = this.writeLockSupplier(() -> {
-                RequestProcessor requestProcessor = Optional.ofNullable(inFlight.get(serverName))
-                                                            .map(m -> m.get(requestType))
-                                                            .orElse(null);
-                if (requestProcessor == null || requestProcessor.isComplete()) {
-                    throw new HanabiException("收到了来自节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
-                }
-
-                if (typeEnum.equals(OperationTypeEnum.REGISTER_RESPONSE)) {
-
-                }
-                inFlight.get(serverName)
-                        .remove(requestType);
+            RequestProcessor requestProcessor = getRequestProcessorIfInFlight(serverName, typeEnum);
+            if (requestProcessor != null) {
+                requestProcessor.complete(msg);
+                removeFromInFlightRequest(serverName, typeEnum);
                 logger.debug("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
-                return requestProcessor;
-            });
-            rp.complete(msg);
-            rp.afterCompleteReceive(typeEnum.name());
+            }
         }
     }
 
@@ -243,76 +214,127 @@ public class ApisManager extends ReentrantReadWriteLocker {
     public boolean send(String serverName, AbstractStruct command, RequestProcessor requestProcessor) {
         OperationTypeEnum typeEnum = command.getOperationTypeEnum();
 
-        // 第一次不锁检查
-        if (Optional.ofNullable(inFlight.get(serverName))
-                    .map(enums -> enums.containsKey(typeEnum))
-                    .orElse(false)) {
-            logger.error("不应该出现这种情况，同时创建发送任务！" + typeEnum);
+        if (getRequestProcessorIfInFlight(serverName, typeEnum) != null) {
+            logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name());
             return false;
+        } else {
+            appendToInFlightRequest(serverName, typeEnum, requestProcessor);
+            sendImpl(serverName, command, requestProcessor, typeEnum);
+            return true;
         }
-
-        return this.writeLockSupplier(() -> {
-
-            // 双重锁检查
-            if (Optional.ofNullable(inFlight.get(serverName))
-                        .map(enums -> enums.containsKey(typeEnum))
-                        .orElse(false)) {
-
-                logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name());
-                return false;
-            } else {
-                logger.debug("正在创建向 {} 发送 {} 的任务", serverName, typeEnum.name());
-                inFlight.compute(serverName, (s, enums) -> {
-                    if (enums == null) {
-                        enums = new HashMap<>();
-                    }
-                    enums.put(typeEnum, requestProcessor);
-                    sendImpl(serverName, command, requestProcessor, typeEnum);
-                    return enums;
-                });
-
-                return true;
-            }
-        });
     }
 
     /**
      * 真正发送消息的方法，内置了重发机制
-     *
-     * TODO 先不进行重发，讲道理消息应该不会丢失
      */
     private void sendImpl(String serverName, AbstractStruct command, RequestProcessor requestProcessor, OperationTypeEnum operationTypeEnum) {
-        this.readLockSupplier(() -> {
+        if (requestProcessor == null || !requestProcessor.isComplete()) {
 
-            if (requestProcessor == null || !requestProcessor.isComplete()) {
+            readLockSupplier(() -> {
+                // 双重锁
+                if (requestProcessor == null || !requestProcessor.isComplete()) {
+                    CoordinateSender.doSend(serverName, command);
+                }
+                return null;
+            });
 
-                CoordinateSender.send(serverName, command);
+            if (requestProcessor == null) { // 是不需要回复的类型
+                removeFromInFlightRequest(serverName, operationTypeEnum);
+            } else {
+                TimedTask task = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
+                if (reAppendToInFlightRequest(serverName, operationTypeEnum, task)) {
 
-                if (requestProcessor == null) { // 是不需要回复的类型
-
-                    writeLockSupplier(() -> inFlight.compute(serverName, (s, enums) -> {
-                            if (enums == null) {
-                                enums = new HashMap<>();
-                            }
-                            enums.remove(operationTypeEnum);
-                            return enums;
-                        })
-                    );
-                } else {
-                    TimedTask task = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs() * 3, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
-
-                    if (Optional.ofNullable(inFlight.get(serverName))
-                                .map(m -> m.get(operationTypeEnum))
-                                .map(rp -> rp.registerTask(task))
-                                .orElse(false)) {
-
-                        logger.debug("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum);
-                        Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
-                             .addTask(task);
-                    }
+                    logger.debug("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum);
+                    Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
+                         .addTask(task);
                 }
             }
+        }
+    }
+
+    /**
+     * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
+     */
+    public void reboot() {
+        this.writeLockSupplier(() -> {
+            for (Entry<String, Map<OperationTypeEnum, RequestProcessor>> mmE : inFlight.entrySet()) {
+                for (Entry<OperationTypeEnum, RequestProcessor> entry : mmE.getValue()
+                                                                           .entrySet()) {
+                    entry.getValue()
+                         .cancel();
+                }
+            }
+            inFlight = new HashMap<>();
             return null;
+        });
+    }
+
+    /**
+     * 将发送任务添加到 InFlightRequest 中，并注册回调函数
+     */
+    private void appendToInFlightRequest(String serverName, OperationTypeEnum typeEnum, RequestProcessor requestProcessor) {
+        writeLockSupplier(() -> {
+            logger.debug("create {} {} request's InFlight RequestProcessor", serverName, typeEnum);
+
+            inFlight.compute(serverName, (s, enums) -> {
+                if (enums == null) {
+                    enums = new HashMap<>();
+                }
+                enums.put(typeEnum, requestProcessor);
+                return enums;
+            });
+            return null;
+        });
+    }
+
+    /**
+     * 刷新 InFlightRequest 中的 timedTask
+     */
+    private boolean reAppendToInFlightRequest(String serverName, OperationTypeEnum typeEnum, TimedTask timedTask) {
+        return writeLockSupplier(() -> {
+            logger.debug("reAppend {} {} request's InFlight RequestProcessor", serverName, typeEnum);
+
+            return Optional.ofNullable(inFlight.get(serverName))
+                    .map(m -> m.get(typeEnum))
+                    .map(rp -> rp.registerTask(timedTask))
+                    .orElse(false);
+        });
+    }
+
+    /**
+     * 将发送任务从 InFlightRequest 中移除
+     */
+    private boolean removeFromInFlightRequest(String serverName, OperationTypeEnum typeEnum) {
+        AtomicBoolean atomicBoolean = new AtomicBoolean(false);
+        writeLockSupplier(() -> inFlight.compute(serverName, (s, enums) -> {
+
+                logger.debug("remove {} {} request's InFlight RequestProcessor", serverName, typeEnum);
+                if (enums == null) {
+                    enums = new HashMap<>();
+                }
+                atomicBoolean.set(enums.remove(typeEnum) != null);
+                return enums;
+            })
+        );
+        return atomicBoolean.get();
+    }
+
+    /**
+     * 用于判断是否还在发送
+     */
+    private RequestProcessor getRequestProcessorIfInFlight(String serverName, OperationTypeEnum typeEnum) {
+        return readLockSupplier(() -> {
+            RequestProcessor requestProcessor = Optional.ofNullable(inFlight.get(serverName))
+                                                        .map(m -> m.get(typeEnum))
+                                                        .orElse(null);
+            if (requestProcessor == null) {
+                return null;
+            } else if (requestProcessor.isComplete()) {
+                HanabiExecutors.excute(() -> removeFromInFlightRequest(serverName, typeEnum));
+                return null;
+            } else {
+                return requestProcessor;
+            }
         });
     }
 }
