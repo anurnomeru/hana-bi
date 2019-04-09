@@ -98,12 +98,12 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
     /**
      * 向此回调
      */
-    public void registerTask(TimedTask timedTask) {
-        readLockSupplier(() -> {
+    public boolean registerTask(TimedTask timedTask) {
+        return readLockSupplier(() -> {
             if (!complete) {
                 this.timedTask = timedTask;
             }
-            return null;
+            return !complete;
         });
     }
 }

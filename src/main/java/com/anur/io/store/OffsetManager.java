@@ -60,7 +60,7 @@ public class OffsetManager extends ReentrantReadWriteLocker {
 
     public GenerationAndOffset load() {
         if (current == null) {
-            this.readLockSupplier(() ->
+            this.writeLockSupplier(() ->
                 {
                     if (current == null) {
                         long gen = mmap.getLong();

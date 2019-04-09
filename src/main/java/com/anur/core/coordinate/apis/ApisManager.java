@@ -3,14 +3,16 @@ package com.anur.core.coordinate.apis;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.CoordinateConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.coordinate.sender.CoordinateSender;
 import com.anur.core.elect.model.GenerationAndOffset;
+import com.anur.core.struct.base.AbstractTimedStruct;
 import com.anur.core.struct.coordinate.CommitResponse;
 import com.anur.core.struct.coordinate.Commiter;
 import com.anur.core.struct.coordinate.FetchResponse;
@@ -27,6 +29,8 @@ import com.anur.exception.HanabiException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.log.LogManager;
 import com.anur.io.store.prelog.ByteBufPreLogManager;
+import com.anur.timewheel.TimedTask;
+import com.anur.timewheel.Timer;
 import io.netty.channel.Channel;
 import io.netty.util.internal.StringUtil;
 
@@ -43,6 +47,8 @@ public class ApisManager extends ReentrantReadWriteLocker {
     private static volatile ApisManager INSTANCE;
 
     private static Map<OperationTypeEnum, OperationTypeEnum> ResponseAndRequestType = new HashMap<>();
+
+    private Map<String, Map<OperationTypeEnum, Long>> requestLog = new HashMap<>();
 
     static {
         ResponseAndRequestType.put(OperationTypeEnum.REGISTER_RESPONSE, OperationTypeEnum.REGISTER);
@@ -73,7 +79,13 @@ public class ApisManager extends ReentrantReadWriteLocker {
      */
     public void reboot() {
         this.writeLockSupplier(() -> {
-            inFlight.forEach((s, m) -> m.forEach((o, t) -> t.cancel()));
+            for (Entry<String, Map<OperationTypeEnum, RequestProcessor>> mmE : inFlight.entrySet()) {
+                for (Entry<OperationTypeEnum, RequestProcessor> entry : mmE.getValue()
+                                                                           .entrySet()) {
+                    entry.getValue()
+                         .cancel();
+                }
+            }
             inFlight = new HashMap<>();
             return null;
         });
@@ -83,6 +95,47 @@ public class ApisManager extends ReentrantReadWriteLocker {
      * 接收到消息如何处理
      */
     public void receive(ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
+        long requestTimestamp = msg.getLong(AbstractTimedStruct.TimestampOffset);
+
+        String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
+                                          .getChannelName(channel);
+
+        if (writeLockSupplier(() -> {
+            AtomicBoolean isAnewRequest = new AtomicBoolean(false);
+            requestLog.compute(serverName, (s, m) -> {
+                if (m == null) {
+                    m = new HashMap<>();
+                }
+                m.compute(typeEnum, (operationTypeEnum, before) -> {
+                        isAnewRequest.set(before == null || (requestTimestamp > before));
+                        return isAnewRequest.get() ? requestTimestamp : before;
+                    }
+                );
+                return m;
+            });
+            return isAnewRequest.get();
+        })) {
+            try {
+                doReceive(serverName, msg, typeEnum, channel);
+            } catch (Exception e) {
+                logger.warn("在处理来自节点 {} 的 {} 请求时出现异常，可能原因 {}", serverName, typeEnum, e.getMessage());
+                writeLockSupplier(() -> {
+                    requestLog.compute(serverName, (s, m) -> {
+                        if (m == null) {
+                            m = new HashMap<>();
+                        }
+                        m.compute(typeEnum, (operationTypeEnum, before) -> null
+                        );
+                        return m;
+                    });
+                    return null;
+                });
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void doReceive(String serverName, ByteBuffer msg, OperationTypeEnum typeEnum, Channel channel) {
         switch (typeEnum) {
         case REGISTER:
             handleRegisterRequest(msg, channel);
@@ -102,8 +155,6 @@ public class ApisManager extends ReentrantReadWriteLocker {
              *  response 处理
              */
             OperationTypeEnum requestType = ResponseAndRequestType.get(typeEnum);
-            String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
-                                              .getChannelName(channel);
             if (StringUtil.isNullOrEmpty(serverName)) {
                 throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
             }
@@ -156,10 +207,8 @@ public class ApisManager extends ReentrantReadWriteLocker {
         send(serverName, new Commiter(canCommit), new RequestProcessor(
             byteBuffer -> {
                 CommitResponse commitResponse = new CommitResponse(byteBuffer);
-                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
-                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
-                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
-                logger.debug("收到了来自 {} 节点的提交进度 {}", serverName, commitResponse.getCommitGAO());
+                CoordinateApisManager.getINSTANCE()
+                                     .commitReport(serverName, commitResponse.getCommitGAO());
             }, null));
 
         // 为什么要。next，因为 fetch 过来的是客户端最新的 GAO 进度，而获取的要从 GAO + 1开始
@@ -250,14 +299,17 @@ public class ApisManager extends ReentrantReadWriteLocker {
                         })
                     );
                 } else {
-                    //                    TimedTask task = new TimedTask(1000, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
-                    //
-                    //                    inFlight.get(serverName)
-                    //                            .get(operationTypeEnum)
-                    //                            .registerTask(task);
-                    //
-                    //                    Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
-                    //                         .addTask(task);
+                    TimedTask task = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs() * 3, () -> sendImpl(serverName, command, requestProcessor, operationTypeEnum));
+
+                    if (Optional.ofNullable(inFlight.get(serverName))
+                                .map(m -> m.get(operationTypeEnum))
+                                .map(rp -> rp.registerTask(task))
+                                .orElse(false)) {
+
+                        logger.debug("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum);
+                        Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
+                             .addTask(task);
+                    }
                 }
             }
             return null;

@@ -67,12 +67,22 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     /**
      * 作为 Leader 时有效，维护了每个节点的 fetch 进度
      */
-    private ConcurrentSkipListMap<GenerationAndOffset, Set<String>> offsetFetchMap = new ConcurrentSkipListMap<>();
+    private ConcurrentSkipListMap<GenerationAndOffset, Set<String>> fetchMap = new ConcurrentSkipListMap<>();
 
     /**
      * 作为 Leader 时有效，记录了每个节点最近的一次 fetch
      */
     private Map<String, GenerationAndOffset> nodeFetchMap = new HashMap<>();
+
+    /**
+     * 作为 Leader 时有效，维护了每个节点的 commit 进度
+     */
+    private ConcurrentSkipListMap<GenerationAndOffset, Set<String>> commitMap = new ConcurrentSkipListMap<>();
+
+    /**
+     * 作为 Leader 时有效，记录了每个节点最近的一次 commit
+     */
+    private Map<String, GenerationAndOffset> nodeCommitMap = new HashMap<>();
 
     /**
      * 作为 Follower 时有效，此任务不断从 Leader 节点获取 PreLog
@@ -153,32 +163,33 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
      * 如果某个最大的 GAO 已经达到了 commit 条件，将返回此 GAO。
      */
     public GenerationAndOffset fetchReport(String node, GenerationAndOffset GAO) {
-        if (!isLeader) {
-            logger.error("出现了不应该出现的情况！");
-        }
-
         GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
                                                      .load();
+        if (!isLeader) {
+            logger.error("出现了不应该出现的情况！");
+            return GAOLatest;
+        }
+
         if (GAOLatest.compareTo(GAO) > 0) {// 小于已经 commit 的 GAO 无需记录
             return GAOLatest;
         }
 
-        GenerationAndOffset GAOCommitBefore = readLockSupplier(() -> nodeFetchMap.get(node));
-        if (GAOCommitBefore != null && GAOCommitBefore.compareTo(GAO) >= 0) {// 小于之前提交记录的无需记录
+        GenerationAndOffset GAOFetchBefore = readLockSupplier(() -> nodeFetchMap.get(node));
+        if (GAOFetchBefore != null && GAOFetchBefore.compareTo(GAO) >= 0) {// 小于之前提交记录的无需记录
             return GAOLatest;
         }
 
         return writeLockSupplier(() -> {
-            if (GAOCommitBefore != null) {// 移除之前的 commit 记录
-                logger.debug("节点 {} 已经 fetch 进度由 {} 更新到了进度 {}", node, GAOCommitBefore.toString(), GAO.toString());
-                offsetFetchMap.get(GAOCommitBefore)
-                              .remove(node);
+            if (GAOFetchBefore != null) {// 移除之前的 commit 记录
+                logger.debug("节点 {} fetch 进度由 {} 更新到了进度 {}", node, GAOFetchBefore.toString(), GAO.toString());
+                fetchMap.get(GAOFetchBefore)
+                        .remove(node);
             } else {
                 logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString());
             }
 
             nodeFetchMap.put(node, GAO);// 更新新的 commit 记录
-            offsetFetchMap.compute(GAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
+            fetchMap.compute(GAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
                 if (strings == null) {
                     strings = new HashSet<>();
                 }
@@ -187,7 +198,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
             });
 
             GenerationAndOffset approach = null;
-            for (Entry<GenerationAndOffset, Set<String>> entry : offsetFetchMap.entrySet()) {
+            for (Entry<GenerationAndOffset, Set<String>> entry : fetchMap.entrySet()) {
                 if (entry.getValue()
                          .size() + 1 >= validCommitCountNeed) {// +1 为自己的一票
                     approach = entry.getKey();
@@ -197,7 +208,57 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
             if (approach == null) {
                 return GAOLatest;
             } else {
-                logger.debug("进度 {} 已可提交 ~", GAO.toString());
+                logger.info("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", GAO.toString());
+                return approach;
+            }
+        });
+    }
+
+    public void commitReport(String node, GenerationAndOffset commitGAO) {
+        GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
+                                                     .load();
+
+        if (GAOLatest.compareTo(commitGAO) > 0) {// 小于已经 commit 的 GAO 直接无视
+            return;
+        }
+
+        GenerationAndOffset GAOCommitBefore = readLockSupplier(() -> nodeCommitMap.get(node));
+        if (GAOCommitBefore != null && GAOCommitBefore.compareTo(commitGAO) >= 0) {// 小于之前提交记录的无需记录
+            return;
+        }
+
+        writeLockSupplier(() -> {
+            if (GAOCommitBefore != null) {// 移除之前的 commit 记录
+                logger.debug("节点 {} 已经 commit 进度由 {} 更新到了进度 {}", node, GAOCommitBefore.toString(), commitGAO.toString());
+                commitMap.get(GAOCommitBefore)
+                         .remove(node);
+            } else {
+                logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, commitGAO.toString());
+            }
+
+            nodeCommitMap.put(node, commitGAO);// 更新新的 commit 记录
+            commitMap.compute(commitGAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
+                if (strings == null) {
+                    strings = new HashSet<>();
+                }
+                strings.add(node);
+                return strings;
+            });
+
+            GenerationAndOffset approach = null;
+            for (Entry<GenerationAndOffset, Set<String>> entry : commitMap.entrySet()) {
+                if (entry.getValue()
+                         .size() + 1 >= validCommitCountNeed) {// +1 为自己的一票
+                    approach = entry.getKey();
+                }
+            }
+
+            if (approach == null) {
+                return GAOLatest;
+            } else {
+                logger.info("进度 {} 已经完成 commit ~", commitGAO.toString());
+                OffsetManager.getINSTANCE()
+                             .cover(commitGAO);
                 return approach;
             }
         });

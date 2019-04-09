@@ -50,4 +50,9 @@ public class Commiter extends AbstractTimedStruct {
     public int totalSize() {
         return size();
     }
+
+    @Override
+    public String toString() {
+        return "Commiter{ GAO => " + getCanCommitGAO() + " }";
+    }
 }
