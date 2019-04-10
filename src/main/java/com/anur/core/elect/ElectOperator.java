@@ -647,10 +647,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (valid) {
                 logger.info("集群状态 => 可用，当前 leader 为 {}", leaderServerName);
                 Cluster cluster = new Cluster(leaderServerName, clusters);
-                this.doWhenClusterValid.forEach(c -> HanabiExecutors.excute(() -> c.accept(cluster)));
+                this.doWhenClusterValid.forEach(c -> HanabiExecutors.execute(() -> c.accept(cluster)));
             } else {
                 logger.info("集群状态 => 不可用");
-                this.doWhenClusterInvalid.forEach(HanabiExecutors::excute);
+                this.doWhenClusterInvalid.forEach(HanabiExecutors::execute);
             }
             return null;
         });

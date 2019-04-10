@@ -3,8 +3,6 @@ package com.anur.core.coordinate.model;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.timewheel.TimedTask;
@@ -68,8 +66,10 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
                 complete = true;
                 Optional.ofNullable(timedTask)
                         .ifPresent(TimedTask::cancel);
-                HanabiExecutors.excute(() -> callBack.accept(byteBuffer));
-                HanabiExecutors.excute(afterCompleteReceive);
+                Optional.ofNullable(callBack)
+                        .ifPresent(cb -> HanabiExecutors.execute(() -> cb.accept(byteBuffer)));
+                Optional.ofNullable(afterCompleteReceive)
+                        .ifPresent(HanabiExecutors::execute);
             }
             return null;
         });

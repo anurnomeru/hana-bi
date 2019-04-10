@@ -1,4 +1,4 @@
-package com.anur.core.coordinate.recovery;
+package com.anur.core.coordinate.apis;
 
 /**
  * Created by Anur IjuoKaruKas on 4/9/2019
@@ -51,10 +51,7 @@ public class ClusterRecoveryManager {
         return INSTANCE;
     }
 
-    /**
-     * 要求节点上报 commit
-     */
-    private void askClusterReportCommitStatus() {
+    public ClusterRecoveryManager() {
 
     }
 }

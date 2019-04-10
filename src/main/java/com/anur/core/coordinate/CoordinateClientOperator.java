@@ -103,7 +103,7 @@ public class CoordinateClientOperator implements Runnable {
                        .send(leader.getServerName(), register, new RequestProcessor(byteBuffer -> {
                                    RegisterResponse registerResponse = new RegisterResponse(byteBuffer);
                                    if (registerResponse.serverName.equals(leader.getServerName())) {
-                                       doWhenConnectToLeader.forEach(HanabiExecutors::excute);
+                                       doWhenConnectToLeader.forEach(HanabiExecutors::execute);
                                    } else {
                                        logger.error(String.format("出现了异常的情况，向 Leader %s 发送了注册请求，却受到了 %s 的回复", leader.getServerName(), registerResponse.serverName));
                                    }
@@ -119,7 +119,7 @@ public class CoordinateClientOperator implements Runnable {
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .unRegister(leader.getServerName());
 
-            doWhenDisconnectToLeader.forEach(HanabiExecutors::excute);
+            doWhenDisconnectToLeader.forEach(HanabiExecutors::execute);
             logger.debug("与协调器 Leader {} [{}:{}] 的连接已断开", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
         }
     }
@@ -139,7 +139,7 @@ public class CoordinateClientOperator implements Runnable {
 
                     INSTANCE = new CoordinateClientOperator(hanabiNode);
                     INSTANCE.init();
-                    HanabiExecutors.excute(INSTANCE);
+                    HanabiExecutors.execute(INSTANCE);
                 }
             }
         }
@@ -168,7 +168,7 @@ public class CoordinateClientOperator implements Runnable {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
             logger.debug("正在重新建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort());
             this.serverShutDownHooker.reset();
-            HanabiExecutors.excute(this);
+            HanabiExecutors.execute(this);
         } else {
             initialLatch.countDown();// 如果没创建过，则直接将其启动
         }

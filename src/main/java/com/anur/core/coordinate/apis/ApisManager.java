@@ -132,8 +132,6 @@ public class ApisManager extends ReentrantReadWriteLocker {
             handleCommitRequest(msg, channel);
             break;
         default:
-            logger.debug("receive responseness request");
-
             /*
              *  response 处理
              */
@@ -142,10 +140,10 @@ public class ApisManager extends ReentrantReadWriteLocker {
                 throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
             }
 
-            RequestProcessor requestProcessor = getRequestProcessorIfInFlight(serverName, typeEnum);
+            RequestProcessor requestProcessor = getRequestProcessorIfInFlight(serverName, requestType);
             if (requestProcessor != null) {
                 requestProcessor.complete(msg);
-                removeFromInFlightRequest(serverName, typeEnum);
+                removeFromInFlightRequest(serverName, requestType);
                 logger.debug("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name());
             }
         }
@@ -274,7 +272,7 @@ public class ApisManager extends ReentrantReadWriteLocker {
      */
     private void appendToInFlightRequest(String serverName, OperationTypeEnum typeEnum, RequestProcessor requestProcessor) {
         writeLockSupplier(() -> {
-            logger.debug("create {} {} request's InFlight RequestProcessor", serverName, typeEnum);
+            logger.debug("InFlight {} {} => 创建发送任务", serverName, typeEnum);
 
             inFlight.compute(serverName, (s, enums) -> {
                 if (enums == null) {
@@ -292,12 +290,12 @@ public class ApisManager extends ReentrantReadWriteLocker {
      */
     private boolean reAppendToInFlightRequest(String serverName, OperationTypeEnum typeEnum, TimedTask timedTask) {
         return writeLockSupplier(() -> {
-            logger.debug("reAppend {} {} request's InFlight RequestProcessor", serverName, typeEnum);
+            logger.debug("InFlight {} {} => 预设重发定时任务", serverName, typeEnum);
 
             return Optional.ofNullable(inFlight.get(serverName))
-                    .map(m -> m.get(typeEnum))
-                    .map(rp -> rp.registerTask(timedTask))
-                    .orElse(false);
+                           .map(m -> m.get(typeEnum))
+                           .map(rp -> rp.registerTask(timedTask))
+                           .orElse(false);
         });
     }
 
@@ -308,11 +306,18 @@ public class ApisManager extends ReentrantReadWriteLocker {
         AtomicBoolean atomicBoolean = new AtomicBoolean(false);
         writeLockSupplier(() -> inFlight.compute(serverName, (s, enums) -> {
 
-                logger.debug("remove {} {} request's InFlight RequestProcessor", serverName, typeEnum);
+                logger.debug("InFlight {} {} => 移除发送任务", serverName, typeEnum);
                 if (enums == null) {
                     enums = new HashMap<>();
                 }
-                atomicBoolean.set(enums.remove(typeEnum) != null);
+
+                RequestProcessor remove = enums.remove(typeEnum);
+                boolean exist = remove != null;
+                if (exist) {
+                    remove.cancel();
+                }
+
+                atomicBoolean.set(exist);
                 return enums;
             })
         );
@@ -330,7 +335,7 @@ public class ApisManager extends ReentrantReadWriteLocker {
             if (requestProcessor == null) {
                 return null;
             } else if (requestProcessor.isComplete()) {
-                HanabiExecutors.excute(() -> removeFromInFlightRequest(serverName, typeEnum));
+                HanabiExecutors.execute(() -> removeFromInFlightRequest(serverName, typeEnum));
                 return null;
             } else {
                 return requestProcessor;

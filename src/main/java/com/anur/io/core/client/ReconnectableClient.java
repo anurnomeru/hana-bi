@@ -1,7 +1,6 @@
 package com.anur.io.core.client;
 
 import java.util.concurrent.CountDownLatch;
-import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.util.HanabiExecutors;
@@ -10,7 +9,6 @@ import com.anur.io.core.handle.ClientReconnectHandler;
 import com.anur.io.core.handle.ErrorHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
@@ -51,7 +49,7 @@ public abstract class ReconnectableClient {
 
     public void start() {
 
-        HanabiExecutors.excute(() -> {
+        HanabiExecutors.execute(() -> {
             try {
                 reconnectLatch.await();
             } catch (InterruptedException e) {

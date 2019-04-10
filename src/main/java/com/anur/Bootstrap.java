@@ -18,7 +18,7 @@ public class Bootstrap {
 
     public static void main(String[] args) throws InterruptedException {
 
-        HanabiExecutors.excute(() -> {
+        HanabiExecutors.execute(() -> {
 
             /**
              * 日志一致性控制器

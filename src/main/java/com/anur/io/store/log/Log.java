@@ -219,7 +219,7 @@ public class Log extends ReentrantLocker {
                 logger.error("滚动时创建新的日志分片失败，该分片已经存在");
             }
 
-            HanabiExecutors.excute(() -> flush(newOffset));
+            HanabiExecutors.execute(() -> flush(newOffset));
 
             return newLogSegment;
         });

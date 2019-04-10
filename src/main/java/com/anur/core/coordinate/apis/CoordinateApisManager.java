@@ -301,14 +301,14 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     private void cancelFetchTask() {
         Optional.ofNullable(fetchPreLogTask)
                 .ifPresent(TimedTask::cancel);
-        logger.debug("cancel fetchPreLogTask task");
+        logger.debug("取消 FetchPreLog 定时任务");
     }
 
     private void rebuildFetchTask() {
         fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
         Timer.getInstance()
              .addTask(fetchPreLogTask);
-        logger.debug("rebuild fetchPreLogTask task");
+        logger.debug("载入 FetchPreLog 定时任务");
     }
 
     /**

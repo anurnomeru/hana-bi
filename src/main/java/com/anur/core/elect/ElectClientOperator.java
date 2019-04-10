@@ -91,7 +91,7 @@ public class ElectClientOperator implements Runnable {
                 if (electClientOperator == null) {
                     electClientOperator = new ElectClientOperator(hanabiNode);
                     electClientOperator.init();
-                    HanabiExecutors.excute(electClientOperator);
+                    HanabiExecutors.execute(electClientOperator);
                     SERVER_INSTANCE_MAPPER.put(hanabiNode, electClientOperator);
                 }
             }
@@ -120,7 +120,7 @@ public class ElectClientOperator implements Runnable {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
             logger.debug("正在重新建立与选举节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getElectionPort());
             this.serverShutDownHooker.reset();
-            HanabiExecutors.excute(this);
+            HanabiExecutors.execute(this);
         } else {
             initialLatch.countDown();// 如果没创建过，则直接将其启动
         }

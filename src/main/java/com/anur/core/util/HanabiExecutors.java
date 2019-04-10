@@ -48,7 +48,7 @@ public class HanabiExecutors {
                                                                                                                                 .build());
     }
 
-    public static void excute(Runnable runnable) {
+    public static void execute(Runnable runnable) {
         Pool.execute(runnable);
     }
 
