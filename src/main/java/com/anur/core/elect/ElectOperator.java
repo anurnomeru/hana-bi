@@ -233,7 +233,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             } else if (this.voteRecord != null) {
                 cause = String.format("在世代 %s，本节点已投票给 => %s 节点", this.generation, this.voteRecord.getServerName());
             } else {
-                this.voteRecord = votes;
+                this.voteRecord = votes; // 代表投票成功了
             }
 
             boolean result = votes.equals(this.voteRecord);
