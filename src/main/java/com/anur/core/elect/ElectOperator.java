@@ -344,13 +344,13 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     public boolean receiveHeatBeat(String leaderServerName, long generation, String msg) {
         return this.lockSupplier(() -> {
-            boolean isFirstReceiveInThisGen = false;
+            boolean needToSendHeartBeatInfection = true;
             // 世代大于当前世代
             if (generation >= this.generation) {
+                needToSendHeartBeatInfection = false;
                 //                logger.debug(msg);
 
                 if (this.leaderServerName == null) {
-                    isFirstReceiveInThisGen = true;
 
                     logger.info("集群中，节点 {} 已经成功在世代 {} 上位成为 Leader，本节点将成为 Follower，直到与 Leader 的网络通讯出现问题", leaderServerName, generation);
 
@@ -378,7 +378,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 重置成为候选者任务
                 this.becomeCandidateAndBeginElectTask(this.generation);
             }
-            return isFirstReceiveInThisGen;
+            return needToSendHeartBeatInfection;
         });
     }
 
