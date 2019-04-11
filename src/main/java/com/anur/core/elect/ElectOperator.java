@@ -167,7 +167,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             this.clusters = InetSocketAddressConfigHelper.getCluster();
             logger.debug("更新集群节点信息     =====> " + JSON.toJSONString(this.clusters));
 
-            if (!this.initVotesBox(this.generation + 1, reason)) {
+            if (!this.init(this.generation + 1, reason)) {
                 updateGeneration(reason);
             }
             return null;
@@ -386,7 +386,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 3、重置本地变量
      * 4、新增成为Candidate的定时任务
      */
-    private boolean initVotesBox(long generation, String reason) {
+    private boolean init(long generation, String reason) {
         return this.lockSupplier(() -> {
             if (generation > this.generation) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 logger.debug("初始化投票箱，原因：{}", reason);
@@ -562,7 +562,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     public void updateGenWhileReceiveHigherGen(long generation, String msg) {
-        this.initVotesBox(generation, msg);
+        this.init(generation, msg);
     }
 
     /**
