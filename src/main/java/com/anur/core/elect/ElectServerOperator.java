@@ -84,14 +84,14 @@ public class ElectServerOperator implements Runnable {
                              String.format("收到了来自节点 %s 的心跳包，其世代 %s 大于当前世代", decodeWrapper.getServerName(), decodeWrapper.getGeneration()));
 
             HeartBeat heartBeat = (HeartBeat) decodeWrapper.getObject();
-            ElectOperator.getInstance()
-                         .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration(),
-                             String.format("收到了来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), decodeWrapper.getGeneration()));
+            boolean isFirstReceiveInThisGen = ElectOperator.getInstance()
+                                                           .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration(),
+                                                               String.format("收到了来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), decodeWrapper.getGeneration()));
 
             String nowLeader = ElectOperator.getInstance()
                                             .getLeaderServerName();
             heartBeat = new HeartBeat(nowLeader);
-            if (!StringUtil.isNullOrEmpty(nowLeader)) {
+            if (!StringUtil.isNullOrEmpty(nowLeader) || !isFirstReceiveInThisGen) {
                 ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat));
             }
         default:

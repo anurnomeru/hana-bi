@@ -342,13 +342,16 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         }
     }
 
-    public void receiveHeatBeat(String leaderServerName, long generation, String msg) {
-        this.lockSupplier(() -> {
+    public boolean receiveHeatBeat(String leaderServerName, long generation, String msg) {
+        return this.lockSupplier(() -> {
+            boolean isFirstReceiveInThisGen = false;
             // 世代大于当前世代
             if (generation >= this.generation) {
                 //                logger.debug(msg);
 
                 if (this.leaderServerName == null) {
+                    isFirstReceiveInThisGen = true;
+
                     logger.info("集群中，节点 {} 已经成功在世代 {} 上位成为 Leader，本节点将成为 Follower，直到与 Leader 的网络通讯出现问题", leaderServerName, generation);
 
                     Optional.ofNullable(this.clusters)
@@ -359,6 +362,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                             .ifPresent(ElectClientOperator::ShutDown);
                                 }
                             }));
+                    // 取消所有任务
                     this.cancelAllTask();
 
                     // 成为follower
@@ -374,12 +378,12 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 重置成为候选者任务
                 this.becomeCandidateAndBeginElectTask(this.generation);
             }
-            return null;
+            return isFirstReceiveInThisGen;
         });
     }
 
     /**
-     * 初始化投票箱
+     * 初始化
      *
      * 1、成为follower
      * 2、先取消所有的定时任务
@@ -400,7 +404,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 3、重置本地变量
                 logger.debug("更新世代：旧世代 {} => 新世代 {}", this.generation, generation);
                 this.generation = generation;
-//                this.offset = Long.MAX_VALUE - 100;
                 this.offset = 0;
                 this.voteRecord = null;
                 this.box = new HashMap<>();
@@ -528,7 +531,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             Timer.getInstance()
                  .addTask(timedTask);
 
-            //            logger.debug("本节点将于 {} ms 后重新发起下一轮选举", electionTimeout);
             taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
             return null;
         });
@@ -540,11 +542,9 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void cancelCandidateAndBeginElectTask(String msg) {
         this.lockSupplier(() -> {
+            //                        logger.debug(msg);
             Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
-                    .ifPresent(timedTask -> {
-                        //                        logger.debug(msg);
-                        timedTask.cancel();
-                    });
+                    .ifPresent(TimedTask::cancel);
             return null;
         });
     }
@@ -589,7 +589,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 // 当流水号达到最大时，进行世代的自增，
                 if (offset == Long.MAX_VALUE) {
                     logger.warn("流水号 offset 已达最大值，节点将更新自身世代 {} => {}", this.generation, this.generation + 1);
-//                    offset = Long.MAX_VALUE - 10;
+                    //                    offset = Long.MAX_VALUE - 10;
                     offset = 0;
                     this.generation++;
                 }
