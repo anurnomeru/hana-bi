@@ -91,7 +91,7 @@ public class ElectServerOperator implements Runnable {
             String nowLeader = ElectOperator.getInstance()
                                             .getLeaderServerName();
             heartBeat = new HeartBeat(nowLeader);
-            if (!StringUtil.isNullOrEmpty(nowLeader) || needToSendHeartBeatInfection) {
+            if (!StringUtil.isNullOrEmpty(nowLeader) && needToSendHeartBeatInfection) {
                 ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat));
             }
         default:
