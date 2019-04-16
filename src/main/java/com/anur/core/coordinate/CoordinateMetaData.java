@@ -12,12 +12,29 @@ import com.anur.core.elect.model.GenerationAndOffset;
 /**
  * Created by Anur IjuoKaruKas on 4/16/2019
  *
- * 维护协调节点的所有变量
+ * 维护协调节点的所有变量，并负责协调各个组件进行工作，通过注册调用链的方式来传递状态
  */
 public class CoordinateMetaData {
 
+    private volatile static CoordinateMetaData INSTANCE;
+
+    public CoordinateMetaData getINSTANCE() {
+        if (INSTANCE == null) {
+            synchronized (CoordinateMetaData.class) {
+                if (INSTANCE == null) {
+                    INSTANCE = new CoordinateMetaData();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+
+    private CoordinateMetaData() {
+        ElectOperator.getInstance().registerWhenClusterVotedALeader(cluster -> {});
+    }
+
     /**
-     * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterValid 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
+     * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterVotedALeader 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
      */
     private volatile boolean clusterValid = false;
 

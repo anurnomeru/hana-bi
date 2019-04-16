@@ -133,7 +133,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private boolean clusterValid;
 
-    private List<Consumer<Cluster>> doWhenClusterValid;
+    private List<Consumer<Cluster>> doWhenClusterVotedALeader;
 
     private List<Runnable> doWhenClusterInvalid;
 
@@ -148,7 +148,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.clusters = InetSocketAddressConfigHelper.getCluster();
         this.clusterValid = false;
         this.leaderServerName = null;
-        this.doWhenClusterValid = new ArrayList<>();
+        this.doWhenClusterVotedALeader = new ArrayList<>();
         this.doWhenClusterInvalid = new ArrayList<>();
 
         String serverName = InetSocketAddressConfigHelper.getServerName();
@@ -647,7 +647,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             if (valid) {
                 logger.info("集群状态 => 可用，当前 leader 为 {}", leaderServerName);
                 Cluster cluster = new Cluster(leaderServerName, clusters);
-                this.doWhenClusterValid.forEach(c -> HanabiExecutors.execute(() -> c.accept(cluster)));
+                this.doWhenClusterVotedALeader.forEach(c -> HanabiExecutors.execute(() -> c.accept(cluster)));
             } else {
                 logger.info("集群状态 => 不可用");
                 this.doWhenClusterInvalid.forEach(HanabiExecutors::execute);
@@ -656,10 +656,16 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         });
     }
 
-    public void registerWhenClusterValid(Consumer<Cluster> clusterConsumer) {
-        this.doWhenClusterValid.add(clusterConsumer);
+    /**
+     * 当集群选主后
+     */
+    public void registerWhenClusterVotedALeader(Consumer<Cluster> clusterConsumer) {
+        this.doWhenClusterVotedALeader.add(clusterConsumer);
     }
 
+    /**
+     * 当集群主节点挂后
+     */
     public void registerWhenClusterInvalid(Runnable runnable) {
         this.doWhenClusterInvalid.add(runnable);
     }
