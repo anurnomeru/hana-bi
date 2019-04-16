@@ -39,7 +39,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
 
     private Logger logger = LoggerFactory.getLogger(CoordinateApisManager.class);
 
-
     /**
      * 作为 Follower 时有效，此任务不断从 Leader 节点获取 PreLog
      */
