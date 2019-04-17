@@ -1,10 +1,11 @@
 package com.anur.core.coordinate;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListMap;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
@@ -30,8 +31,38 @@ public class CoordinateMetaData {
     }
 
     private CoordinateMetaData() {
-        ElectOperator.getInstance().registerWhenClusterVotedALeader(cluster -> {});
+        ElectOperator.getInstance()
+                     .registerWhenClusterVotedALeader(cluster -> {
+                         leader = cluster.getLeader();
+                         isLeader = InetSocketAddressConfigHelper.getServerName()
+                                                                 .equals(leader);
+                         clusters = cluster.getClusters();
+                         validCommitCountNeed = clusters.size() / 2 + 1;
+
+                         if (!isLeader) {
+                             CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()))
+                                                     .tryStartWhileDisconnected();
+                         }
+                     });
+
+        ElectOperator.getInstance()
+                     .registerWhenClusterInvalid(() -> {
+                         clusterValid = false;
+                         isLeader = false;
+                         clusters = null;
+                         leader = null;
+                         validCommitCountNeed = Integer.MAX_VALUE;
+                         fetchMap = new ConcurrentSkipListMap<>();
+                         commitMap = new ConcurrentSkipListMap<>();
+                         nodeFetchMap = new ConcurrentHashMap<>();
+                         nodeCommitMap = new ConcurrentHashMap<>();
+
+                         // 当集群不可用时，与协调 leader 断开连接
+                         CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
+                     });
     }
+
+    //    private volatile CoordinateState coordinateState = CoordinateS;
 
     /**
      * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterVotedALeader 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
@@ -66,7 +97,7 @@ public class CoordinateMetaData {
     /**
      * 作为 Leader 时有效，记录了每个节点最近的一次 fetch
      */
-    private volatile Map<String, GenerationAndOffset> nodeFetchMap = new HashMap<>();
+    private volatile Map<String, GenerationAndOffset> nodeFetchMap = new ConcurrentHashMap<>();
 
     /**
      * 作为 Leader 时有效，维护了每个节点的 commit 进度
@@ -76,5 +107,41 @@ public class CoordinateMetaData {
     /**
      * 作为 Leader 时有效，记录了每个节点最近的一次 commit
      */
-    private volatile Map<String, GenerationAndOffset> nodeCommitMap = new HashMap<>();
+    private volatile Map<String, GenerationAndOffset> nodeCommitMap = new ConcurrentHashMap<>();
+
+    public boolean isClusterValid() {
+        return clusterValid;
+    }
+
+    public String getLeader() {
+        return leader;
+    }
+
+    public List<HanabiNode> getClusters() {
+        return clusters;
+    }
+
+    public boolean isLeader() {
+        return isLeader;
+    }
+
+    public int getValidCommitCountNeed() {
+        return validCommitCountNeed;
+    }
+
+    public ConcurrentSkipListMap<GenerationAndOffset, Set<String>> getFetchMap() {
+        return fetchMap;
+    }
+
+    public Map<String, GenerationAndOffset> getNodeFetchMap() {
+        return nodeFetchMap;
+    }
+
+    public ConcurrentSkipListMap<GenerationAndOffset, Set<String>> getCommitMap() {
+        return commitMap;
+    }
+
+    public Map<String, GenerationAndOffset> getNodeCommitMap() {
+        return nodeCommitMap;
+    }
 }
