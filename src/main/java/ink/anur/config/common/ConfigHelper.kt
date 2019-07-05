@@ -1,4 +1,4 @@
-package ink.anur.config
+package ink.anur.config.common
 
 import com.anur.exception.HanabiException
 import javafx.util.Pair
@@ -12,41 +12,44 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
  *
  * 统一操作配置文件入口
  */
-class ConfigHelper {
+open class ConfigHelper {
 
-    @Volatile
-    internal var RESOURCE_BUNDLE: ResourceBundle
+    companion object {
+        @Volatile
+        private var resourceBundle: ResourceBundle = ResourceBundle.getBundle("application")
+        private const val errorFormatter = "读取application.properties配置异常，异常项目：%s，建议：%s"
+    }
 
-    private var READ_LOCK: Lock
-    private var WRITE_LOCK: Lock
-    private val CACHE = ConcurrentHashMap<ConfigEnum, Any>()
-    private val ERROR_FORMATTER = "读取application.properties配置异常，异常项目：%s，建议：%s"
+
+    private val readLock: Lock
+    private val writeLock: Lock
+    private val cache = ConcurrentHashMap<ConfigEnum, Any>()
+
 
     init {
         val readWriteLock = ReentrantReadWriteLock()
-        READ_LOCK = readWriteLock.readLock()
-        WRITE_LOCK = readWriteLock.writeLock()
-        RESOURCE_BUNDLE = ResourceBundle.getBundle("application")
+        readLock = readWriteLock.readLock()
+        writeLock = readWriteLock.writeLock()
     }
 
     /**
      * 优先获取缓存中的值，如果获取不到再从配置文件获取
      */
-    private fun <T> lockSupplier(configEnum: ConfigEnum, supplier: () -> T): T {
-        var t: T
+    private fun lockSupplier(configEnum: ConfigEnum, supplier: () -> Any): Any {
+        val t: Any
         try {
-            READ_LOCK.lock()
-            CACHE.containsKey(configEnum)
+            readLock.lock()
+            cache.containsKey(configEnum)
 
-            t = (if (CACHE.containsKey(configEnum)) {
-                CACHE[configEnum]
+            (if (cache.containsKey(configEnum)) {
+                t = cache[configEnum]!!
             } else {
                 t = supplier.invoke()
-                CACHE[configEnum] = t!!
-            }) as T
+                cache[configEnum] = t
+            })
 
         } finally {
-            READ_LOCK.unlock()
+            readLock.unlock()
         }
         return t
     }
@@ -56,30 +59,30 @@ class ConfigHelper {
      */
     fun refresh() {
         try {
-            WRITE_LOCK.lock()
-            CACHE.clear()
-            RESOURCE_BUNDLE = ResourceBundle.getBundle("application")
+            writeLock.lock()
+            cache.clear()
+            resourceBundle = ResourceBundle.getBundle("application")
         } finally {
-            WRITE_LOCK.unlock()
+            writeLock.unlock()
         }
     }
 
     /**
      * 根据key获取某个配置
      */
-    protected fun <T> getConfig(configEnum: ConfigEnum, transfer: (String) -> T): T {
+    internal fun getConfig(configEnum: ConfigEnum, transfer: (String) -> Any?): Any {
         return lockSupplier(configEnum) {
-            transfer.invoke(RESOURCE_BUNDLE.getString(configEnum.key))
-                ?: throw ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.key, configEnum.adv))
+            transfer.invoke(resourceBundle.getString(configEnum.key))
+                ?: throw ApplicationConfigException(String.format(errorFormatter, configEnum.key, configEnum.adv))
         }
     }
 
     /**
      * 根据key模糊得获取某些配置，匹配规则为 key%
      */
-    protected fun <T> getConfigSimilar(configEnum: ConfigEnum, transfer: (Pair<String, String>) -> T): List<T> {
+    internal fun getConfigSimilar(configEnum: ConfigEnum, transfer: (Pair<String, String>) -> Any?): Any {
         return lockSupplier(configEnum) {
-            val stringEnumeration = RESOURCE_BUNDLE.keys
+            val stringEnumeration = resourceBundle.keys
             val keys = mutableListOf<String>()
 
             while (stringEnumeration.hasMoreElements()) {
@@ -89,13 +92,12 @@ class ConfigHelper {
                 }
             }
 
-            val key = configEnum.key
             keys.map {
                 transfer.invoke(
                     Pair(
-                        if (it.length > key.length) it.substring(key.length + 1) else it,
-                        RESOURCE_BUNDLE.getString(it)
-                    ))
+                        if (it.length > configEnum.key.length) it.substring(configEnum.key.length + 1) else it,
+                        resourceBundle.getString(it)
+                    )) ?: throw ApplicationConfigException(String.format(errorFormatter, configEnum.key, configEnum.adv))
             }
         }
     }
@@ -132,7 +134,4 @@ enum class ConfigEnum constructor(val key: String, val adv: String) {
     ////////////////////// CoordinateConfigHelper
 
     COORDINATE_FETCH_BACK_OFF_MS("coordinate.fetchBackOffMs", "间隔 ms 去 leader 拉取最新的日志")
-}
-
-fun main() {
 }
