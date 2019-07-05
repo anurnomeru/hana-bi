@@ -50,13 +50,13 @@ public class Bootstrap {
                          .start();
 
             try {
-                Thread.sleep(10000);
+                Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
             try {
-                for (int i = 0; i < 10000; i++) {
+                for (int i = 0; i < 100000000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                     LogManager.getINSTANCE()
                               .append(operation);

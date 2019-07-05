@@ -1,6 +1,5 @@
 package com.anur.io.core.handle;
 
-import com.anur.exception.HanabiException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
