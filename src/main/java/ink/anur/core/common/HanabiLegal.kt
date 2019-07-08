@@ -1,4 +1,4 @@
-package ink.anur.core.base
+package ink.anur.core.common
 
 import java.util.Objects
 

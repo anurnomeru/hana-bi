@@ -4,7 +4,7 @@ import com.anur.core.util.ChannelManager
 import com.anur.exception.HanabiException
 import ink.anur.config.common.ConfigHelper
 import ink.anur.config.common.ConfigurationEnum
-import ink.anur.core.base.HanabiLegal
+import ink.anur.core.common.HanabiLegal
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5
