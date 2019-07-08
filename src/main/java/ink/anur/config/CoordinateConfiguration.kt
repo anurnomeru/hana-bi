@@ -6,9 +6,11 @@ import ink.anur.config.common.ConfigurationEnum
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5
  */
-object CoordinateConfiguration : ConfigHelper() {
+class CoordinateConfiguration {
 
-    fun getFetchBackOfMs(): Int {
-        return getConfig(ConfigurationEnum.COORDINATE_FETCH_BACK_OFF_MS) { Integer.valueOf(it) } as Int
+    companion object : ConfigHelper() {
+        fun getFetchBackOfMs(): Int {
+            return getConfig(ConfigurationEnum.COORDINATE_FETCH_BACK_OFF_MS) { Integer.valueOf(it) } as Int
+        }
     }
 }
