@@ -23,13 +23,11 @@ import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantLocker;
+import com.anur.exception.LogException;
 import com.anur.io.store.common.OffsetAndPosition;
-import com.anur.exception.HanabiException;
-import io.netty.buffer.CompositeByteBuf;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27
@@ -230,7 +228,7 @@ public class OffsetIndex extends ReentrantLocker {
     public void append(long offset, int position) {
         this.lockSupplier(() -> {
             if (isFull()) {
-                throw new HanabiException("Attempt to append to a full index (size = " + entries + ").");
+                throw new LogException("Attempt to append to a full index (size = " + entries + ").");
             }
             if (entries == 0 || offset > lastOffset) {
                 logger.debug("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引", baseOffset + ".index", offset, position);
@@ -240,11 +238,11 @@ public class OffsetIndex extends ReentrantLocker {
                 lastOffset = offset;
 
                 if (entries * 8 != mmap.position()) {
-                    throw new HanabiException(
+                    throw new LogException(
                         entries + " entries but file position in index is " + mmap.position() + ".");
                 }
             } else {
-                throw new HanabiException(
+                throw new LogException(
                     String.format("Attempt to append an offset (%d) to position %d no larger than the last offset appended (%d) to %s.", offset, entries, lastOffset, file.getAbsolutePath()));
             }
             return null;
@@ -331,7 +329,7 @@ public class OffsetIndex extends ReentrantLocker {
             try {
                 raf = new RandomAccessFile(file, "rw");
             } catch (FileNotFoundException e) {
-                throw new HanabiException(e);
+                throw new LogException(e);
             }
 
             int roundedNewSize = roundToExactMultiple(newSize, 8);
@@ -370,7 +368,7 @@ public class OffsetIndex extends ReentrantLocker {
                                              .clean();
             }
         } catch (Throwable e) {
-            throw new HanabiException("Error when freeing index buffer");
+            throw new LogException("Error when freeing index buffer");
         }
     }
 
@@ -422,7 +420,7 @@ public class OffsetIndex extends ReentrantLocker {
         return lastOffset;
     }
 
-    public static class OffsetIndexIllegalException extends HanabiException {
+    public static class OffsetIndexIllegalException extends RuntimeException {
 
         public OffsetIndexIllegalException(String message) {
             super(message);

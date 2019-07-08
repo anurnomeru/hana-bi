@@ -20,14 +20,11 @@ package com.anur.io.store.operationset;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.util.IteratorTemplate;
-import com.anur.exception.HanabiException;
 import com.anur.core.struct.base.Operation;
+import com.anur.exception.LogException;
 import com.anur.io.store.common.OperationAndOffset;
 
 /**
@@ -75,7 +72,7 @@ public class ByteBufferOperationSet extends OperationSet {
     @Override
     public int writeTo(GatheringByteChannel channel, long offset, int maxSize) throws IOException {
         if (offset > Integer.MAX_VALUE) {
-            throw new HanabiException("offset 不应大于 Integer.MaxValue");
+            throw new LogException("offset 不应大于 Integer.MaxValue");
         }
         ByteBuffer dup = byteBuffer.duplicate();
         int pos = (int) offset;

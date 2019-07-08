@@ -29,7 +29,8 @@ import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.TimeUtil;
-import com.anur.exception.HanabiException;
+import com.anur.exception.ApplicationConfigException;
+import com.anur.exception.ElectException;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectProtocolEnum;
 import com.anur.timewheel.TimedTask;
@@ -153,7 +154,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
         String serverName = InetSocketAddressConfigHelper.getServerName();
         if (serverName == null || serverName.isEmpty()) {
-            throw new HanabiException("未正确配置 server.name 或 client.addr");
+            throw new ApplicationConfigException("未正确配置 server.name 或 client.addr");
         }
     }
 
@@ -598,7 +599,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                 return new GenerationAndOffset(generation, offset);
             } else {
-                throw new HanabiException("不是 Leader 的节点无法生成id号");
+                throw new ElectException("不是 Leader 的节点无法生成id号");
             }
         });
     }

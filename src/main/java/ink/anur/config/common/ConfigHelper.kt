@@ -1,6 +1,6 @@
 package ink.anur.config.common
 
-import ink.anur.exception.ApplicationConfigException
+import com.anur.exception.ApplicationConfigException
 import javafx.util.Pair
 import java.util.ResourceBundle
 import java.util.concurrent.ConcurrentHashMap

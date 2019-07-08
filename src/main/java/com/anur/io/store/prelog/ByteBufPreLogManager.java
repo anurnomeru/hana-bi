@@ -7,7 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
-import com.anur.exception.HanabiException;
+import com.anur.exception.LogException;
 import com.anur.io.store.common.OperationAndOffset;
 import com.anur.io.store.log.LogManager;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
@@ -127,7 +127,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
 
                 PreLogMeta preLogMeta = getBefore(canCommit);
                 if (preLogMeta == null) {
-                    throw new HanabiException("有bug请注意排查！！，不应该出现这个情况");
+                    throw new LogException("有bug请注意排查！！，不应该出现这个情况");
                 }
 
                 ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(preLogMeta.offsets);
@@ -151,7 +151,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             ConcurrentNavigableMap<Long, ByteBufPreLog> head = preLog.headMap(gen, true);
 
             if (head == null || head.size() == 0) {
-                throw new HanabiException("获取预日志时：世代过小或者此世代还未有预日志");
+                throw new LogException("获取预日志时：世代过小或者此世代还未有预日志");
             }
 
             ByteBufPreLog byteBufPreLog = head.firstEntry()
@@ -171,7 +171,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
             ConcurrentNavigableMap<Long, ByteBufPreLog> head = preLog.headMap(gen, true);
 
             if (head == null || head.size() == 0) {
-                throw new HanabiException("获取预日志时：世代过小或者此世代还未有预日志");
+                throw new LogException("获取预日志时：世代过小或者此世代还未有预日志");
             }
 
             ByteBufPreLog byteBufPreLog = head.firstEntry()

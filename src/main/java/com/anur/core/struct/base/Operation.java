@@ -3,7 +3,7 @@ package com.anur.core.struct.base;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import com.anur.core.struct.OperationTypeEnum;
-import com.anur.exception.HanabiException;
+import com.anur.exception.LogException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
@@ -57,7 +57,7 @@ public class Operation extends AbstractStruct {
         int kSize = kBytes.length;
 
         if (kSize == 0) {
-            throw new HanabiException("Operation Key的长度不合法，不能为0");
+            throw new LogException("Operation Key的长度不合法，不能为0");
         }
 
         byte[] vBytes = value.getBytes(Charset.defaultCharset());

@@ -10,23 +10,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.CoordinateConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.coordinate.sender.CoordinateSender;
 import com.anur.core.elect.model.GenerationAndOffset;
+import com.anur.core.lock.ReentrantReadWriteLocker;
+import com.anur.core.struct.OperationTypeEnum;
+import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.struct.base.AbstractTimedStruct;
 import com.anur.core.struct.coordinate.CommitResponse;
 import com.anur.core.struct.coordinate.Commiter;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
 import com.anur.core.struct.coordinate.Register;
-import com.anur.core.struct.base.AbstractStruct;
-import com.anur.core.coordinate.model.RequestProcessor;
-import com.anur.core.struct.OperationTypeEnum;
-import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
-import com.anur.exception.HanabiException;
+import com.anur.exception.NetworkException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.log.LogManager;
 import com.anur.io.store.prelog.ByteBufPreLogManager;
@@ -137,7 +137,7 @@ public class ApisManager extends ReentrantReadWriteLocker {
              */
             OperationTypeEnum requestType = ResponseAndRequestType.get(typeEnum);
             if (StringUtil.isNullOrEmpty(serverName)) {
-                throw new HanabiException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
+                throw new NetworkException("收到了来自已断开连接节点 " + serverName + " 关于 " + requestType.name() + " 的无效 response");
             }
 
             RequestProcessor requestProcessor = getRequestProcessorIfInFlight(serverName, requestType);

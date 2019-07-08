@@ -4,7 +4,7 @@ import com.anur.core.util.ChannelManager
 import ink.anur.config.common.ConfigHelper
 import ink.anur.config.common.ConfigurationEnum
 import ink.anur.core.common.HanabiLegal
-import ink.anur.exception.ApplicationConfigException
+import com.anur.exception.ApplicationConfigException
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5

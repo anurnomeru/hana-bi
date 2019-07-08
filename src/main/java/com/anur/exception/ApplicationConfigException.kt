@@ -1,4 +1,4 @@
-package ink.anur.exception
+package com.anur.exception
 
 
 /**

@@ -24,12 +24,12 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.anur.exception.LogException;
 import com.anur.io.store.common.OffsetAndPosition;
 import com.anur.core.struct.base.Operation;
 import com.anur.io.store.common.OperationAndOffset;
 import com.anur.core.util.FileIOUtil;
 import com.anur.core.util.IteratorTemplate;
-import com.anur.exception.HanabiException;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
@@ -209,7 +209,7 @@ public class FileOperationSet extends OperationSet {
     public int truncateTo(int targetSize) {
         int originalSize = this.sizeInBytes();
         if (targetSize > originalSize || targetSize < 0) {
-            throw new HanabiException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
+            throw new LogException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
                 " 原文件大小为 " + originalSize + " bytes。");
         }
 
@@ -220,7 +220,7 @@ public class FileOperationSet extends OperationSet {
                 _size.set(targetSize);
             }
         } catch (IOException e) {
-            throw new HanabiException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
+            throw new LogException("尝试将日志文件截短成 " + targetSize + " bytes 但是失败了, " +
                 " 原文件大小为 " + originalSize + " bytes。");
         }
         return originalSize - targetSize;
@@ -249,7 +249,7 @@ public class FileOperationSet extends OperationSet {
         // 进行边界检查
         int newSize = Math.min((int) fileChannel.size(), end) - start;
         if (newSize < _size.get()) {
-            throw new HanabiException(String.format("FileOperationSet 的文件大小 %s 在写的过程中被截断了：之前的文件大小为 %d, 现在的文件大小为 %d", file.getAbsolutePath(), _size.get(), newSize));
+            throw new LogException(String.format("FileOperationSet 的文件大小 %s 在写的过程中被截断了：之前的文件大小为 %d, 现在的文件大小为 %d", file.getAbsolutePath(), _size.get(), newSize));
         }
         int position = start + (int) writePosition; // The position in the message set to begin writing from.
         int count = Math.min(size, sizeInBytes());
@@ -287,7 +287,7 @@ public class FileOperationSet extends OperationSet {
                 try {
                     fileChannel.read(sizeOffsetBuffer, location);
                 } catch (IOException e) {
-                    throw new HanabiException("Error occurred while reading data from fileChannel.");
+                    throw new LogException("Error occurred while reading data from fileChannel.");
                 }
                 if (sizeOffsetBuffer.hasRemaining()) {// 这也是读到了末尾
                     return allDone();
@@ -302,7 +302,7 @@ public class FileOperationSet extends OperationSet {
                 }
 
                 if (size > maxMessageSize) {
-                    throw new HanabiException(String.format("Message size exceeds the largest allowable message size (%d).", maxMessageSize));
+                    throw new LogException(String.format("Message size exceeds the largest allowable message size (%d).", maxMessageSize));
                 }
 
                 // read the item itself
@@ -310,7 +310,7 @@ public class FileOperationSet extends OperationSet {
                 try {
                     fileChannel.read(buffer, location + LogOverhead);
                 } catch (IOException e) {
-                    throw new HanabiException("Error occurred while reading data from fileChannel.");
+                    throw new LogException("Error occurred while reading data from fileChannel.");
                 }
                 if (buffer.hasRemaining()) {// 代表没读完，其实和上面一样，可能是消息写到最后写不下了，或者被截取截没了
                     return allDone();

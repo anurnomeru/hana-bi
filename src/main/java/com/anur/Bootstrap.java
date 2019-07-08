@@ -55,14 +55,14 @@ public class Bootstrap {
                 e.printStackTrace();
             }
 
-            try {
-                for (int i = 0; i < 100000000; i++) {
-                    Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
-                    LogManager.getINSTANCE()
-                              .append(operation);
-                }
-            } catch (Exception e) {
-            }
+//            try {
+//                for (int i = 0; i < 100000000; i++) {
+//                    Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
+//                    LogManager.getINSTANCE()
+//                              .append(operation);
+//                }
+//            } catch (Exception e) {
+//            }
         });
 
         while (RUNNING) {

@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import com.anur.exception.HanabiException;
+import com.anur.exception.ApplicationConfigException;
 import javafx.util.Pair;
 
 /**
@@ -108,13 +108,6 @@ public class ConfigHelper {
             }
             return tList;
         });
-    }
-
-    public static class ApplicationConfigException extends HanabiException {
-
-        public ApplicationConfigException(String message) {
-            super(message);
-        }
     }
 
     protected enum ConfigEnum {

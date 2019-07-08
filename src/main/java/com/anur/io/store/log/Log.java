@@ -9,11 +9,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
 import com.anur.core.lock.ReentrantLocker;
-import com.anur.io.store.common.LogCommon;
-import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.util.HanabiExecutors;
-import com.anur.exception.HanabiException;
+import com.anur.exception.LogException;
+import com.anur.io.store.common.LogCommon;
+import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.google.common.collect.Lists;
 
 /**
@@ -57,7 +57,7 @@ public class Log extends ReentrantLocker {
             if (file.isFile()) {
 
                 if (!file.canRead()) {
-                    throw new HanabiException("日志分片文件或索引文件不可读！");
+                    throw new LogException("日志分片文件或索引文件不可读！");
                 }
 
                 String filename = file.getName();
@@ -77,7 +77,7 @@ public class Log extends ReentrantLocker {
                     try {
                         thisSegment = new LogSegment(dir, start, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize());
                     } catch (IOException e) {
-                        throw new HanabiException("创建或映射日志分片文件 " + filename + " 失败");
+                        throw new LogException("创建或映射日志分片文件 " + filename + " 失败");
                     }
 
                     if (indexFile.exists()) {
@@ -119,7 +119,7 @@ public class Log extends ReentrantLocker {
      */
     public void append(Operation operation, long offset) {
         if (offset < currentOffset) {
-            throw new HanabiException("一定是哪里有问题");
+            throw new LogException("一定是哪里有问题");
         }
 
         LogSegment logSegment = maybeRoll(operation.size());
@@ -128,7 +128,7 @@ public class Log extends ReentrantLocker {
         try {
             logSegment.append(offset, byteBufferOperationSet);
         } catch (IOException e) {
-            throw new HanabiException("写入操作日志失败：" + operation.toString());
+            throw new LogException("写入操作日志失败：" + operation.toString());
         }
         currentOffset = offset;
     }
@@ -138,7 +138,7 @@ public class Log extends ReentrantLocker {
      */
     public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
         if (startOffset < currentOffset) {
-            throw new HanabiException("一定是哪里有问题");
+            throw new LogException("一定是哪里有问题");
         }
 
         LogSegment logSegment = maybeRoll(byteBufferOperationSet.getByteBuffer()
@@ -146,7 +146,7 @@ public class Log extends ReentrantLocker {
         try {
             logSegment.append(startOffset, byteBufferOperationSet);
         } catch (IOException e) {
-            throw new HanabiException("写入操作日志失败：" + startOffset + " => " + endOffset);
+            throw new LogException("写入操作日志失败：" + startOffset + " => " + endOffset);
         }
         currentOffset = endOffset;
     }
@@ -212,7 +212,7 @@ public class Log extends ReentrantLocker {
                 newLogSegment = new LogSegment(dir, newOffset, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize());
             } catch (IOException e) {
                 logger.error("滚动时创建新的日志分片失败，分片目录：{}, 创建的文件为：{}", dir.getAbsolutePath(), newFile.getName());
-                throw new HanabiException("滚动时创建新的日志分片失败");
+                throw new LogException("滚动时创建新的日志分片失败");
             }
 
             if (addSegment(newLogSegment) != null) {

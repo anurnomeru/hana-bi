@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
 import com.anur.core.elect.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
-import com.anur.exception.HanabiException;
+import com.anur.exception.LogException;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.common.LogCommon;
 import com.anur.core.struct.base.Operation;
@@ -78,7 +78,7 @@ public class LogManager {
             generationDirs.put(1L, latest);
             init = new GenerationAndOffset(latestGeneration, latest.getCurrentOffset());
         } catch (IOException e) {
-            throw new HanabiException("操作日志初始化失败，项目无法启动");
+            throw new LogException("操作日志初始化失败，项目无法启动");
         }
 
         return init;
@@ -119,13 +119,13 @@ public class LogManager {
             try {
                 log = new Log(generation, dir, 0);
             } catch (IOException e) {
-                throw new HanabiException("创建世代为 " + generation + " 的操作日志管理文件 Log 失败");
+                throw new LogException("创建世代为 " + generation + " 的操作日志管理文件 Log 失败");
             }
 
             generationDirs.put(generation, log);
             return log;
         } else if (generation < current.generation) {
-            throw new HanabiException("不应在添加日志时获取旧世代的 Log");
+            throw new LogException("不应在添加日志时获取旧世代的 Log");
         }
 
         return current;
