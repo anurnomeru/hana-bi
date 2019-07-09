@@ -215,8 +215,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                     .put(votesResponse.getServerName(), votesResponse.isAgreed());
 
                 List<HanabiNode> hanabiNodeList = meta.getClusters();
-                int clusterSize = hanabiNodeList.size();
-
                 long voteCount = meta.getBox()
                                      .values()
                                      .stream()

@@ -37,53 +37,60 @@ object ElectMeta {
      * 是否 Leader
      */
     @Volatile
-    private var isLeader = false
+    var isLeader = false
 
     /**
      * 流水号，用于生成 id，集群内每一次由 Leader 发起的关键操作都会生成一个id [.genOperationId] ()}，其中就需要自增 offset 号
      */
+    @Volatile
     var offset: Long = 0L
 
     /**
      * 投票箱
      */
+    @Volatile
     var box: MutableMap<String/* serverName */, Boolean> = mutableMapOf()
 
     /**
      * 投票给了谁的投票记录
      */
+    @Volatile
     var voteRecord: Votes? = null
 
     /**
      * 缓存一份集群信息，因为集群信息是可能变化的，我们要保证在一次选举中，集群信息是不变的
      */
+    @Volatile
     var clusters: List<InetSocketAddressConfigHelper.HanabiNode>? = null
 
     /**
      * 法定人数
      */
+    @Volatile
     var quorom: Int = Int.MAX_VALUE
+
+    /**
+     * 当前节点的角色
+     */
+    @Volatile
+    var nodeRole: NodeRole = NodeRole.Follower
+
+
+    /**
+     * 选举是否已经进行完
+     */
+    @Volatile
+    private var electionCompleted: Boolean = false
 
     /**
      * 心跳内容
      */
     val heartBeat: HeartBeat = HeartBeat(InetSocketAddressConfigHelper.getServerName() ?: throw ApplicationConfigException("未正确配置 server.name 或 client.addr"))
 
-
     /**
      * 仅用于统计选主用了多长时间
      */
     var beginElectTime: Long = 0
-
-    /**
-     * 当前节点的角色
-     */
-    var nodeRole: NodeRole = NodeRole.Follower
-
-    /**
-     * 选举是否已经进行完
-     */
-    private var electionCompleted: Boolean = false
 
     fun generationIncr(): Long {
         return ++generation

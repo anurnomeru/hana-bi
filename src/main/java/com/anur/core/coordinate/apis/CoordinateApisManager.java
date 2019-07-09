@@ -43,11 +43,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     private Logger logger = LoggerFactory.getLogger(CoordinateApisManager.class);
 
     /**
-     * 作为 Leader 时有效，日志需要拿到 n 个 commit 才可以提交
-     */
-    private volatile int validCommitCountNeed = Integer.MAX_VALUE;
-
-    /**
      * 作为 Leader 时有效，维护了每个节点的 fetch 进度
      */
     private volatile ConcurrentSkipListMap<GenerationAndOffset, Set<String>> fetchMap = new ConcurrentSkipListMap<>();
@@ -66,6 +61,11 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
      * 作为 Leader 时有效，记录了每个节点最近的一次 commit
      */
     private volatile Map<String, GenerationAndOffset> nodeCommitMap = new HashMap<>();
+
+    /**
+     * 与 leader 节点的连接是否正常
+     */
+    private volatile boolean leaderConnectionValid;
 
     /**
      * 作为 Follower 时有效，此任务不断从 Leader 节点获取 PreLog
@@ -152,7 +152,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
             GenerationAndOffset approach = null;
             for (Entry<GenerationAndOffset, Set<String>> entry : fetchMap.entrySet()) {
                 if (entry.getValue()
-                         .size() + 1 >= validCommitCountNeed) {// +1 为自己的一票
+                         .size() + 1 >= ElectMeta.INSTANCE.getQuorom()) {// +1 为自己的一票
                     approach = entry.getKey();
                 }
             }
@@ -219,70 +219,54 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     public CoordinateApisManager() {
         HanabiListener.INSTANCE.register(EventEnum.CLUSTER_VALID,
             () -> {
+                if (!ElectMeta.INSTANCE.isLeader()) {
+                    writeLockSupplier(() -> {
+                        CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(ElectMeta.INSTANCE.getLeader()));
 
+                        // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
+                        // 当集群可用时，连接协调 leader
+
+                        client.registerWhenConnectToLeader(() -> {
+                            fetchLock.lock();
+                            try {
+                                rebuildFetchTask();
+                                leaderConnectionValid = true;
+                            } finally {
+                                fetchLock.unlock();
+                            }
+                        });
+
+                        client.registerWhenDisconnectToLeader(() -> {
+                            fetchLock.lock();
+                            try {
+                                cancelFetchTask();
+                                leaderConnectionValid = false;
+                            } finally {
+                                fetchLock.unlock();
+                            }
+                        });
+                        client.tryStartWhileDisconnected();
+                        return null;
+                    });
+                }
+                return null;
             }
         );
-        ElectOperator.getInstance()
-                     .registerWhenClusterVotedALeader(
-                         cluster -> {
-                             writeLockSupplier(() -> {
 
-                                 isLeader = InetSocketAddressConfigHelper.getServerName()
-                                                                         .equals(ElectMeta.INSTANCE.getLeader());
+        HanabiListener.INSTANCE.register(EventEnum.CLUSTER_INVALID,
+            () ->
+                writeLockSupplier(() -> {
+                    ApisManager.getINSTANCE()
+                               .reboot();
 
-                                 if (isLeader) {
-                                     clusterValid = true;
-                                     clusters = cluster.getClusters();
-                                     validCommitCountNeed = clusters.size() / 2 + 1;
-                                 } else {
-                                     CoordinateClientOperator client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(cluster.getLeader()));
-                                     // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
-                                     // 当集群可用时，连接协调 leader
-                                     client.registerWhenConnectToLeader(() -> {
-                                         fetchLock.lock();
-                                         try {
-                                             rebuildFetchTask();
-                                         } finally {
-                                             fetchLock.unlock();
-                                         }
-                                         clusterValid = true;
-                                     });
+                    cancelFetchTask();
+                    leaderConnectionValid = false;
 
-                                     client.registerWhenDisconnectToLeader(() -> {
-                                         fetchLock.lock();
-                                         try {
-                                             cancelFetchTask();
-                                         } finally {
-                                             fetchLock.unlock();
-                                         }
-                                     });
-                                     client.tryStartWhileDisconnected();
-                                 }
-
-                                 return null;
-                             });
-                         });
-
-        ElectOperator.getInstance()
-                     .registerWhenClusterInvalid(
-                         () ->
-                             writeLockSupplier(() -> {
-                                 ApisManager.getINSTANCE()
-                                            .reboot();
-
-                                 cancelFetchTask();
-
-                                 clusterValid = false;
-                                 isLeader = false;
-                                 clusters = null;
-                                 leader = null;
-                                 validCommitCountNeed = Integer.MAX_VALUE;
-
-                                 // 当集群不可用时，与协调 leader 断开连接
-                                 CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
-                                 return null;
-                             })
-                     );
+                    // 当集群不可用时，与协调 leader 断开连接
+                    CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
+                    return null;
+                })
+        );
     }
 
     private void cancelFetchTask() {
