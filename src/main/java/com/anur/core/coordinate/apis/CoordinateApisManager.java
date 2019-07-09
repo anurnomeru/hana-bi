@@ -21,6 +21,8 @@ import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.elect.ElectMeta;
 import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
+import com.anur.core.listener.EventEnum;
+import com.anur.core.listener.HanabiListener;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
@@ -39,21 +41,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     private static volatile CoordinateApisManager INSTANCE;
 
     private Logger logger = LoggerFactory.getLogger(CoordinateApisManager.class);
-
-    /**
-     * 集群是否可用，此状态由 {@link ElectOperator#registerWhenClusterVotedALeader 和 {@link ElectOperator#registerWhenClusterInvalid}} 共同维护
-     */
-    private volatile boolean clusterValid = false;
-
-    /**
-     * Leader 节点
-     */
-    private volatile String leader = null;
-
-    /**
-     * 是否 Leader
-     */
-    private volatile boolean isLeader = false;
 
     /**
      * 作为 Leader 时有效，日志需要拿到 n 个 commit 才可以提交
@@ -230,6 +217,11 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     }
 
     public CoordinateApisManager() {
+        HanabiListener.INSTANCE.register(EventEnum.CLUSTER_VALID,
+            () -> {
+
+            }
+        );
         ElectOperator.getInstance()
                      .registerWhenClusterVotedALeader(
                          cluster -> {

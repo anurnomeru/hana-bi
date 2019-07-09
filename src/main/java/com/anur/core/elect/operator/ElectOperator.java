@@ -82,24 +82,12 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     Map<TaskEnum, TimedTask> taskMap = new ConcurrentHashMap<>();
 
-    private List<Consumer<Cluster>> doWhenClusterVotedALeader;
-
-    private List<Runnable> doWhenClusterInvalid;
-
-    private ElectOperator() {
-        this.doWhenClusterVotedALeader = new ArrayList<>();
-        this.doWhenClusterInvalid = new ArrayList<>();
-    }
-
     /**
      * 强制更新世代信息
      */
     private void updateGeneration(String reason) {
         this.lockSupplier(() -> {
             logger.debug("强制更新当前世代 {} -> {}", meta.getGeneration(), meta.getGeneration() + 1);
-
-            meta.setClusters(InetSocketAddressConfigHelper.getCluster());
-            logger.debug("更新集群节点信息     ===> " + JSON.toJSONString(meta.getClusters()));
 
             if (!this.init(meta.getGeneration() + 1, reason)) {
                 updateGeneration(reason);
@@ -228,7 +216,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                 List<HanabiNode> hanabiNodeList = meta.getClusters();
                 int clusterSize = hanabiNodeList.size();
-                int votesNeed = clusterSize / 2 + 1;
 
                 long voteCount = meta.getBox()
                                      .values()
@@ -236,10 +223,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                      .filter(aBoolean -> aBoolean)
                                      .count();
 
-                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, votesNeed);
+                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, meta.getQuorom());
 
                 // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
-                if (voteCount == votesNeed) {
+                if (voteCount == meta.getQuorom()) {
                     logger.info("选票过半，本节点即将 {} 上位成为 leader 节点", votesResponse.getServerName());
                     this.becomeLeader();
                 }
@@ -340,6 +327,12 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         return this.lockSupplier(() -> {
             if (generation > meta.getGeneration()) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 logger.debug("初始化投票箱，原因：{}", reason);
+
+                // 0、更新集群信息
+                meta.setClusters(InetSocketAddressConfigHelper.getCluster());
+                meta.setQuorom(meta.getClusters()
+                                   .size() / 2 + 1);
+                logger.debug("更新集群节点信息     ===> " + JSON.toJSONString(meta.getClusters()));
 
                 // 1、成为follower
                 meta.becomeFollower();
@@ -526,16 +519,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             meta.setOffset(generationAndOffset.getOffset());
         }
         return this;
-    }
-
-    /**
-     * 集群是否处于正常状态
-     */
-    private void changeClusterState(boolean electionCompleted) {
-        this.lockSupplier(() -> {
-            meta.electionStateChanged(electionCompleted);
-            return null;
-        });
     }
 
     public void start() {

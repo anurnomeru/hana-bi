@@ -4,6 +4,8 @@ import com.anur.config.InetSocketAddressConfigHelper
 import com.anur.core.elect.constant.NodeRole
 import com.anur.core.elect.model.HeartBeat
 import com.anur.core.elect.model.Votes
+import com.anur.core.listener.EventEnum
+import com.anur.core.listener.HanabiListener
 import com.anur.core.util.TimeUtil
 import com.anur.exception.ApplicationConfigException
 import org.slf4j.Logger
@@ -58,6 +60,11 @@ object ElectMeta {
     var clusters: List<InetSocketAddressConfigHelper.HanabiNode>? = null
 
     /**
+     * 法定人数
+     */
+    var quorom: Int = Int.MAX_VALUE
+
+    /**
      * 心跳内容
      */
     val heartBeat: HeartBeat = HeartBeat(InetSocketAddressConfigHelper.getServerName() ?: throw ApplicationConfigException("未正确配置 server.name 或 client.addr"))
@@ -92,6 +99,12 @@ object ElectMeta {
     fun electionStateChanged(electionCompleted: Boolean): Boolean {
         val changed = electionCompleted == this.electionCompleted
         ElectMeta.electionCompleted = electionCompleted
+
+        if (changed) {
+            if (electionCompleted) HanabiListener.onEvent(EventEnum.CLUSTER_VALID)
+            else HanabiListener.onEvent(EventEnum.CLUSTER_INVALID)
+        }
+
         return changed
     }
 
