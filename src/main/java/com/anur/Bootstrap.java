@@ -1,11 +1,9 @@
 package com.anur;
 
-import com.anur.core.coordinate.CoordinateServerOperator;
+import com.anur.core.coordinate.operator.CoordinateServerOperator;
 import com.anur.core.coordinate.apis.CoordinateApisManager;
-import com.anur.core.elect.ElectOperator;
-import com.anur.core.elect.ElectServerOperator;
-import com.anur.core.struct.OperationTypeEnum;
-import com.anur.core.struct.base.Operation;
+import com.anur.core.elect.operator.ElectOperator;
+import com.anur.core.elect.operator.ElectServerOperator;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.io.store.log.LogManager;
 

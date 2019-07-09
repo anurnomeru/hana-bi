@@ -16,9 +16,10 @@ import org.slf4j.LoggerFactory;
 import com.anur.config.CoordinateConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.coordinate.CoordinateClientOperator;
+import com.anur.core.coordinate.operator.CoordinateClientOperator;
 import com.anur.core.coordinate.model.RequestProcessor;
-import com.anur.core.elect.ElectOperator;
+import com.anur.core.elect.ElectMeta;
+import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.struct.coordinate.FetchResponse;
@@ -48,11 +49,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
      * Leader 节点
      */
     private volatile String leader = null;
-
-    /**
-     * 当前集群内有哪些机器
-     */
-    private volatile List<HanabiNode> clusters = null;
 
     /**
      * 是否 Leader
@@ -239,9 +235,8 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                          cluster -> {
                              writeLockSupplier(() -> {
 
-                                 leader = cluster.getLeader();
                                  isLeader = InetSocketAddressConfigHelper.getServerName()
-                                                                         .equals(leader);
+                                                                         .equals(ElectMeta.INSTANCE.getLeader());
 
                                  if (isLeader) {
                                      clusterValid = true;

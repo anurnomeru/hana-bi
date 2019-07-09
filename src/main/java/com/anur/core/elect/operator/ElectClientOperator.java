@@ -1,4 +1,4 @@
-package com.anur.core.elect;
+package com.anur.core.elect.operator;
 
 import java.util.HashMap;
 import java.util.Map;

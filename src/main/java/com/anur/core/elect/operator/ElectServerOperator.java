@@ -1,4 +1,4 @@
-package com.anur.core.elect;
+package com.anur.core.elect.operator;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
@@ -13,7 +13,6 @@ import com.anur.io.core.coder.ElectProtocolEnum;
 import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.elect.model.Votes;
-import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.elect.server.ElectServer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
