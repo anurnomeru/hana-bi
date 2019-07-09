@@ -4,6 +4,8 @@ import com.anur.core.coordinate.operator.CoordinateServerOperator;
 import com.anur.core.coordinate.apis.CoordinateApisManager;
 import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.operator.ElectServerOperator;
+import com.anur.core.struct.OperationTypeEnum;
+import com.anur.core.struct.base.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.io.store.log.LogManager;
 
@@ -48,19 +50,19 @@ public class Bootstrap {
                          .start();
 
             try {
-                Thread.sleep(2000);
+                Thread.sleep(10000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-//            try {
-//                for (int i = 0; i < 100000000; i++) {
-//                    Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
-//                    LogManager.getINSTANCE()
-//                              .append(operation);
-//                }
-//            } catch (Exception e) {
-//            }
+            try {
+                for (int i = 0; i < 100000; i++) {
+                    Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
+                    LogManager.getINSTANCE()
+                              .append(operation);
+                }
+            } catch (Exception e) {
+            }
         });
 
         while (RUNNING) {

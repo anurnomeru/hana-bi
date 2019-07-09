@@ -247,19 +247,19 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private boolean becomeCandidate() {
         return this.lockSupplier(() -> {
             meta.becomeCandidate();
-            return null;
+            return true;
         });
     }
 
     /**
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
-    private void becomeLeader() {
-        this.lockSupplier(() -> {
+    private boolean becomeLeader() {
+        return this.lockSupplier(() -> {
             meta.becomeLeader();
             this.cancelAllTask();
             this.initHeartBeatTask();
-            return null;
+            return true;
         });
     }
 
@@ -280,7 +280,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             // 世代大于当前世代
             if (generation >= meta.getGeneration()) {
                 needToSendHeartBeatInfection = false;
-                //                logger.debug(msg);
+                logger.debug(msg);
 
                 if (meta.getLeader() == null) {
 
