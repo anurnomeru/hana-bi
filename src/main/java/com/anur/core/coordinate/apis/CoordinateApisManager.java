@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,11 +92,11 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     /**
      * 如何消费 Fetch response
      */
-    private Consumer<FetchResponse> CONSUME_FETCH_RESPONSE = fetchResponse -> {
+    private BiConsumer<String, FetchResponse> CONSUME_FETCH_RESPONSE = (node, fetchResponse) -> {
         readLockSupplier(() -> {
-            logger.debug("收到 Leader {} 返回的 FETCH_RESPONSE", leader);
+            logger.debug("收到节点 {} 返回的 FETCH_RESPONSE", node);
 
-            if (isLeader) {
+            if (ElectMeta.INSTANCE.isLeader()) {
                 logger.error("出现了不应该出现的情况！");
             }
 
@@ -117,7 +118,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     public GenerationAndOffset fetchReport(String node, GenerationAndOffset GAO) {
         GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
                                                      .load();
-        if (!isLeader) {
+        if (!ElectMeta.INSTANCE.isLeader()) {
             logger.error("出现了不应该出现的情况！");
             return GAOLatest;
         }
@@ -200,7 +201,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
             GenerationAndOffset approach = null;
             for (Entry<GenerationAndOffset, Set<String>> entry : commitMap.entrySet()) {
                 if (entry.getValue()
-                         .size() + 1 >= validCommitCountNeed) {// +1 为自己的一票
+                         .size() + 1 >= ElectMeta.INSTANCE.getQuorom()) {// +1 为自己的一票
                     approach = entry.getKey();
                 }
             }
@@ -229,7 +230,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                         client.registerWhenConnectToLeader(() -> {
                             fetchLock.lock();
                             try {
-                                rebuildFetchTask();
+                                rebuildFetchTask(ElectMeta.INSTANCE.getLeader());
                                 leaderConnectionValid = true;
                             } finally {
                                 fetchLock.unlock();
@@ -275,8 +276,8 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
         logger.debug("取消 FetchPreLog 定时任务");
     }
 
-    private void rebuildFetchTask() {
-        fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), this::sendFetchPreLog);
+    private void rebuildFetchTask(String fetchFrom) {
+        fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), () -> sendFetchPreLog(fetchFrom));
         Timer.getInstance()
              .addTask(fetchPreLogTask);
         logger.debug("载入 FetchPreLog 定时任务");
@@ -285,7 +286,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     /**
      * 定时 Fetch 消息
      */
-    public void sendFetchPreLog() {
+    public void sendFetchPreLog(String fetchFrom) {
         fetchLock.lock();
         try {
             Optional.ofNullable(fetchPreLogTask)
@@ -293,14 +294,14 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                     .ifPresent(fetchTask -> {
                         if (ApisManager.getINSTANCE()
                                        .send(
-                                           leader,
+                                           fetchFrom,
                                            new Fetcher(
                                                ByteBufPreLogManager.getINSTANCE()
                                                                    .getPreLogGAO()
                                            ),
                                            new RequestProcessor(byteBuffer ->
-                                               CONSUME_FETCH_RESPONSE.accept(new FetchResponse(byteBuffer)),
-                                               this::rebuildFetchTask))) {
+                                               CONSUME_FETCH_RESPONSE.accept(fetchFrom, new FetchResponse(byteBuffer)),
+                                               () -> rebuildFetchTask(fetchFrom)))) {
                         }
                     });
         } finally {

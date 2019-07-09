@@ -7,6 +7,7 @@ import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.core.elect.ElectMeta;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.io.core.coder.ElectProtocolEnum;
@@ -84,11 +85,10 @@ public class ElectServerOperator implements Runnable {
 
             HeartBeat heartBeat = (HeartBeat) decodeWrapper.getObject();
             boolean needToSendHeartBeatInfection = ElectOperator.getInstance()
-                                                           .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration(),
-                                                               String.format("收到了来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), decodeWrapper.getGeneration()));
+                                                                .receiveHeatBeat(heartBeat.getServerName(), decodeWrapper.getGeneration(),
+                                                                    String.format("收到了来自 Leader %s 世代 %s 节点的心跳包", heartBeat.getServerName(), decodeWrapper.getGeneration()));
 
-            String nowLeader = ElectOperator.getInstance()
-                                            .getLeaderServerName();
+            String nowLeader = ElectMeta.INSTANCE.getLeader();
             heartBeat = new HeartBeat(nowLeader);
             if (!StringUtil.isNullOrEmpty(nowLeader) && needToSendHeartBeatInfection) {
                 ctx.writeAndFlush(ElectCoder.encodeToByteBuf(ElectProtocolEnum.HEART_BEAT_INFECTION, heartBeat));
