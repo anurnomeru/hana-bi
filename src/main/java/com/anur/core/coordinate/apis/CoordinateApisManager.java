@@ -1,12 +1,6 @@
 package com.anur.core.coordinate.apis;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -14,16 +8,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.CoordinateConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.coordinate.operator.CoordinateClientOperator;
 import com.anur.core.coordinate.model.RequestProcessor;
+import com.anur.core.coordinate.operator.CoordinateClientOperator;
 import com.anur.core.elect.ElectMeta;
-import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.listener.EventEnum;
 import com.anur.core.listener.HanabiListener;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
-import com.anur.io.store.OffsetManager;
 import com.anur.io.store.prelog.ByteBufPreLogManager;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
@@ -37,44 +29,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
 
     private static volatile CoordinateApisManager INSTANCE;
 
-    private Logger logger = LoggerFactory.getLogger(CoordinateApisManager.class);
 
-    /**
-     * 作为 Leader 时有效，维护了每个节点的 fetch 进度
-     */
-    private volatile ConcurrentSkipListMap<GenerationAndOffset, Set<String>> fetchMap = new ConcurrentSkipListMap<>();
-
-    /**
-     * 作为 Leader 时有效，记录了每个节点最近的一次 fetch
-     */
-    private volatile Map<String, GenerationAndOffset> nodeFetchMap = new HashMap<>();
-
-    /**
-     * 作为 Leader 时有效，维护了每个节点的 commit 进度
-     */
-    private volatile ConcurrentSkipListMap<GenerationAndOffset, Set<String>> commitMap = new ConcurrentSkipListMap<>();
-
-    /**
-     * 作为 Leader 时有效，记录了每个节点最近的一次 commit
-     */
-    private volatile Map<String, GenerationAndOffset> nodeCommitMap = new HashMap<>();
-
-    /**
-     * 此字段用作版本控制，定时任务仅执行小于等于自己版本的任务
-     *
-     * Coordinate Version Control
-     */
-    private volatile long cvc;
-
-    /**
-     * 作为 Follower 时有效，此任务不断从 Leader 节点获取 PreLog
-     */
-    private TimedTask fetchPreLogTask = null;
-
-    /**
-     * Fetch 锁
-     */
-    private Lock fetchLock = new ReentrantLock();
 
     public static CoordinateApisManager getINSTANCE() {
         if (INSTANCE == null) {
@@ -107,113 +62,6 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
             return null;
         });
     };
-
-    /**
-     * Follower 向 Leader 提交拉取到的最大的 GAO
-     *
-     * 如果某个最大的 GAO 已经达到了 commit 条件，将返回此 GAO。
-     */
-    public GenerationAndOffset fetchReport(String node, GenerationAndOffset GAO) {
-        GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
-                                                     .load();
-        if (!ElectMeta.INSTANCE.isLeader()) {
-            logger.error("出现了不应该出现的情况！");
-            return GAOLatest;
-        }
-
-        if (GAOLatest.compareTo(GAO) > 0) {// 小于已经 commit 的 GAO 无需记录
-            return GAOLatest;
-        }
-
-        GenerationAndOffset GAOFetchBefore = readLockSupplier(() -> nodeFetchMap.get(node));
-        if (GAOFetchBefore != null && GAOFetchBefore.compareTo(GAO) >= 0) {// 小于之前提交记录的无需记录
-            return GAOLatest;
-        }
-
-        return writeLockSupplier(() -> {
-            if (GAOFetchBefore != null) {// 移除之前的 commit 记录
-                logger.debug("节点 {} fetch 进度由 {} 更新到了进度 {}", node, GAOFetchBefore.toString(), GAO.toString());
-                fetchMap.get(GAOFetchBefore)
-                        .remove(node);
-            } else {
-                logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString());
-            }
-
-            nodeFetchMap.put(node, GAO);// 更新新的 commit 记录
-            fetchMap.compute(GAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
-                if (strings == null) {
-                    strings = new HashSet<>();
-                }
-                strings.add(node);
-                return strings;
-            });
-
-            GenerationAndOffset approach = null;
-            for (Entry<GenerationAndOffset, Set<String>> entry : fetchMap.entrySet()) {
-                if (entry.getValue()
-                         .size() + 1 >= ElectMeta.INSTANCE.getQuorom()) {// +1 为自己的一票
-                    approach = entry.getKey();
-                }
-            }
-
-            if (approach == null) {
-                return GAOLatest;
-            } else {
-                logger.info("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", GAO.toString());
-                return approach;
-            }
-        });
-    }
-
-    public void commitReport(String node, GenerationAndOffset commitGAO) {
-        GenerationAndOffset GAOLatest = OffsetManager.getINSTANCE()
-                                                     .load();
-
-        if (GAOLatest.compareTo(commitGAO) > 0) {// 小于已经 commit 的 GAO 直接无视
-            return;
-        }
-
-        GenerationAndOffset GAOCommitBefore = readLockSupplier(() -> nodeCommitMap.get(node));
-        if (GAOCommitBefore != null && GAOCommitBefore.compareTo(commitGAO) >= 0) {// 小于之前提交记录的无需记录
-            return;
-        }
-
-        writeLockSupplier(() -> {
-            if (GAOCommitBefore != null) {// 移除之前的 commit 记录
-                logger.debug("节点 {} 已经 commit 进度由 {} 更新到了进度 {}", node, GAOCommitBefore.toString(), commitGAO.toString());
-                commitMap.get(GAOCommitBefore)
-                         .remove(node);
-            } else {
-                logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, commitGAO.toString());
-            }
-
-            nodeCommitMap.put(node, commitGAO);// 更新新的 commit 记录
-            commitMap.compute(commitGAO, (generationAndOffset, strings) -> { // 更新新的 commit 记录
-                if (strings == null) {
-                    strings = new HashSet<>();
-                }
-                strings.add(node);
-                return strings;
-            });
-
-            GenerationAndOffset approach = null;
-            for (Entry<GenerationAndOffset, Set<String>> entry : commitMap.entrySet()) {
-                if (entry.getValue()
-                         .size() + 1 >= ElectMeta.INSTANCE.getQuorom()) {// +1 为自己的一票
-                    approach = entry.getKey();
-                }
-            }
-
-            if (approach == null) {
-                return GAOLatest;
-            } else {
-                logger.info("进度 {} 已经完成 commit ~", commitGAO.toString());
-                OffsetManager.getINSTANCE()
-                             .cover(commitGAO);
-                return approach;
-            }
-        });
-    }
 
     public CoordinateApisManager() {
         HanabiListener.INSTANCE.register(EventEnum.CLUSTER_VALID,

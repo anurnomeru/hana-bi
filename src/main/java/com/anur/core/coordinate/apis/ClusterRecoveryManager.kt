@@ -1,4 +1,4 @@
-package com.anur.core.coordinate.apis;
+package com.anur.core.coordinate.apis
 
 /**
  * Created by Anur IjuoKaruKas on 4/9/2019
@@ -36,22 +36,7 @@ package com.anur.core.coordinate.apis;
  *
  * 需要检查当前世代 的last Offset，进行check，如果与leader不符，则需要truncate后恢复可用。
  */
-public class ClusterRecoveryManager {
+object ClusterRecoveryManager {
 
-    private volatile static ClusterRecoveryManager INSTANCE;
 
-    public static ClusterRecoveryManager getInstance() {
-        if (INSTANCE == null) {
-            synchronized (ClusterRecoveryManager.class) {
-                if (INSTANCE == null) {
-                    INSTANCE = new ClusterRecoveryManager();
-                }
-            }
-        }
-        return INSTANCE;
-    }
-
-    public ClusterRecoveryManager() {
-
-    }
 }

@@ -170,14 +170,13 @@ public class ApisManager extends ReentrantReadWriteLocker {
 
         logger.debug("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.getFetchGAO());
 
-        GenerationAndOffset canCommit = CoordinateApisManager.getINSTANCE()
-                                                             .fetchReport(serverName, fetcher.getFetchGAO());
+        GenerationAndOffset canCommit =
+            LeaderCoordinateManager.INSTANCE.fetchReport(serverName, fetcher.getFetchGAO());
 
         send(serverName, new Commiter(canCommit), new RequestProcessor(
             byteBuffer -> {
                 CommitResponse commitResponse = new CommitResponse(byteBuffer);
-                CoordinateApisManager.getINSTANCE()
-                                     .commitReport(serverName, commitResponse.getCommitGAO());
+                LeaderCoordinateManager.INSTANCE.commitReport(serverName, commitResponse.getCommitGAO());
             }, null));
 
         // 为什么要。next，因为 fetch 过来的是客户端最新的 GAO 进度，而获取的要从 GAO + 1开始
