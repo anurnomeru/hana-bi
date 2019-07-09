@@ -104,10 +104,10 @@ object ElectMeta {
      * 当集群选举状态变更时调用
      */
     fun electionStateChanged(electionCompleted: Boolean): Boolean {
-        val changed = electionCompleted == this.electionCompleted
-        ElectMeta.electionCompleted = electionCompleted
+        val changed = electionCompleted != this.electionCompleted
 
         if (changed) {
+            this.electionCompleted = electionCompleted
             if (electionCompleted) HanabiListener.onEvent(EventEnum.CLUSTER_VALID)
             else HanabiListener.onEvent(EventEnum.CLUSTER_INVALID)
         }

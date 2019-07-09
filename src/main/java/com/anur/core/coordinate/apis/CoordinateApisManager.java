@@ -2,7 +2,6 @@ package com.anur.core.coordinate.apis;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -11,16 +10,13 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.CoordinateConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.coordinate.operator.CoordinateClientOperator;
 import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.elect.ElectMeta;
-import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.listener.EventEnum;
 import com.anur.core.listener.HanabiListener;
@@ -64,9 +60,11 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     private volatile Map<String, GenerationAndOffset> nodeCommitMap = new HashMap<>();
 
     /**
-     * 与 leader 节点的连接是否正常
+     * 此字段用作版本控制，定时任务仅执行小于等于自己版本的任务
+     *
+     * Coordinate Version Control
      */
-    private volatile boolean leaderConnectionValid;
+    private volatile long cvc;
 
     /**
      * 作为 Follower 时有效，此任务不断从 Leader 节点获取 PreLog
@@ -230,8 +228,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                         client.registerWhenConnectToLeader(() -> {
                             fetchLock.lock();
                             try {
-                                rebuildFetchTask(ElectMeta.INSTANCE.getLeader());
-                                leaderConnectionValid = true;
+                                rebuildFetchTask(cvc, ElectMeta.INSTANCE.getLeader());
                             } finally {
                                 fetchLock.unlock();
                             }
@@ -241,7 +238,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                             fetchLock.lock();
                             try {
                                 cancelFetchTask();
-                                leaderConnectionValid = false;
+                                cvc++;
                             } finally {
                                 fetchLock.unlock();
                             }
@@ -260,8 +257,8 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                     ApisManager.getINSTANCE()
                                .reboot();
 
+                    cvc++;
                     cancelFetchTask();
-                    leaderConnectionValid = false;
 
                     // 当集群不可用时，与协调 leader 断开连接
                     CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接");
@@ -276,8 +273,13 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
         logger.debug("取消 FetchPreLog 定时任务");
     }
 
-    private void rebuildFetchTask(String fetchFrom) {
-        fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), () -> sendFetchPreLog(fetchFrom));
+    private void rebuildFetchTask(long myVersion, String fetchFrom) {
+        if (cvc > myVersion) {
+            logger.debug("sendFetchPreLog Task is out of version.");
+            return;
+        }
+
+        fetchPreLogTask = new TimedTask(CoordinateConfigHelper.getFetchBackOfMs(), () -> sendFetchPreLog(myVersion, fetchFrom));
         Timer.getInstance()
              .addTask(fetchPreLogTask);
         logger.debug("载入 FetchPreLog 定时任务");
@@ -286,7 +288,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
     /**
      * 定时 Fetch 消息
      */
-    public void sendFetchPreLog(String fetchFrom) {
+    public void sendFetchPreLog(long myVersion, String fetchFrom) {
         fetchLock.lock();
         try {
             Optional.ofNullable(fetchPreLogTask)
@@ -301,7 +303,7 @@ public class CoordinateApisManager extends ReentrantReadWriteLocker {
                                            ),
                                            new RequestProcessor(byteBuffer ->
                                                CONSUME_FETCH_RESPONSE.accept(fetchFrom, new FetchResponse(byteBuffer)),
-                                               () -> rebuildFetchTask(fetchFrom)))) {
+                                               () -> rebuildFetchTask(myVersion, fetchFrom)))) {
                         }
                     });
         } finally {
