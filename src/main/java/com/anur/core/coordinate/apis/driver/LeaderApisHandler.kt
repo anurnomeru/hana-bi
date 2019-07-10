@@ -14,6 +14,8 @@ import com.anur.io.store.log.LogManager
 import io.netty.channel.Channel
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
+import java.util.function.Consumer
+import kotlin.math.log
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/10
@@ -39,10 +41,11 @@ object LeaderApisHandler {
         val canCommit = LeaderCoordinateManager.fetchReport(serverName, fetcher.fetchGAO)
 
         ApisManager.send(serverName, Commiter(canCommit), RequestProcessor(
-            { byteBuffer ->
+            Consumer { byteBuffer ->
                 val commitResponse = CommitResponse(byteBuffer)
                 LeaderCoordinateManager.commitReport(serverName, commitResponse.commitGAO)
-            }, null))
+            },
+            null))
 
         // 为什么要。next，因为 fetch 过来的是客户端最新的 GAO 进度，而获取的要从 GAO + 1开始
         val fetchDataInfo = LogManager.getINSTANCE()

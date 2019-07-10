@@ -58,14 +58,13 @@ object ApisManager : ReentrantReadWriteLocker() {
      */
     fun receive(msg: ByteBuffer, typeEnum: OperationTypeEnum, channel: Channel) {
         val requestTimestampCurrent = msg.getLong(AbstractTimedStruct.TimestampOffset)
-
-
         val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE).getChannelName(channel)
 
         // serverName 是不会为空的，但是有一种情况例外，便是服务还未注册时 这里做特殊处理
-        if (typeEnum == OperationTypeEnum.REGISTER) {
-            LeaderApisHandler.handleRegisterRequest(msg, channel)
-        } else if (writeLockSupplierCompel(Supplier {
+        when {
+            typeEnum == OperationTypeEnum.REGISTER -> LeaderApisHandler.handleRegisterRequest(msg, channel)
+            serverName == null -> logger.error("没有注册却发来了信息，猜想是过期的消息，或者出现了BUG！")
+            writeLockSupplierCompel(Supplier {
                 var changed = false
                 receiveLog.compute(serverName) { _, timestampMap ->
                     (timestampMap ?: mutableMapOf()).also {
@@ -76,8 +75,7 @@ object ApisManager : ReentrantReadWriteLocker() {
                     }
                 }
                 changed
-            })) {
-            try {
+            }) -> try {
                 doReceive(serverName, msg, typeEnum, channel)
             } catch (e: Exception) {
                 logger.warn("在处理来自节点 {} 的 {} 请求时出现异常，可能原因 {}", serverName, typeEnum, e.message)
@@ -88,7 +86,6 @@ object ApisManager : ReentrantReadWriteLocker() {
                 }
                 e.printStackTrace()
             }
-
         }
     }
 

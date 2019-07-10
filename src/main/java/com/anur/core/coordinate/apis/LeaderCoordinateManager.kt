@@ -5,8 +5,6 @@ import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.io.store.OffsetManager
 import org.slf4j.LoggerFactory
-import java.util.HashMap
-import java.util.HashSet
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
 
@@ -29,7 +27,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
      * 作为 Leader 时有效，记录了每个节点最近的一次 fetch
      */
     @Volatile
-    private var currentFetchMap = HashMap<String, GenerationAndOffset>()
+    private var currentFetchMap = mutableMapOf<String, GenerationAndOffset>()
 
     /**
      * 作为 Leader 时有效，维护了每个节点的 commit 进度
@@ -41,7 +39,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
      * 作为 Leader 时有效，记录了每个节点最近的一次 commit
      */
     @Volatile
-    private var currentCommitMap = HashMap<String, GenerationAndOffset>()
+    private var currentCommitMap = mutableMapOf<String, GenerationAndOffset>()
 
     /**
      * Follower 向 Leader 提交拉取到的最大的 GAO
