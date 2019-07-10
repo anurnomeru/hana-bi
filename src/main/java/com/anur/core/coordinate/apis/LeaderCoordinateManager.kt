@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory
 import java.util.HashMap
 import java.util.HashSet
 import java.util.concurrent.ConcurrentSkipListMap
+import java.util.function.Supplier
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/9
@@ -16,7 +17,7 @@ import java.util.concurrent.ConcurrentSkipListMap
  */
 object LeaderCoordinateManager : ReentrantReadWriteLocker() {
 
-    private val logger = LoggerFactory.getLogger(LeaderCoordinateManager::class.java)
+    private val logger = LoggerFactory.getLogger(LeaderCoordinateManager.javaClass)
 
     /**
      * 作为 Leader 时有效，维护了每个节点的 fetch 进度
@@ -49,7 +50,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
      */
     fun fetchReport(node: String, GAO: GenerationAndOffset): GenerationAndOffset {
         val latestGAO = OffsetManager.getINSTANCE()
-            .load()
+            .load()!!
 
         if (!ElectMeta.isLeader) {
             logger.error("不是leader不太可能收到 fetchReport！ 很可能是有BUG ")
@@ -60,95 +61,70 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
             return latestGAO
         }
 
-        val currentGAO = readLockSupplier<GenerationAndOffset> { currentFetchMap[node] }
+        val currentGAO = readLockSupplier(Supplier { currentFetchMap[node] })
 
         return if (currentGAO != null && currentGAO >= GAO) {// 小于之前提交记录的无需记录
             latestGAO
-        } else writeLockSupplier<GenerationAndOffset> {
-            if (currentGAO != null) {// 移除之前的 commit 记录
-                logger.debug("节点 {} fetch 进度由 {} 更新到了进度 {}", node, currentGAO.toString(), GAO.toString())
-                fetchMap[currentGAO]!!.remove(node)
-            } else {
-                logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString())
-            }
+        } else {
+            writeLockSupplierCompel(Supplier {
+                // 移除之前的 fetch 记录
+                currentGAO?.also {
+                    logger.info("节点 {} fetch 进度由 {} 更新到了进度 {}", node, it.toString(), GAO.toString())
+                    fetchMap[it]!!.remove(node)
+                } ?: logger.info("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString())
 
-            currentFetchMap[node] = GAO// 更新新的 commit 记录
-            fetchMap.compute(GAO) { // 更新新的 commit 记录
-                _, strings ->
-                var result = strings
-                if (result == null) {
-                    result = mutableSetOf()
+                currentFetchMap[node] = GAO// 更新节点的 fetch 进度
+                fetchMap.compute(GAO) { // 更新节点最近一次 fetch 处于哪个 GAO
+                    _, strings ->
+                    (strings ?: mutableSetOf()).also {
+                        it.add(node)
+                    }
                 }
-                result.add(node)
-                result
-            }
 
-            var approach: GenerationAndOffset? = null
-            for (entry in fetchMap.entries) {
-                if (entry.value
-                        .size + 1 >= ElectMeta.quorom) {// +1 为自己的一票
-                    approach = entry.key
-                }
-            }
-
-            if (approach == null) {
-                return@writeLockSupplier latestGAO
-            } else {
-                logger.info("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", GAO.toString())
-                return@writeLockSupplier approach
-            }
+                // 找到最大的那个票数 >= quorum 的 fetch GAO
+                fetchMap.entries.findLast { e -> e.value.size >= ElectMeta.quorum }?.key.also { logger.info("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", it.toString()) }
+                    ?: latestGAO
+            })
         }
-
     }
 
     fun commitReport(node: String, commitGAO: GenerationAndOffset) {
         val latestCommitGAO = OffsetManager.getINSTANCE()
-            .load()
+            .load()!!
 
-        if (latestCommitGAO.compareTo(commitGAO) > 0) {// 小于已经 commit 的 GAO 直接无视
+        if (!ElectMeta.isLeader) {
+            logger.error("不是leader不太可能收到 commitReport！ 很可能是有BUG ")
             return
         }
 
-        val currentCommitGAO = readLockSupplier<GenerationAndOffset> { currentCommitMap[node] }
+        if (latestCommitGAO > commitGAO) {// 小于已经 commit 的 GAO 直接无视
+            return
+        }
+
+        val currentCommitGAO = readLockSupplier(Supplier { currentCommitMap[node] })
         if (currentCommitGAO != null && currentCommitGAO >= commitGAO) {// 小于之前提交记录的无需记录
             return
         }
 
-        writeLockSupplier<GenerationAndOffset> {
-            if (currentCommitGAO != null) {// 移除之前的 commit 记录
-                logger.debug("节点 {} 已经 commit 进度由 {} 更新到了进度 {}", node, currentCommitGAO.toString(), commitGAO.toString())
-                commitMap[currentCommitGAO]!!.remove(node)
-            } else {
-                logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, commitGAO.toString())
-            }
+        writeLockSupplierCompel(Supplier {
+            // 移除之前的 commit 记录
+            currentCommitGAO?.also {
+                logger.info("节点 {} 已经 commit 进度由 {} 更新到了进度 {}", node, it.toString(), commitGAO.toString())
+                commitMap[it]!!.remove(node)
+            } ?: logger.info("节点 {} 已经 fetch 更新到了进度 {}", node, commitGAO.toString())
 
-            currentCommitMap[node] = commitGAO// 更新新的 commit 记录
-            commitMap.compute(commitGAO) { // 更新新的 commit 记录
+
+            currentCommitMap[node] = commitGAO//更新节点的 commit 进度
+            commitMap.compute(commitGAO) { // 更新节点最近一次 commit 处于哪个 GAO
                 _, strings ->
-                var result = strings
-                if (result == null) {
-                    result = HashSet()
-                }
-                result.add(node)
-                result
-            }
-
-            var approach: GenerationAndOffset? = null
-            for (entry in commitMap.entries) {
-                if (entry.value
-                        .size + 1 >= ElectMeta.quorom) {// +1 为自己的一票
-                    approach = entry.key
+                (strings ?: mutableSetOf()).also {
+                    it.add(node)
                 }
             }
 
-            if (approach == null) {
-                return@writeLockSupplier latestCommitGAO
-            } else {
-                logger.info("进度 {} 已经完成 commit ~", commitGAO.toString())
-                OffsetManager.getINSTANCE()
-                    .cover(commitGAO)
-                return@writeLockSupplier approach
-            }
-        }
+            // 找到最大的那个票数 >= quorum 的 commit GAO
+            commitMap.entries.findLast { e -> e.value.size >= ElectMeta.quorum }?.key.also { logger.info("进度 {} 已经完成 commit ~", it.toString()) }
+                ?: latestCommitGAO
+        })
     }
 }

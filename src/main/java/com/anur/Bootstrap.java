@@ -1,7 +1,7 @@
 package com.anur;
 
+import com.anur.core.coordinate.apis.FollowerCoordinateManager;
 import com.anur.core.coordinate.operator.CoordinateServerOperator;
-import com.anur.core.coordinate.apis.CoordinateApisManager;
 import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.operator.ElectServerOperator;
 import com.anur.core.struct.OperationTypeEnum;
@@ -23,7 +23,7 @@ public class Bootstrap {
             /**
              * 日志一致性控制器
              */
-            CoordinateApisManager.getINSTANCE();
+            FollowerCoordinateManager forInitial = FollowerCoordinateManager.INSTANCE;
 
             /**
              * 初始化日志管理
@@ -50,12 +50,13 @@ public class Bootstrap {
                          .start();
 
             try {
-                Thread.sleep(10000);
+                Thread.sleep(15000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
             try {
+                System.out.println("开始append");
                 for (int i = 0; i < 100000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                     LogManager.getINSTANCE()

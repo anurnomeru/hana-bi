@@ -1,6 +1,5 @@
 package com.anur.core.elect.operator;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -9,14 +8,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.anur.config.ElectConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.core.coordinate.model.Cluster;
 import com.anur.core.elect.ElectMeta;
 import com.anur.core.elect.constant.NodeRole;
 import com.anur.core.elect.constant.TaskEnum;
@@ -221,10 +218,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                                      .filter(aBoolean -> aBoolean)
                                      .count();
 
-                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, meta.getQuorom());
+                logger.info("集群中共 {} 个节点，本节点当前投票箱进度 {}/{}", hanabiNodeList.size(), voteCount, meta.getQuorum());
 
                 // 如果获得的选票已经大于了集群数量的一半以上，则成为leader
-                if (voteCount == meta.getQuorom()) {
+                if (voteCount == meta.getQuorum()) {
                     logger.info("选票过半，本节点即将 {} 上位成为 leader 节点", votesResponse.getServerName());
                     this.becomeLeader();
                 }
@@ -328,7 +325,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
                 // 0、更新集群信息
                 meta.setClusters(InetSocketAddressConfigHelper.getCluster());
-                meta.setQuorom(meta.getClusters()
+                meta.setQuorum(meta.getClusters()
                                    .size() / 2 + 1);
                 logger.debug("更新集群节点信息     ===> " + JSON.toJSONString(meta.getClusters()));
 

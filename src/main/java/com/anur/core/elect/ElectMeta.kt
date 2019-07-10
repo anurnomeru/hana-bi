@@ -67,7 +67,7 @@ object ElectMeta {
      * 法定人数
      */
     @Volatile
-    var quorom: Int = Int.MAX_VALUE
+    var quorum: Int = Int.MAX_VALUE
 
     /**
      * 当前节点的角色

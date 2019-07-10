@@ -2,7 +2,6 @@ package com.anur.core.util;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import io.netty.channel.Channel;
