@@ -103,7 +103,6 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
         fetchPreLogTask = TimedTask(CoordinateConfigHelper.getFetchBackOfMs().toLong()) { sendFetchPreLog(myVersion, fetchFrom) }
         Timer.getInstance()
             .addTask(fetchPreLogTask)
-        logger.info("载入 FetchPreLog 定时任务")
     }
 
     /**
@@ -112,7 +111,7 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
     private fun sendFetchPreLog(myVersion: Long, fetchFrom: String) {
         fetchLock.lock()
         try {
-            fetchPreLogTask?.takeIf { it.isCancel }?.run {
+            fetchPreLogTask?.takeIf { !it.isCancel }?.run {
                 ApisManager.getINSTANCE().send(fetchFrom,
                     Fetcher(ByteBufPreLogManager.getINSTANCE().preLogGAO),
                     RequestProcessor(Consumer { CONSUME_FETCH_RESPONSE.invoke(fetchFrom, FetchResponse(it)) }, Runnable { rebuildFetchTask(myVersion, fetchFrom) })
