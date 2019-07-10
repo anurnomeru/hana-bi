@@ -1,12 +1,14 @@
 package com.anur.core.coordinate.apis.driver
 
 import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.core.coordinate.apis.ClusterRecoveryManager
 import com.anur.core.coordinate.apis.LeaderCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.struct.coordinate.CommitResponse
 import com.anur.core.struct.coordinate.Commiter
 import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.Fetcher
+import com.anur.core.struct.coordinate.RecoveryReporter
 import com.anur.core.struct.coordinate.Register
 import com.anur.core.struct.coordinate.RegisterResponse
 import com.anur.core.util.ChannelManager
@@ -15,7 +17,6 @@ import io.netty.channel.Channel
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.function.Consumer
-import kotlin.math.log
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/10
@@ -27,9 +28,20 @@ object LeaderApisHandler {
     private val logger = LoggerFactory.getLogger(LeaderApisHandler::class.java)
 
     /**
-     * 从 -> 主
-     *
-     * 协调子节点向主节点请求 Fetch 消息，主节点需返回一定的消息
+     * 在集群选主成功后，先来一波日志恢复
+     */
+    fun handleRecoveryRequest(msg: ByteBuffer, channel: Channel) {
+        val recoveryReporter = RecoveryReporter(msg)
+        val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE)
+            .getChannelName(channel)
+        val GAO = recoveryReporter.getLatestGAO()
+
+        logger.debug("收到来自协调节点 {} 的 RecoveryReport 请求 {} ", serverName, GAO)
+        ClusterRecoveryManager.receive(serverName, GAO)
+    }
+
+    /**
+     * 协调子节点向主节点请求 Fetch 消息，主节点需返回当前可提交 GAO (canCommit)
      */
     fun handleFetchRequest(msg: ByteBuffer, channel: Channel) {
         val fetcher = Fetcher(msg)

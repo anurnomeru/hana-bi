@@ -1,5 +1,19 @@
 package com.anur.core.coordinate.apis
 
+import com.anur.core.coordinate.apis.driver.ApisManager
+import com.anur.core.coordinate.apis.driver.LeaderApisHandler
+import com.anur.core.coordinate.model.RequestProcessor
+import com.anur.core.elect.ElectMeta
+import com.anur.core.elect.model.GenerationAndOffset
+import com.anur.core.listener.EventEnum
+import com.anur.core.listener.HanabiListener
+import com.anur.core.struct.coordinate.RecoveryReporter
+import com.anur.core.util.TimeUtil
+import com.anur.io.store.prelog.ByteBufPreLogManager
+import org.slf4j.LoggerFactory
+import java.util.function.Consumer
+import kotlin.math.log
+
 /**
  * Created by Anur IjuoKaruKas on 4/9/2019
  *
@@ -38,5 +52,51 @@ package com.anur.core.coordinate.apis
  */
 object ClusterRecoveryManager {
 
+    init {
+        HanabiListener.register(EventEnum.CLUSTER_VALID) {
+            RecoveryTimeCounter = TimeUtil.getTime()
+            RecoveryMap.clear()
+            inRecovery = true
+            if (ElectMeta.isLeader) RecoveryMap[ElectMeta.leader!!] = ByteBufPreLogManager.getINSTANCE().commitGAO else sendLatestCommitGao()
+        }
 
+        HanabiListener.register(EventEnum.CLUSTER_INVALID) {
+            inRecovery = false
+            ApisManager.reboot()
+        }
+    }
+
+    private val logger = LoggerFactory.getLogger(ClusterRecoveryManager::class.java)
+
+    private val RecoveryMap = mutableMapOf<String, GenerationAndOffset>()
+
+    private var inRecovery = false
+
+    private var RecoveryTimeCounter: Long = 0
+
+    fun receive(name: String, GAO: GenerationAndOffset) {
+        if (inRecovery) {
+            RecoveryMap[name] = GAO
+
+            if (RecoveryMap.size >= ElectMeta.quorum) {
+                var newest: MutableMap.MutableEntry<String, GenerationAndOffset>? = null
+                RecoveryMap.entries.forEach(Consumer {
+                    if (newest == null || it.value > newest!!.value) {
+                        newest = it
+                    }
+                })
+
+                if (newest!!.value == ByteBufPreLogManager.getINSTANCE().commitGAO) {
+                    logger.info("已有过半节点提交了最大进度，且集群最大进度 ${newest!!.value} 与 Leader 节点相同，集群已恢复")
+                    HanabiListener.onEvent(EventEnum.RECOVERY_COMPLATE)
+                } else {
+                    logger.info("已有过半节点提交了最大进度，集群最大进度于节点 ${newest!!.key} ，进度为 ${newest!!.value}")
+                }
+            }
+        }
+    }
+
+    private fun sendLatestCommitGao() {
+        ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO), RequestProcessor.REQUIRE_NESS)
+    }
 }

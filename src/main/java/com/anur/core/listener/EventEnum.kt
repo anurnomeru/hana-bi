@@ -5,5 +5,6 @@ package com.anur.core.listener
  */
 enum class EventEnum {
     CLUSTER_VALID,
-    CLUSTER_INVALID
+    CLUSTER_INVALID,
+    RECOVERY_COMPLATE,
 }

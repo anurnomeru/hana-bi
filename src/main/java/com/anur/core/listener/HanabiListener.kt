@@ -10,7 +10,7 @@ object HanabiListener {
     private val EVENT: MutableMap<EventEnum, Registion> = mutableMapOf()
 
     @Synchronized
-    fun register(event: EventEnum, action: () -> Any?) {
+    fun register(event: EventEnum, action: () -> Unit) {
         EVENT.compute(event, BiFunction { _, v ->
             var registion = v
             if (registion == null) {
@@ -22,18 +22,18 @@ object HanabiListener {
     }
 
     fun onEvent(event: EventEnum) {
-        EVENT.get(event)?.onEvent()
+        EVENT[event]?.onEvent()
     }
 
     class Registion {
-        private val actionRegister: MutableList<() -> Any?> = mutableListOf()
+        private val actionRegister: MutableList<() -> Unit> = mutableListOf()
 
-        fun register(action: () -> Any?) {
+        fun register(action: () -> Unit) {
             actionRegister.add(action)
         }
 
         fun onEvent() {
-            actionRegister.forEach { function: () -> Any? -> function.invoke() }
+            actionRegister.forEach { function: () -> Unit -> function.invoke() }
         }
     }
 }
