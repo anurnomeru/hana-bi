@@ -3,6 +3,7 @@ package com.anur.core.util;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.annotation.Nullable;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import io.netty.channel.Channel;
 
@@ -31,6 +32,7 @@ public class ChannelManager extends ReentrantReadWriteLocker {
     }
 
     private static Map<ChannelType, ChannelManager> MANAGER_MAP = new ConcurrentHashMap<>();
+
 
     public static ChannelManager getInstance(ChannelType channelType) {
         ChannelManager channelManager = MANAGER_MAP.get(channelType);

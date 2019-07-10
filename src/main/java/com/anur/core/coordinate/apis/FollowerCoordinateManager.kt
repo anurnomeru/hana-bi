@@ -2,6 +2,7 @@ package com.anur.core.coordinate.apis
 
 import com.anur.config.CoordinateConfigHelper
 import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
@@ -77,8 +78,7 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
         HanabiListener.register(EventEnum.CLUSTER_INVALID
         ) {
             writeLocker {
-                ApisManager.getINSTANCE()
-                    .reboot()
+                ApisManager.reboot()
 
                 cvc++
                 cancelFetchTask()
@@ -112,7 +112,7 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
         fetchLock.lock()
         try {
             fetchPreLogTask?.takeIf { !it.isCancel }?.run {
-                ApisManager.getINSTANCE().send(fetchFrom,
+                ApisManager.send(fetchFrom,
                     Fetcher(ByteBufPreLogManager.getINSTANCE().preLogGAO),
                     RequestProcessor(Consumer { CONSUME_FETCH_RESPONSE.invoke(fetchFrom, FetchResponse(it)) }, Runnable { rebuildFetchTask(myVersion, fetchFrom) })
                 )

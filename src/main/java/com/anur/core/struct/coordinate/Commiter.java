@@ -6,6 +6,7 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.AbstractTimedStruct;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+
 /**
  * Created by Anur IjuoKaruKas on 4/8/2019
  *

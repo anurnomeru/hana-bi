@@ -42,7 +42,7 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
     }
 
     public boolean isComplete() {
-        return readLockSupplier(() -> complete);
+        return readLockSupplierCompel(() -> complete);
     }
 
     /**
@@ -91,7 +91,7 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
      * 向此回调
      */
     public boolean registerTask(TimedTask timedTask) {
-        return readLockSupplier(() -> {
+        return readLockSupplierCompel(() -> {
             if (!complete) {
                 this.timedTask = timedTask;
             }

@@ -43,6 +43,7 @@ import io.netty.util.internal.StringUtil;
  * 1、消息在没有收到回复之前，会定时重发。
  * 2、那么如何保证数据不被重复消费：我们以时间戳作为 key 的一部分，应答方需要在消费消息后，需要记录此时间戳，并不再消费比此时间戳小的消息。
  */
+@Deprecated
 public class ApisManager extends ReentrantReadWriteLocker {
 
     private static volatile ApisManager INSTANCE;
@@ -84,7 +85,7 @@ public class ApisManager extends ReentrantReadWriteLocker {
         String serverName = ChannelManager.getInstance(ChannelType.COORDINATE)
                                           .getChannelName(channel);
 
-        if (writeLockSupplier(() -> {
+        if (writeLockSupplierCompel(() -> {
             AtomicBoolean isAnewRequest = new AtomicBoolean(false);
             requestLog.compute(serverName, (s, m) -> {
                 if (m == null) {
@@ -342,3 +343,5 @@ public class ApisManager extends ReentrantReadWriteLocker {
         });
     }
 }
+
+
