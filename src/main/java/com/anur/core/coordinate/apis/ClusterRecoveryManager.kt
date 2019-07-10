@@ -1,7 +1,10 @@
 package com.anur.core.coordinate.apis
 
+import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.core.common.Resetable
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
+import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.listener.EventEnum
@@ -48,19 +51,37 @@ import java.util.function.Consumer
  *
  * 需要检查当前世代 的last Offset，进行check，如果与leader不符，则需要truncate后恢复可用。
  */
-object ClusterRecoveryManager {
+object ClusterRecoveryManager : Resetable {
+
+    override fun reset() {
+        RecoveryMap.clear()
+        recoveryComplete = false
+    }
 
     init {
+
+        /*
+         * 当项目选主成功后，子节点需启动协调控制器去连接主节点
+         *
+         * 将 recoveryComplete 设置为真，表示正在集群正在日志恢复
+         */
         HanabiListener.register(EventEnum.CLUSTER_VALID) {
+            if (!ElectMeta.isLeader) {
+                CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(ElectMeta.leader)).tryStartWhileDisconnected()
+            } else {
+                RecoveryMap[ElectMeta.leader!!] = ByteBufPreLogManager.getINSTANCE().commitGAO
+            }
+
             RecoveryTimeCounter = TimeUtil.getTime()
-            RecoveryMap.clear()
-            inRecovery = true
-            if (ElectMeta.isLeader) RecoveryMap[ElectMeta.leader!!] = ByteBufPreLogManager.getINSTANCE().commitGAO else sendLatestCommitGao()
+            reset()
         }
 
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
-            inRecovery = false
-            ApisManager.reboot()
+            reset()
+        }
+
+        HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO_LEADER) {
+            sendLatestCommitGao()
         }
     }
 
@@ -68,12 +89,13 @@ object ClusterRecoveryManager {
 
     private val RecoveryMap = mutableMapOf<String, GenerationAndOffset>()
 
-    private var inRecovery = false
-
     private var RecoveryTimeCounter: Long = 0
 
+    @Volatile
+    private var recoveryComplete = false
+
     fun receive(name: String, GAO: GenerationAndOffset) {
-        if (inRecovery) {
+        if (recoveryComplete) {
             RecoveryMap[name] = GAO
 
             if (RecoveryMap.size >= ElectMeta.quorum) {
@@ -97,10 +119,4 @@ object ClusterRecoveryManager {
     private fun sendLatestCommitGao() {
         ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO), RequestProcessor.REQUIRE_NESS)
     }
-}
-
-fun main() {
-    val recoveryReporter = RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO)
-
-    println()
 }

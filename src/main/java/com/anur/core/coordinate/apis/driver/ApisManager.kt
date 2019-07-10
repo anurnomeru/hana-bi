@@ -1,8 +1,11 @@
 package com.anur.core.coordinate.apis.driver
 
 import com.anur.config.CoordinateConfigHelper
+import com.anur.core.common.Resetable
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.sender.CoordinateSender
+import com.anur.core.listener.EventEnum
+import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.OperationTypeEnum
 import com.anur.core.struct.base.AbstractStruct
@@ -27,7 +30,25 @@ import kotlin.math.log
  * 1、消息在没有收到回复之前，会定时重发。
  * 2、那么如何保证数据不被重复消费：我们以时间戳作为 key 的一部分，应答方需要在消费消息后，需要记录此时间戳，并不再消费比此时间戳小的消息。
  */
-object ApisManager : ReentrantReadWriteLocker() {
+object ApisManager : ReentrantReadWriteLocker(), Resetable {
+
+    /**
+     * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
+     */
+    override fun reset() {
+        this.writeLockSupplier(Supplier {
+            for ((_, value) in inFlight) {
+                for ((_, requestProcessor) in value) {
+                    requestProcessor?.cancel()
+                }
+            }
+            inFlight = mutableMapOf()
+        })
+    }
+
+    init {
+        HanabiListener.register(EventEnum.CLUSTER_INVALID) { reset() }
+    }
 
     private val logger = LoggerFactory.getLogger(ApisManager::class.java)
 
@@ -149,19 +170,6 @@ object ApisManager : ReentrantReadWriteLocker() {
         }
     }
 
-    /**
-     * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
-     */
-    fun reboot() {
-        this.writeLockSupplier(Supplier {
-            for ((_, value) in inFlight) {
-                for ((_, requestProcessor) in value) {
-                    requestProcessor?.cancel()
-                }
-            }
-            inFlight = mutableMapOf()
-        })
-    }
 
     /**
      * 将发送任务添加到 InFlightRequest 中，并注册回调函数
