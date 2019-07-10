@@ -33,7 +33,6 @@ public class ChannelManager extends ReentrantReadWriteLocker {
 
     private static Map<ChannelType, ChannelManager> MANAGER_MAP = new ConcurrentHashMap<>();
 
-
     public static ChannelManager getInstance(ChannelType channelType) {
         ChannelManager channelManager = MANAGER_MAP.get(channelType);
         if (channelManager == null) {

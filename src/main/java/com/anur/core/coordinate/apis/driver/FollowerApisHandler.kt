@@ -12,7 +12,7 @@ import java.nio.ByteBuffer
 /**
  * Created by Anur IjuoKaruKas on 2019/7/10
  *
- * 所有协调器的业务分发处理中心
+ * 从节点协调器的业务分发处理中心
  */
 object FollowerApisHandler {
 

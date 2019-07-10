@@ -56,7 +56,6 @@ public class Bootstrap {
             }
 
             try {
-                System.out.println("开始append");
                 for (int i = 0; i < 100000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                     LogManager.getINSTANCE()

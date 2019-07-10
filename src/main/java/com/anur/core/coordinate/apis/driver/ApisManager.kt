@@ -16,9 +16,8 @@ import io.netty.channel.Channel
 import io.netty.util.internal.StringUtil
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
-import java.util.HashMap
-import java.util.function.BiFunction
 import java.util.function.Supplier
+import kotlin.math.log
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/10
@@ -46,7 +45,7 @@ object ApisManager : ReentrantReadWriteLocker() {
      * 此 map 确保对一个服务发送某个消息，在收到回复之前，不可以再次对其发送消息。（有自动重发机制）
      */
     @Volatile
-    private var inFlight = mutableMapOf<String, MutableMap<OperationTypeEnum, RequestProcessor>>()
+    private var inFlight = mutableMapOf<String, MutableMap<OperationTypeEnum, RequestProcessor?>>()
 
     init {
         ResponseAndRequestType[OperationTypeEnum.REGISTER_RESPONSE] = OperationTypeEnum.REGISTER
@@ -59,9 +58,14 @@ object ApisManager : ReentrantReadWriteLocker() {
      */
     fun receive(msg: ByteBuffer, typeEnum: OperationTypeEnum, channel: Channel) {
         val requestTimestampCurrent = msg.getLong(AbstractTimedStruct.TimestampOffset)
-        val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE).getChannelName(channel)!!
 
-        if (writeLockSupplierCompel(Supplier {
+
+        val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE).getChannelName(channel)
+
+        // serverName 是不会为空的，但是有一种情况例外，便是服务还未注册时 这里做特殊处理
+        if (typeEnum == OperationTypeEnum.REGISTER) {
+            LeaderApisHandler.handleRegisterRequest(msg, channel)
+        } else if (writeLockSupplierCompel(Supplier {
                 var changed = false
                 receiveLog.compute(serverName) { _, timestampMap ->
                     (timestampMap ?: mutableMapOf()).also {
@@ -88,10 +92,9 @@ object ApisManager : ReentrantReadWriteLocker() {
         }
     }
 
-    private fun doReceive(serverName: String, msg: ByteBuffer, typeEnum: OperationTypeEnum, channel: Channel) {
 
+    private fun doReceive(serverName: String, msg: ByteBuffer, typeEnum: OperationTypeEnum, channel: Channel) {
         when (typeEnum) {
-            OperationTypeEnum.REGISTER -> LeaderApisHandler.handleRegisterRequest(msg, channel)
             OperationTypeEnum.FETCH -> LeaderApisHandler.handleFetchRequest(msg, channel)
             OperationTypeEnum.COMMIT -> FollowerApisHandler.handleCommitRequest(msg, channel)
             else -> {
@@ -116,7 +119,7 @@ object ApisManager : ReentrantReadWriteLocker() {
     /**
      * 此发送器保证【一个类型的消息】只能在收到回复前发送一次，类似于仅有 1 容量的Queue
      */
-    fun send(serverName: String, command: AbstractStruct, requestProcessor: RequestProcessor): Boolean {
+    fun send(serverName: String, command: AbstractStruct, requestProcessor: RequestProcessor?): Boolean {
         val typeEnum = command.operationTypeEnum
 
         return if (getRequestProcessorIfInFlight(serverName, typeEnum) != null) {
@@ -155,8 +158,8 @@ object ApisManager : ReentrantReadWriteLocker() {
     fun reboot() {
         this.writeLockSupplier(Supplier {
             for ((_, value) in inFlight) {
-                for ((_, value1) in value) {
-                    value1.cancel()
+                for ((_, requestProcessor) in value) {
+                    requestProcessor?.cancel()
                 }
             }
             inFlight = mutableMapOf()
@@ -166,7 +169,7 @@ object ApisManager : ReentrantReadWriteLocker() {
     /**
      * 将发送任务添加到 InFlightRequest 中，并注册回调函数
      */
-    private fun appendToInFlightRequest(serverName: String, typeEnum: OperationTypeEnum, requestProcessor: RequestProcessor) {
+    private fun appendToInFlightRequest(serverName: String, typeEnum: OperationTypeEnum, requestProcessor: RequestProcessor?) {
         writeLockSupplier(Supplier {
             logger.debug("InFlight {} {} => 创建发送任务", serverName, typeEnum)
             inFlight.compute(serverName) { _, enums -> (enums ?: mutableMapOf()).also { it[typeEnum] = requestProcessor } }
