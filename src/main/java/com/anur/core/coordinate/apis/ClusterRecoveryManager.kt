@@ -1,7 +1,6 @@
 package com.anur.core.coordinate.apis
 
 import com.anur.core.coordinate.apis.driver.ApisManager
-import com.anur.core.coordinate.apis.driver.LeaderApisHandler
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
@@ -12,7 +11,6 @@ import com.anur.core.util.TimeUtil
 import com.anur.io.store.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.util.function.Consumer
-import kotlin.math.log
 
 /**
  * Created by Anur IjuoKaruKas on 4/9/2019
@@ -88,7 +86,7 @@ object ClusterRecoveryManager {
 
                 if (newest!!.value == ByteBufPreLogManager.getINSTANCE().commitGAO) {
                     logger.info("已有过半节点提交了最大进度，且集群最大进度 ${newest!!.value} 与 Leader 节点相同，集群已恢复")
-                    HanabiListener.onEvent(EventEnum.RECOVERY_COMPLATE)
+                    HanabiListener.onEvent(EventEnum.RECOVERY_COMPLETE)
                 } else {
                     logger.info("已有过半节点提交了最大进度，集群最大进度于节点 ${newest!!.key} ，进度为 ${newest!!.value}")
                 }
@@ -99,4 +97,10 @@ object ClusterRecoveryManager {
     private fun sendLatestCommitGao() {
         ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO), RequestProcessor.REQUIRE_NESS)
     }
+}
+
+fun main() {
+    val recoveryReporter = RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO)
+
+    println()
 }

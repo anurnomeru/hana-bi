@@ -11,6 +11,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.elect.ElectMeta;
+import com.anur.core.listener.EventEnum;
+import com.anur.core.listener.HanabiListener;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
@@ -57,9 +60,9 @@ public class CoordinateClientOperator implements Runnable {
 
     private static volatile CoordinateClientOperator INSTANCE;
 
-    private List<Runnable> doWhenConnectToLeader = new ArrayList<>();
+    private List<Runnable> doWhenConnectToNode = new ArrayList<>();
 
-    private List<Runnable> doWhenDisconnectToLeader = new ArrayList<>();
+    private List<Runnable> doWhenDisconnectToNode = new ArrayList<>();
 
     /**
      * 如何消费消息
@@ -72,43 +75,43 @@ public class CoordinateClientOperator implements Runnable {
     /**
      * 需要在 channelPipeline 上挂载什么
      */
-    private Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter(hanabiNode, doWhenConnectToLeader, doWhenDisconnectToLeader));
+    private Consumer<ChannelPipeline> PIPE_LINE_ADDER = c -> c.addFirst(new RegisterAdapter(hanabiNode, doWhenConnectToNode, doWhenDisconnectToNode));
 
     /**
      * Coordinate 初始化连接时的注册器
      */
     static class RegisterAdapter extends ChannelInboundHandlerAdapter {
 
-        private HanabiNode leader;
+        private HanabiNode node;
 
-        private List<Runnable> doWhenConnectToLeader;
+        private List<Runnable> doWhenConnectToNode;
 
-        private List<Runnable> doWhenDisconnectToLeader;
+        private List<Runnable> doWhenDisconnectToNode;
 
-        public RegisterAdapter(HanabiNode leader, List<Runnable> doWhenConnectToLeader, List<Runnable> doWhenDisconnectToLeader) {
-            this.leader = leader;
-            this.doWhenConnectToLeader = doWhenConnectToLeader;
-            this.doWhenDisconnectToLeader = doWhenDisconnectToLeader;
+        public RegisterAdapter(HanabiNode node, List<Runnable> doWhenConnectToNode, List<Runnable> doWhenDisconnectToNode) {
+            this.node = node;
+            this.doWhenConnectToNode = doWhenConnectToNode;
+            this.doWhenDisconnectToNode = doWhenDisconnectToNode;
         }
 
         @Override
         public void channelActive(ChannelHandlerContext ctx) throws Exception {
             super.channelActive(ctx);
             ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .register(leader.getServerName(), ctx.channel());
+                          .register(node.getServerName(), ctx.channel());
 
             Register register = new Register(InetSocketAddressConfigHelper.getServerName());
             ApisManager.INSTANCE
-                .send(leader.getServerName(), register, new RequestProcessor(byteBuffer -> {
+                .send(node.getServerName(), register, new RequestProcessor(byteBuffer -> {
                     RegisterResponse registerResponse = new RegisterResponse(byteBuffer);
-                    if (registerResponse.serverName.equals(leader.getServerName())) {
-                        doWhenConnectToLeader.forEach(HanabiExecutors::execute);
+                    if (registerResponse.serverName.equals(node.getServerName())) {
+                        doWhenConnectToNode.forEach(HanabiExecutors::execute);
                     } else {
-                        logger.error(String.format("出现了异常的情况，向 Leader %s 发送了注册请求，却受到了 %s 的回复", leader.getServerName(), registerResponse.serverName));
+                        logger.error(String.format("出现了异常的情况，向节点 %s 发送了注册请求，却收到了 %s 的回复", node.getServerName(), registerResponse.serverName));
                     }
                 }, null
                 ));
-            logger.debug("成功连接协调器 Leader {} [{}:{}] 连接", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
+            logger.debug("成功连接协调器 节点 {} [{}:{}] 连接", node.getServerName(), node.getHost(), node.getCoordinatePort());
         }
 
         @Override
@@ -116,10 +119,10 @@ public class CoordinateClientOperator implements Runnable {
             super.channelInactive(ctx);
 
             ChannelManager.getInstance(ChannelType.COORDINATE)
-                          .unRegister(leader.getServerName());
+                          .unRegister(node.getServerName());
 
-            doWhenDisconnectToLeader.forEach(HanabiExecutors::execute);
-            logger.debug("与协调器 Leader {} [{}:{}] 的连接已断开", leader.getServerName(), leader.getHost(), leader.getCoordinatePort());
+            doWhenDisconnectToNode.forEach(HanabiExecutors::execute);
+            logger.debug("与协调器 节点 {} [{}:{}] 的连接已断开", node.getServerName(), node.getHost(), node.getCoordinatePort());
         }
     }
 
@@ -145,8 +148,13 @@ public class CoordinateClientOperator implements Runnable {
         return INSTANCE;
     }
 
-    public CoordinateClientOperator(HanabiNode hanabiNode) {
-        this.hanabiNode = hanabiNode;
+    public CoordinateClientOperator(HanabiNode node) {
+        this.hanabiNode = node;
+        if (node.getServerName()
+                .equals(ElectMeta.INSTANCE.getLeader())) {
+            this.doWhenConnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_CONNECT_TO_LEADER));
+            this.doWhenDisconnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_DISCONNECT_TO_LEADER));
+        }
     }
 
     /**
@@ -200,13 +208,5 @@ public class CoordinateClientOperator implements Runnable {
         }
         logger.debug("正在建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort());
         coordinateClient.start();
-    }
-
-    public void registerWhenConnectToLeader(Runnable runnable) {
-        this.doWhenConnectToLeader.add(runnable);
-    }
-
-    public void registerWhenDisconnectToLeader(Runnable runnable) {
-        this.doWhenDisconnectToLeader.add(runnable);
     }
 }

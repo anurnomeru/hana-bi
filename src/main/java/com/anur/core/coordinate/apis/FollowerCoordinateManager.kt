@@ -55,7 +55,7 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
     }
 
     init {
-        HanabiListener.register(EventEnum.RECOVERY_COMPLATE
+        HanabiListener.register(EventEnum.RECOVERY_COMPLETE
         ) {
             if (!ElectMeta.isLeader) {
                 writeLocker {
