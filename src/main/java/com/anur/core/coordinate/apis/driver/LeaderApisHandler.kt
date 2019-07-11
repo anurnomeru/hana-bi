@@ -1,7 +1,7 @@
 package com.anur.core.coordinate.apis.driver
 
 import com.anur.config.InetSocketAddressConfigHelper
-import com.anur.core.coordinate.apis.ClusterRecoveryManager
+import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager
 import com.anur.core.coordinate.apis.LeaderCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.struct.coordinate.CommitResponse
@@ -37,7 +37,7 @@ object LeaderApisHandler {
         val GAO = recoveryReporter.getLatestGAO()
 
         logger.debug("收到来自协调节点 {} 的 RecoveryReport 请求 {} ", serverName, GAO)
-        ClusterRecoveryManager.receive(serverName, GAO)
+        LeaderClusterRecoveryManager.receive(serverName, GAO)
     }
 
     /**

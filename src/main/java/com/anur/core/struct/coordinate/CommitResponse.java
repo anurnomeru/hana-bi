@@ -23,13 +23,10 @@ public class CommitResponse extends AbstractTimedStruct {
     public static final int BaseMessageOverhead = CommitOffsetOffset + CommitOffsetLength;
 
     public CommitResponse(GenerationAndOffset CommitGAO) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
-        init(byteBuffer, OperationTypeEnum.COMMIT_RESPONSE);
-
-        byteBuffer.putLong(CommitGAO.getGeneration());
-        byteBuffer.putLong(CommitGAO.getOffset());
-
-        byteBuffer.flip();
+        init(BaseMessageOverhead, OperationTypeEnum.COMMIT_RESPONSE, buffer -> {
+            buffer.putLong(CommitGAO.getGeneration());
+            buffer.putLong(CommitGAO.getOffset());
+        });
     }
 
     public CommitResponse(ByteBuffer byteBuffer) {

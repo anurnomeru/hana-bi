@@ -25,13 +25,10 @@ public class Commiter extends AbstractTimedStruct {
     public static final int BaseMessageOverhead = CanCommitOffsetOffset + CanCommitOffsetLength;
 
     public Commiter(GenerationAndOffset canCommitGAO) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
-        init(byteBuffer, OperationTypeEnum.COMMIT);
-
-        byteBuffer.putLong(canCommitGAO.getGeneration());
-        byteBuffer.putLong(canCommitGAO.getOffset());
-
-        byteBuffer.flip();
+        init(BaseMessageOverhead, OperationTypeEnum.COMMIT, buffer -> {
+            buffer.putLong(canCommitGAO.getGeneration());
+            buffer.putLong(canCommitGAO.getOffset());
+        });
     }
 
     public Commiter(ByteBuffer byteBuffer) {

@@ -25,13 +25,10 @@ public class Fetcher extends AbstractTimedStruct {
     public static final int BaseMessageOverhead = FetchOffsetOffset + FetchOffsetLength;
 
     public Fetcher(GenerationAndOffset fetchGAO) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
-        init(byteBuffer, OperationTypeEnum.FETCH);
-
-        byteBuffer.putLong(fetchGAO.getGeneration());
-        byteBuffer.putLong(fetchGAO.getOffset());
-
-        byteBuffer.flip();
+        init(BaseMessageOverhead, OperationTypeEnum.FETCH, buffer -> {
+            buffer.putLong(fetchGAO.getGeneration());
+            buffer.putLong(fetchGAO.getOffset());
+        });
     }
 
     public Fetcher(ByteBuffer byteBuffer) {

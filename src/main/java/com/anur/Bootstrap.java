@@ -1,6 +1,8 @@
 package com.anur;
 
-import com.anur.core.coordinate.apis.ClusterRecoveryManager;
+import com.anur.core.coordinate.apis.LeaderCoordinateManager;
+import com.anur.core.coordinate.apis.recovery.FollowerClusterRecoveryManager;
+import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager;
 import com.anur.core.coordinate.apis.FollowerCoordinateManager;
 import com.anur.core.coordinate.operator.CoordinateServerOperator;
 import com.anur.core.elect.operator.ElectOperator;
@@ -27,9 +29,19 @@ public class Bootstrap {
             FollowerCoordinateManager forInitial01 = FollowerCoordinateManager.INSTANCE;
 
             /**
+             * 日志一致性控制器
+             */
+            LeaderCoordinateManager forInitial02 = LeaderCoordinateManager.INSTANCE;
+
+            /**
              * 集群日志恢复器
-             * */
-            ClusterRecoveryManager forInitial02 = ClusterRecoveryManager.INSTANCE;
+             */
+            LeaderClusterRecoveryManager forInitial03 = LeaderClusterRecoveryManager.INSTANCE;
+
+            /**
+             * 集群日志恢复器
+             */
+            FollowerClusterRecoveryManager forInitial04 = FollowerClusterRecoveryManager.INSTANCE;
 
             /**
              * 初始化日志管理

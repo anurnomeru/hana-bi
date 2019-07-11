@@ -25,6 +25,34 @@ import java.util.function.Consumer
  */
 object FollowerCoordinateManager : ReentrantReadWriteLocker() {
 
+    init {
+        HanabiListener.register(EventEnum.RECOVERY_COMPLETE) {
+            if (!ElectMeta.isLeader) {
+                writeLocker {
+                    // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
+                    fetchLocker { rebuildFetchTask(cvc, ElectMeta.leader!!) }
+                }
+            }
+        }
+
+        HanabiListener.register(EventEnum.COORDINATE_DISCONNECT_TO_LEADER) {
+            cancelFetchTask()
+            cvc++
+        }
+
+        HanabiListener.register(EventEnum.CLUSTER_INVALID
+        ) {
+            writeLocker {
+
+                cvc++
+                cancelFetchTask()
+
+                // 当集群不可用时，与协调 leader 断开连接
+                CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接")
+            }
+        }
+    }
+
     private val logger = LoggerFactory.getLogger(FollowerCoordinateManager.javaClass)
 
     /**
@@ -51,41 +79,6 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
             doSomething.invoke()
         } finally {
             fetchLock.unlock()
-        }
-    }
-
-    init {
-        HanabiListener.register(EventEnum.RECOVERY_COMPLETE
-        ) {
-            if (!ElectMeta.isLeader) {
-                writeLocker {
-                    val client = CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(ElectMeta.leader))
-
-                    // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
-                    // 当集群可用时，连接协调 leader
-                    client.registerWhenConnectToLeader { fetchLocker { rebuildFetchTask(cvc, ElectMeta.leader!!) } }
-                    client.registerWhenDisconnectToLeader {
-                        fetchLocker {
-                            cancelFetchTask()
-                            cvc++
-                        }
-                    }
-                    client.tryStartWhileDisconnected()
-                }
-            }
-        }
-
-        HanabiListener.register(EventEnum.CLUSTER_INVALID
-        ) {
-            writeLocker {
-                ApisManager.reboot()
-
-                cvc++
-                cancelFetchTask()
-
-                // 当集群不可用时，与协调 leader 断开连接
-                CoordinateClientOperator.shutDownInstance("集群已不可用，与协调 Leader 断开连接")
-            }
         }
     }
 

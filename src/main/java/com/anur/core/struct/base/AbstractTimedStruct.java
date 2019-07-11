@@ -1,6 +1,7 @@
 package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 import com.anur.core.struct.OperationTypeEnum;
 
 /**
@@ -14,11 +15,22 @@ public abstract class AbstractTimedStruct extends AbstractStruct {
 
     public static final int TimestampLength = 8;
 
+    public static final int OriginMessageOverhead = TimestampOffset + TimestampLength;
+
     public void init(ByteBuffer byteBuffer, OperationTypeEnum operationTypeEnum) {
         buffer = byteBuffer;
         byteBuffer.position(TypeOffset);
         byteBuffer.putInt(operationTypeEnum.byteSign);
         byteBuffer.putLong(System.currentTimeMillis());
+    }
+
+    public void init(int capacity, OperationTypeEnum operationTypeEnum, Consumer<ByteBuffer> then) {
+        buffer = ByteBuffer.allocate(capacity);
+        buffer.position(TypeOffset);
+        buffer.putInt(operationTypeEnum.byteSign);
+        buffer.putLong(System.currentTimeMillis());
+        then.accept(buffer);
+        buffer.flip();
     }
 
     /**

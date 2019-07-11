@@ -2,6 +2,7 @@ package com.anur.core.coordinate.apis.driver
 
 import com.anur.config.CoordinateConfigHelper
 import com.anur.core.common.Resetable
+import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.sender.CoordinateSender
 import com.anur.core.listener.EventEnum
@@ -20,7 +21,6 @@ import io.netty.util.internal.StringUtil
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer
 import java.util.function.Supplier
-import kotlin.math.log
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/10
@@ -37,6 +37,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
      */
     override fun reset() {
         this.writeLockSupplier(Supplier {
+            logger.debug("ApisManager RESET is triggered")
             for ((_, value) in inFlight) {
                 for ((_, requestProcessor) in value) {
                     requestProcessor?.cancel()
@@ -72,6 +73,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
         ResponseAndRequestType[OperationTypeEnum.REGISTER_RESPONSE] = OperationTypeEnum.REGISTER
         ResponseAndRequestType[OperationTypeEnum.FETCH_RESPONSE] = OperationTypeEnum.FETCH
         ResponseAndRequestType[OperationTypeEnum.COMMIT_RESPONSE] = OperationTypeEnum.COMMIT
+        ResponseAndRequestType[OperationTypeEnum.RECOVERY_RESPONSE] = OperationTypeEnum.RECOVERY
     }
 
     /**
@@ -114,6 +116,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
     private fun doReceive(serverName: String, msg: ByteBuffer, typeEnum: OperationTypeEnum, channel: Channel) {
         when (typeEnum) {
             OperationTypeEnum.FETCH -> LeaderApisHandler.handleFetchRequest(msg, channel)
+            OperationTypeEnum.RECOVERY -> LeaderApisHandler.handleRecoveryRequest(msg, channel)
             OperationTypeEnum.COMMIT -> FollowerApisHandler.handleCommitRequest(msg, channel)
             else -> {
                 /*

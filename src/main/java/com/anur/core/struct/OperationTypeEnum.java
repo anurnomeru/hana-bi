@@ -7,6 +7,8 @@ import java.util.Set;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.struct.coordinate.Commiter;
+import com.anur.core.struct.coordinate.RecoveryComplete;
+import com.anur.core.struct.coordinate.RecoveryReporter;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
@@ -57,6 +59,16 @@ public enum OperationTypeEnum {
      * 协调节点告诉主节点自己提交到了哪里
      */
     COMMIT_RESPONSE(10005, Commiter.class),
+
+    /**
+     * 协调节点告诉主节点自己最大进度
+     */
+    RECOVERY(10006, RecoveryReporter.class),
+
+    /**
+     * 主节点告诉协调节点，集群日志同步完毕
+     */
+    RECOVERY_RESPONSE(10007, RecoveryComplete.class),
     ;
 
     public int byteSign;

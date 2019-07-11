@@ -1,18 +1,18 @@
-package com.anur.core.coordinate.apis
+package com.anur.core.coordinate.apis.recovery
 
-import com.anur.config.InetSocketAddressConfigHelper
 import com.anur.core.common.Resetable
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
-import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
-import com.anur.core.struct.coordinate.RecoveryReporter
+import com.anur.core.struct.coordinate.RecoveryComplete
 import com.anur.core.util.TimeUtil
 import com.anur.io.store.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentSkipListSet
 import java.util.function.Consumer
 
 /**
@@ -51,53 +51,54 @@ import java.util.function.Consumer
  *
  * 需要检查当前世代 的last Offset，进行check，如果与leader不符，则需要truncate后恢复可用。
  */
-object ClusterRecoveryManager : Resetable {
+object LeaderClusterRecoveryManager : Resetable {
 
     override fun reset() {
+        logger.debug("LeaderClusterRecoveryManager RESET is triggered")
         RecoveryMap.clear()
         recoveryComplete = false
     }
 
     init {
-
         /*
          * 当项目选主成功后，子节点需启动协调控制器去连接主节点
          *
          * 将 recoveryComplete 设置为真，表示正在集群正在日志恢复
          */
         HanabiListener.register(EventEnum.CLUSTER_VALID) {
-            if (!ElectMeta.isLeader) {
-                CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(ElectMeta.leader)).tryStartWhileDisconnected()
-            } else {
-                RecoveryMap[ElectMeta.leader!!] = ByteBufPreLogManager.getINSTANCE().commitGAO
-            }
-
-            RecoveryTimeCounter = TimeUtil.getTime()
             reset()
+            RecoveryTimer = TimeUtil.getTime()
+            if (ElectMeta.isLeader) {
+                receive(ElectMeta.leader!!, ByteBufPreLogManager.getINSTANCE().commitGAO)
+            }
         }
 
+        /*
+         * 当集群不可用，则重置所有状态
+         */
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
             reset()
         }
-
-        HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO_LEADER) {
-            sendLatestCommitGao()
-        }
     }
 
-    private val logger = LoggerFactory.getLogger(ClusterRecoveryManager::class.java)
+    private val logger = LoggerFactory.getLogger(LeaderClusterRecoveryManager::class.java)
 
-    private val RecoveryMap = mutableMapOf<String, GenerationAndOffset>()
+    private var RecoveryTimer: Long = 0
 
-    private var RecoveryTimeCounter: Long = 0
+    @Volatile
+    private var waitShutting = ConcurrentSkipListSet<String>()
+
+    @Volatile
+    private var RecoveryMap = ConcurrentHashMap<String, GenerationAndOffset>()
 
     @Volatile
     private var recoveryComplete = false
 
-    fun receive(name: String, GAO: GenerationAndOffset) {
-        if (recoveryComplete) {
-            RecoveryMap[name] = GAO
+    fun receive(serverName: String, latestGao: GenerationAndOffset) {
+        logger.info("节点 $serverName 提交了其最大进度 $latestGao ")
+        RecoveryMap[serverName] = latestGao
 
+        if (!recoveryComplete) {
             if (RecoveryMap.size >= ElectMeta.quorum) {
                 var newest: MutableMap.MutableEntry<String, GenerationAndOffset>? = null
                 RecoveryMap.entries.forEach(Consumer {
@@ -107,16 +108,32 @@ object ClusterRecoveryManager : Resetable {
                 })
 
                 if (newest!!.value == ByteBufPreLogManager.getINSTANCE().commitGAO) {
-                    logger.info("已有过半节点提交了最大进度，且集群最大进度 ${newest!!.value} 与 Leader 节点相同，集群已恢复")
-                    HanabiListener.onEvent(EventEnum.RECOVERY_COMPLETE)
+                    val cost = TimeUtil.getTime() - RecoveryTimer
+                    logger.info("已有过半节点提交了最大进度，且集群最大进度 ${newest!!.value} 与 Leader 节点相同，集群已恢复，耗时 $cost ms ")
+                    shuttingWhileRecoveryComplete()
                 } else {
                     logger.info("已有过半节点提交了最大进度，集群最大进度于节点 ${newest!!.key} ，进度为 ${newest!!.value}")
                 }
             }
         }
+
+        sendRecoveryComplete(serverName)
     }
 
-    private fun sendLatestCommitGao() {
-        ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO), RequestProcessor.REQUIRE_NESS)
+    private fun shuttingWhileRecoveryComplete() {
+        recoveryComplete = true
+        waitShutting.forEach(Consumer { sendRecoveryComplete(it) })
+    }
+
+    private fun sendRecoveryComplete(serverName: String) {
+        if (recoveryComplete) {
+            doSendRecoveryComplete(serverName)
+        } else {
+            waitShutting.add(serverName)
+        }
+    }
+
+    private fun doSendRecoveryComplete(serverName: String) {
+        ApisManager.send(serverName, RecoveryComplete(), RequestProcessor.REQUIRE_NESS)
     }
 }

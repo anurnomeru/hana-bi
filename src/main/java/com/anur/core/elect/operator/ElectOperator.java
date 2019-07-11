@@ -242,7 +242,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 成为候选者
      */
     private boolean becomeCandidate() {
-        return this.lockSupplier(() -> {
+        return this.lockSupplierCompel(() -> {
             meta.becomeCandidate();
             return true;
         });
@@ -252,7 +252,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 当选票大于一半以上时调用这个方法，如何去成为一个leader
      */
     private boolean becomeLeader() {
-        return this.lockSupplier(() -> {
+        return this.lockSupplierCompel(() -> {
             meta.becomeLeader();
             this.cancelAllTask();
             this.initHeartBeatTask();
@@ -272,7 +272,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     }
 
     public boolean receiveHeatBeat(String leaderServerName, long generation, String msg) {
-        return this.lockSupplier(() -> {
+        return this.lockSupplierCompel(() -> {
             boolean needToSendHeartBeatInfection = true;
             // 世代大于当前世代
             if (generation >= meta.getGeneration()) {
@@ -319,7 +319,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 4、新增成为Candidate的定时任务
      */
     private boolean init(long generation, String reason) {
-        return this.lockSupplier(() -> {
+        return this.lockSupplierCompel(() -> {
             if (generation > meta.getGeneration()) {// 如果有选票的世代已经大于当前世代，那么重置投票箱
                 logger.debug("初始化投票箱，原因：{}", reason);
 

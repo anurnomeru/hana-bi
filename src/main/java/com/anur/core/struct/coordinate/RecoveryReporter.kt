@@ -6,6 +6,7 @@ import com.anur.core.struct.base.AbstractTimedStruct
 import io.netty.buffer.Unpooled
 import io.netty.channel.Channel
 import java.nio.ByteBuffer
+import java.util.function.Consumer
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/10
@@ -14,24 +15,21 @@ import java.nio.ByteBuffer
  */
 class RecoveryReporter : AbstractTimedStruct {
 
-    val LatestCommitGenerationOffset = TimestampOffset + TimestampLength
+    private val LatestCommitGenerationOffset = TimestampOffset + TimestampLength
 
-    val CanCommitGenerationLength = 8
+    private val CanCommitGenerationLength = 8
 
-    val LatestCommitOffsetOffset = LatestCommitGenerationOffset + CanCommitGenerationLength
+    private val LatestCommitOffsetOffset = LatestCommitGenerationOffset + CanCommitGenerationLength
 
-    val CanCommitOffsetLength = 8
+    private val CanCommitOffsetLength = 8
 
-    val BaseMessageOverhead = LatestCommitOffsetOffset + CanCommitOffsetLength
+    private val BaseMessageOverhead: Int = LatestCommitOffsetOffset + CanCommitOffsetLength
 
     constructor(latestGAO: GenerationAndOffset) {
-        val byteBuffer = ByteBuffer.allocate(BaseMessageOverhead)
-        init(byteBuffer, OperationTypeEnum.FETCH)
-
-        byteBuffer.putLong(latestGAO.generation)
-        byteBuffer.putLong(latestGAO.offset)
-
-        byteBuffer.flip()
+        init(BaseMessageOverhead, OperationTypeEnum.RECOVERY, Consumer {
+            byteBuffer.putLong(latestGAO.generation)
+            byteBuffer.putLong(latestGAO.offset)
+        })
     }
 
     constructor(byteBuffer: ByteBuffer) {

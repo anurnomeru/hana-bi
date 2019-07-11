@@ -1,11 +1,15 @@
 package com.anur.core.listener
 
+import com.anur.core.coordinate.apis.recovery.FollowerClusterRecoveryManager
+import org.slf4j.LoggerFactory
 import java.util.function.BiFunction
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/9
  */
 object HanabiListener {
+
+    private val logger = LoggerFactory.getLogger(FollowerClusterRecoveryManager::class.java)
 
     private val EVENT: MutableMap<EventEnum, Registion> = mutableMapOf()
 
@@ -22,6 +26,7 @@ object HanabiListener {
     }
 
     fun onEvent(event: EventEnum) {
+        logger.info("Event ${event.name} is triggered")
         EVENT[event]?.onEvent()
     }
 
