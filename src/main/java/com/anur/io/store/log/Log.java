@@ -239,8 +239,8 @@ public class Log extends ReentrantLocker {
         if (offset <= recoveryPoint) {
             return;
         }
-        logger.debug("将世代 {} 日志 {} 刷盘，现刷盘至 offset {}，上次刷盘时间为 {}，现共有 {} 条消息还未刷盘。", generation, name(), offset, lastFlushedTime.get(), unFlushedMessages());
 
+        logger.debug("将世代 {} 日志 {} 刷盘，现刷盘至 offset {}，上次刷盘时间为 {}，现共有 {} 条消息还未刷盘", generation, name(), offset, lastFlushedTime.get(), unFlushedMessages());
         for (LogSegment logSegment : getLogSegments(recoveryPoint, offset)) {
             logSegment.flush();
         }
@@ -252,6 +252,8 @@ public class Log extends ReentrantLocker {
             }
             return null;
         });
+
+        logger.info("刷盘完毕，现刷盘至 gen -> {} offset -> {},还有 {} 条消息还未刷盘", generation, offset, unFlushedMessages());
     }
 
     public String name() {
