@@ -61,18 +61,19 @@ public class Log extends ReentrantLocker {
                 }
 
                 String filename = file.getName();
-                if (filename.endsWith(LogCommon.IndexFileSuffix)) {
+                if (filename.endsWith(LogCommon.Companion.getIndexFileSuffix())) {
                     File logFile = new File(file.getAbsolutePath()
-                                                .replace(LogCommon.IndexFileSuffix, LogCommon.LogFileSuffix));
+                                                .replace(LogCommon.Companion.getIndexFileSuffix(), LogCommon.Companion.getLogFileSuffix()));
 
                     if (!logFile.exists()) {
                         logger.warn("世代 {} 日志索引文件 {} 被创建了，但并没有创建相应的日志切片文件", generation, filename);
                         file.delete();
                         break;
                     }
-                } else if (filename.endsWith(LogCommon.LogFileSuffix)) {
-                    long start = Long.valueOf(filename.substring(0, filename.length() - LogCommon.LogFileSuffix.length()));
-                    File indexFile = LogCommon.indexFilename(dir, start);
+                } else if (filename.endsWith(LogCommon.Companion.getLogFileSuffix())) {
+                    long start = Long.valueOf(filename.substring(0, filename.length() - LogCommon.Companion.getLogFileSuffix()
+                                                                                                           .length()));
+                    File indexFile = LogCommon.Companion.indexFilename(dir, start);
                     LogSegment thisSegment;
                     try {
                         thisSegment = new LogSegment(dir, start, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize());
@@ -185,8 +186,8 @@ public class Log extends ReentrantLocker {
     private LogSegment roll() {
         return this.lockSupplier(() -> {
             long newOffset = currentOffset + 1;
-            File newFile = LogCommon.logFilename(dir, newOffset);
-            File indexFile = LogCommon.indexFilename(dir, newOffset);
+            File newFile = LogCommon.Companion.logFilename(dir, newOffset);
+            File indexFile = LogCommon.Companion.indexFilename(dir, newOffset);
 
             Lists.newArrayList(newFile, indexFile)
                  .forEach(file -> Optional.of(newFile)

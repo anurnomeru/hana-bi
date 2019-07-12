@@ -15,6 +15,8 @@ import com.anur.io.store.prelog.ByteBufPreLog.PreLogMeta;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/23
+ *
+ * 负责写入预日志，并操作将预日志追加到日志中
  */
 public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
 
@@ -50,7 +52,6 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
         this.commitOffset = LogManager.getINSTANCE()
                                       .getInitial();
         this.preLogOffset = commitOffset;
-
         logger.info("预日志初始化成功，预日志将由 {} 开始", commitOffset.toString());
     }
 
@@ -142,7 +143,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     }
 
     /**
-     * 获取当前这一条之前的数据（包括这一条）
+     * 获取当前这一条之前的预日志（包括这一条）
      */
     private PreLogMeta getBefore(GenerationAndOffset GAO) {
         return this.readLockSupplier(() -> {
@@ -162,7 +163,7 @@ public class ByteBufPreLogManager extends ReentrantReadWriteLocker {
     }
 
     /**
-     * 丢弃掉一些消息（批量丢弃，包括这一条）
+     * 丢弃掉一些预日志消息（批量丢弃，包括这一条）
      */
     private void discardBefore(GenerationAndOffset GAO) {
         this.writeLockSupplier(() -> {

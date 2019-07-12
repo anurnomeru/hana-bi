@@ -80,8 +80,8 @@ public class LogSegment {
      */
     public LogSegment(File dir, long startOffset, int indexIntervalBytes, int maxIndexSize) throws IOException {
         this(
-            new FileOperationSet(LogCommon.logFilename(dir, startOffset)),
-            new OffsetIndex(LogCommon.indexFilename(dir, startOffset),
+            new FileOperationSet(LogCommon.Companion.logFilename(dir, startOffset)),
+            new OffsetIndex(LogCommon.Companion.indexFilename(dir, startOffset),
                 startOffset, maxIndexSize),
             startOffset,
             indexIntervalBytes);
@@ -286,12 +286,12 @@ public class LogSegment {
      *
      * 然后取最后一个
      */
-    public long lastOffset(long gen)  {
+    public long lastOffset(long gen) {
         FetchDataInfo fetchDataInfo = read(gen, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
         if (fetchDataInfo == null) {
             return baseOffset;
         } else {
-            Iterator<OperationAndOffset> operationAndOffsetIterator = fetchDataInfo.getFileOperationSet()
+            Iterator<OperationAndOffset> operationAndOffsetIterator = fetchDataInfo.getFos()
                                                                                    .iterator();
             long lastOffset = baseOffset;
 
@@ -302,8 +302,6 @@ public class LogSegment {
             return lastOffset;
         }
     }
-
-
 
     public long getBaseOffset() {
         return baseOffset;

@@ -135,7 +135,7 @@ public class LogManager {
      * 创建世代目录
      */
     private File createGenDirIfNEX(long generation) {
-        return LogCommon.dirName(baseDir, generation);
+        return LogCommon.Companion.dirName(baseDir, generation);
     }
 
     /**

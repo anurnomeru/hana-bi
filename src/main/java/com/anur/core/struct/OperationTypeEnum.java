@@ -12,6 +12,7 @@ import com.anur.core.struct.coordinate.RecoveryReporter;
 import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.struct.coordinate.Fetcher;
+import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.exception.HanabiException;
 
 /**
@@ -38,7 +39,7 @@ public enum OperationTypeEnum {
     /**
      * 注册 ACK
      */
-    REGISTER_RESPONSE(10001, Register.class),
+    REGISTER_RESPONSE(10001, RegisterResponse.class),
 
     /**
      * 协调节点从主节点拉取消息

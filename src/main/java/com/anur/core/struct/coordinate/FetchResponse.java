@@ -50,9 +50,9 @@ public class FetchResponse extends AbstractTimedStruct {
             byteBuffer.putLong(-1);
             byteBuffer.putInt(0);
         } else {
-            fileOperationSet = fetchDataInfo.getFileOperationSet();
+            fileOperationSet = fetchDataInfo.getFos();
             fileOperationSetSize = fileOperationSet.sizeInBytes();
-            byteBuffer.putLong(fetchDataInfo.getFetchOffsetMetadata()
+            byteBuffer.putLong(fetchDataInfo.getFetchMeta()
                                             .getGeneration());
             byteBuffer.putInt(fileOperationSetSize);
         }
