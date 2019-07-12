@@ -23,9 +23,4 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <configuration>
-        <statusListener class="ch.qos.logback.core.status.NopStatusListener"/>
-        <!-- etc -->
-    </configuration>
-
 </configuration>
