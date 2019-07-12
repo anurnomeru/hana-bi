@@ -32,8 +32,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
     private var preLogOffset: GenerationAndOffset? = null
 
     init {
-        this.commitOffset = LogManager.getINSTANCE()
-            .initial
+        this.commitOffset = LogManager.initial
         this.preLogOffset = commitOffset
         logger.info("预日志初始化成功，预日志将由 {} 开始", commitOffset!!.toString())
     }
@@ -115,11 +114,11 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
 
                 val byteBufferOperationSet = ByteBufferOperationSet(preLogMeta.oao)
 
-                val logManager = LogManager.getINSTANCE()
-                logManager.append(byteBufferOperationSet, GAO.generation, preLogMeta.startOffset, preLogMeta.endOffset)
+                // 追加到磁盘
+                LogManager.append(byteBufferOperationSet, GAO.generation, preLogMeta.startOffset, preLogMeta.endOffset)
 
                 // 强制刷盘
-                logManager.activeLog().flush(preLogMeta.endOffset)
+                LogManager.activeLog().flush(preLogMeta.endOffset)
 
                 logger.info("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString())
                 commitOffset = canCommit

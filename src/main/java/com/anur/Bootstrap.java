@@ -46,7 +46,7 @@ public class Bootstrap {
             /**
              * 初始化日志管理
              */
-            LogManager logManager = LogManager.getINSTANCE();
+            LogManager logManager = LogManager.INSTANCE;
 
             /**
              * 启动协调服务器
@@ -76,8 +76,7 @@ public class Bootstrap {
             try {
                 for (int i = 0; i < 100000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
-                    LogManager.getINSTANCE()
-                              .append(operation);
+                    LogManager.INSTANCE.append(operation);
                 }
             } catch (Exception e) {
             }

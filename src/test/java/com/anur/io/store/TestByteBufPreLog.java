@@ -16,7 +16,7 @@ public class TestByteBufPreLog {
     public static void main(String[] args) throws InterruptedException {
         new Operation(OperationTypeEnum.SETNX, "1", "");
 
-        LogManager.getINSTANCE();
+        LogManager instance = LogManager.INSTANCE;
 
         ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
 
