@@ -18,7 +18,7 @@ public class TestByteBufPreLog {
 
         LogManager.getINSTANCE();
 
-        ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.getINSTANCE();
+        ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
 
         HanabiExecutors.execute(() -> {
             long start = System.currentTimeMillis();

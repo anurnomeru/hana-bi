@@ -106,7 +106,7 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
         try {
             fetchPreLogTask?.takeIf { !it.isCancel }?.run {
                 ApisManager.send(fetchFrom,
-                    Fetcher(ByteBufPreLogManager.getINSTANCE().preLogGAO),
+                    Fetcher(ByteBufPreLogManager.getPreLogGAO()),
                     RequestProcessor(Consumer { CONSUME_FETCH_RESPONSE.invoke(fetchFrom, FetchResponse(it)) }, Runnable { rebuildFetchTask(myVersion, fetchFrom) })
                 )
             }
@@ -124,7 +124,7 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
             ElectMeta.takeIf { it.isLeader }?.run { logger.error("出现了不应该出现的情况！") }
 
             if (fetchResponse.fileOperationSetSize == 0) return@readLocker
-            ByteBufPreLogManager.getINSTANCE()
+            ByteBufPreLogManager
                 .append(fetchResponse.generation, fetchResponse.read())
         }
     }

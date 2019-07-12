@@ -71,7 +71,7 @@ object LeaderClusterRecoveryManager : Resetable {
             reset()
             RecoveryTimer = TimeUtil.getTime()
             if (ElectMeta.isLeader) {
-                receive(ElectMeta.leader!!, ByteBufPreLogManager.getINSTANCE().commitGAO)
+                receive(ElectMeta.leader!!, ByteBufPreLogManager.getCommitGAO())
             }
         }
 
@@ -109,7 +109,7 @@ object LeaderClusterRecoveryManager : Resetable {
                     }
                 })
 
-                if (newest!!.value == ByteBufPreLogManager.getINSTANCE().commitGAO) {
+                if (newest!!.value == ByteBufPreLogManager.getCommitGAO()) {
                     val cost = TimeUtil.getTime() - RecoveryTimer
                     logger.info("已有过半节点提交了最大进度，且集群最大进度 ${newest!!.value} 与 Leader 节点相同，集群已恢复，耗时 $cost ms ")
                     shuttingWhileRecoveryComplete()

@@ -29,13 +29,9 @@ object FollowerApisHandler {
             .getChannelName(channel)
 
         logger.debug("收到来自协调 Leader {} 的 commit 请求 {} ", serverName, commiter.canCommitGAO)
+        ByteBufPreLogManager.commit(commiter.canCommitGAO)
 
-        ByteBufPreLogManager.getINSTANCE()
-            .commit(commiter.canCommitGAO)
-
-        val commitGAO = ByteBufPreLogManager.getINSTANCE()
-            .commitGAO
-
+        val commitGAO = ByteBufPreLogManager.getCommitGAO()
         ApisManager.send(serverName, CommitResponse(commitGAO), RequestProcessor.REQUIRE_NESS)
     }
 }

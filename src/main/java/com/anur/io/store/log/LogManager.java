@@ -19,6 +19,8 @@ import com.anur.io.store.operationset.ByteBufferOperationSet;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18
+ *
+ * 最外层的日志管理器，所有持久化日志都走这里~~
  */
 public class LogManager {
 
@@ -101,7 +103,6 @@ public class LogManager {
      * 添加多条操作日志到磁盘的入口
      */
     public void append(ByteBufferOperationSet byteBufferOperationSet, long generation, long startOffset, long endOffset) {
-
         Log log = maybeRoll(generation);
         log.append(byteBufferOperationSet, startOffset, endOffset);
 
@@ -151,7 +152,7 @@ public class LogManager {
      *
      * 先获取符合此世代的首个 Log ，称为 needLoad
      *
-     * == >      循环 needLoad，直到拿到首个有数据的 LogSegment，称为 needToRead
+     * ==>      循环 needLoad，直到拿到首个有数据的 LogSegment，称为 needToRead
      *
      * 如果拿不到 needToRead，则进行递归
      */

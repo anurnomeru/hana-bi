@@ -75,7 +75,7 @@ object FollowerClusterRecoveryManager {
          * 当连接主节点成功后，发送当前最大 GAO
          */
         HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO_LEADER) {
-            ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getINSTANCE().commitGAO),
+            ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getCommitGAO()),
                 RequestProcessor(Consumer { }, Runnable {
                     logger.info("集群已经恢复正常，开始通知 Fetcher 进行日志同步")
 
