@@ -22,9 +22,9 @@ import java.util.function.Consumer
  *
  * 当选主成功后
  *
- * - 所有节点进行coordinate的注册，注册时上报其最大 commit offset
+ * - 所有节点进行coordinate的注册，注册后上报其最大 commit offset
  *
- * - 进行 recovery waiting n sec，直到所有节点上报数据
+ * - 集群进入恢复状态，直到半数节点上报数据
  *
  * -- 是否达到半数节点上报 => no => 节点一直阻塞，直到有半数节点上报
  *
@@ -33,11 +33,13 @@ import java.util.function.Consumer
  * V
  * yes
  *
- * - 获取最大的commit，作为 recovery point，最小的 commit 则作为 commit GAO
+ * - 获取最大的commit，作为 recovery point
  *
  * -- leader 是否达到此 commit 数据 => no => 向拥有此数据的节点进行 fetch
  *
- * -- 下发指令，删除大于此 recovery point 的数据（针对前leader）
+ * -- leader 恢复完毕后。将leader节点改为日志恢复完毕状态
+ *
+ * -- 回复所有子节点，节点所在世代最大 commitPoint 为多少，子节点删除大于 commit Point 的数据
  *
  * |
  * |
