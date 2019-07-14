@@ -176,12 +176,15 @@ object LogManager {
      */
     fun discardAfter(GAO: GenerationAndOffset) {
         for (i in GAO.generation..currentGAO.generation) {
-            if (!generationDirs.containsKey(i)) {
+            if (!generationDirs.containsKey(i) && LogCommon.dirName(baseDir, i).exists()) {
                 generationDirs[i] = Log(i, createGenDirIfNEX(i))
             }
         }
 
-        while (doDiscardAfter(GAO)) {
+        var result = doDiscardAfter(GAO)
+        while (result) {
+            result = doDiscardAfter(GAO)
+            println(result)
         }
     }
 
@@ -195,7 +198,7 @@ object LogManager {
         val tailMap = generationDirs.tailMap(gen, true)
         if (tailMap == null || tailMap.size == 0) {
             // 世代过大或者此世代还未有预日志
-            return true
+            return false
         }
 
         // 取其最大者
@@ -219,7 +222,7 @@ object LogManager {
             logSegmentIterable.forEach {
                 it.fileOperationSet.fileChannel.close()
                 val needToDelete = it.fileOperationSet.file
-                logger.info("删除日志分片 ${needToDelete.absoluteFile} "
+                logger.debug("删除日志分片 ${needToDelete.absoluteFile} "
                     + (if (needToDelete.delete()) "成功" else "失败")
                     + "。删除对应索引文件"
                     + if (it.offsetIndex.delete()) "成功" else "失败")
@@ -227,23 +230,24 @@ object LogManager {
 
             val dir = needDeleteLog.dir
             val success: Boolean = needDeleteLog.dir.delete()
-            logger.info("删除目录 $dir" + if (success) {
+            logger.debug("删除目录 $dir" + if (success) {
                 generationDirs.remove(needDeleteGen)
                 "成功"
             } else "失败")
             true
         } else {
+            logger.info("当前需删除 $GAO 往后的日志，故世代 $needDeleteGen 日志将部分删去")
             val logSegmentIterable =
                 needDeleteLog.getLogSegments(offset, Long.MAX_VALUE).iterator()
 
             logSegmentIterable.forEach {
-                if (it.baseOffset <= offset && offset <= it.lastOffset()) {
+                if (it.baseOffset <= offset && offset <= it.lastOffset(needDeleteGen)) {
                     it.truncateTo(offset)
-                    logger.info("删除日志分片 ${it.fileOperationSet.file} 中大于等于 $offset 的记录移除")
+                    logger.debug("删除日志分片 ${it.fileOperationSet.file} 中大于等于 $offset 的记录移除")
                 } else {
                     it.fileOperationSet.fileChannel.close()
                     val needToDelete = it.fileOperationSet.file
-                    logger.info("删除日志分片 ${needToDelete.absoluteFile}" + if (needToDelete.delete()) "成功" else "失败")
+                    logger.debug("删除日志分片 ${needToDelete.absoluteFile}" + if (needToDelete.delete()) "成功" else "失败")
                 }
             }
             false

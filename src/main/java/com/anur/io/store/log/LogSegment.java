@@ -286,8 +286,8 @@ public class LogSegment {
      *
      * 然后取最后一个
      */
-    public long lastOffset() {
-        FetchDataInfo fetchDataInfo = read(-1, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
+    public long lastOffset(long gen) {
+        FetchDataInfo fetchDataInfo = read(gen, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
         if (fetchDataInfo == null) {
             return baseOffset;
         } else {

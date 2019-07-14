@@ -23,7 +23,7 @@ fun main() {
     } catch (e: Exception) {
     }
 
-    LogManager.discardAfter(GenerationAndOffset(3, 0))
+    LogManager.discardAfter(GenerationAndOffset(5, 5))
 
     for (i in 0..99999) {
         val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")

@@ -105,7 +105,7 @@ public class Log extends ReentrantLocker {
             segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
         }
 
-        currentOffset = activeSegment().lastOffset();
+        currentOffset = activeSegment().lastOffset(generation);
     }
 
     /**
