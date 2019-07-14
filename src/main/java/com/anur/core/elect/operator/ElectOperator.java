@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.alibaba.fastjson.JSON;
 import com.anur.config.ElectConfigHelper;
+import com.anur.config.ExtraConfiguration;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 import com.anur.core.elect.ElectMeta;
@@ -23,10 +24,12 @@ import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.TimeUtil;
 import com.anur.exception.ElectException;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectProtocolEnum;
+import com.anur.io.store.log.LogManager;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -44,13 +47,6 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     private static final long HEART_BEAT_MS = ElectConfigHelper.getHeartBeatMs();
 
-    /**
-     * 协调器独享线程
-     */
-    private static Executor ElectControllerPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
-                                                                                                            .setNameFormat("Controller")
-                                                                                                            .build());
-
     private volatile static ElectOperator INSTANCE;
 
     private static Random RANDOM = new Random();
@@ -60,7 +56,10 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             synchronized (ElectOperator.class) {
                 if (INSTANCE == null) {
                     INSTANCE = new ElectOperator();
-                    ElectControllerPool.execute(INSTANCE);
+                    Thread thread = new Thread(INSTANCE);
+                    thread.setPriority(10);
+                    thread.setName("Controller");
+                    HanabiExecutors.Companion.execute(thread);
                 }
             }
         }
@@ -507,7 +506,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     /**
      * 设置本节点的世代和位移，仅有未启动时才可设置，已经启动则无法再设置
      */
-    public ElectOperator resetGenerationAndOffset(GenerationAndOffset generationAndOffset) {
+    private ElectOperator resetGenerationAndOffset(GenerationAndOffset generationAndOffset) {
         if (startLatch.getCount() > 0) {
             startLatch.countDown();
             meta.setGeneration(generationAndOffset.getGeneration());
@@ -523,6 +522,8 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     @Override
     public void run() {
         this.lockSupplier(() -> {
+            resetGenerationAndOffset(LogManager.INSTANCE.getInitial());
+
             logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfigHelper.getServerName());
             try {
                 startLatch.await();
@@ -530,7 +531,16 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 e.printStackTrace();
             }
             logger.debug("初始化选举控制器 启动中");
-            this.becomeCandidateAndBeginElectTask(meta.getGeneration());
+
+            if (ExtraConfiguration.Companion.isDebug()) {
+                logger.info("== <==>");
+                logger.info("<>-- -|   测试模式   |- --<>");
+                logger.info("== <==>");
+                updateGeneration("");
+                this.becomeLeader();
+            } else {
+                this.becomeCandidateAndBeginElectTask(meta.getGeneration());
+            }
             return null;
         });
     }

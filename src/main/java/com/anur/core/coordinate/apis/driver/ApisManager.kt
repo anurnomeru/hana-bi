@@ -209,7 +209,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
             when {
                 requestProcessor == null -> null
                 requestProcessor.isComplete -> {
-                    HanabiExecutors.execute { removeFromInFlightRequest(serverName, typeEnum) }
+                    HanabiExecutors.execute(Runnable { removeFromInFlightRequest(serverName, typeEnum) })
                     null
                 }
                 else -> requestProcessor

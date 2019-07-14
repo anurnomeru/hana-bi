@@ -20,7 +20,7 @@ public class TestByteBufPreLog {
 
         ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
 
-        HanabiExecutors.execute(() -> {
+        HanabiExecutors.Companion.execute(() -> {
             long start = System.currentTimeMillis();
             for (int i = 30000000; i < 30000999; i++) {
                 byteBufPreLogManager
@@ -30,7 +30,7 @@ public class TestByteBufPreLog {
             System.out.println(start - System.currentTimeMillis());
         });
 
-        HanabiExecutors.submit(() -> {
+        HanabiExecutors.Companion.submit(() -> {
             while (true) {
                 Thread.sleep(100);
                 byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));

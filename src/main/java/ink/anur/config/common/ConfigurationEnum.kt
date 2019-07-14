@@ -5,6 +5,11 @@ package ink.anur.config.common
  */
 enum class ConfigurationEnum constructor(val key: String, val adv: String) {
 
+
+    ////////////////////// ExtraConfiguration
+
+    DEBUG_MODE("debug", "是否开启DEBUG模式，该模式下有些限制会比较宽松，便于调试"),
+
     ////////////////////// InetSocketAddressConfigHelper
 
     SERVER_NAME("server.name", "server.name 是本机的服务名，集群内应唯一"),

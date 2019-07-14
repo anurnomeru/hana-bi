@@ -252,8 +252,6 @@ public class Log extends ReentrantLocker {
             }
             return null;
         });
-
-        logger.info("刷盘完毕，现刷盘至 gen -> {} offset -> {},还有 {} 条消息还未刷盘", generation, offset, unFlushedMessages());
     }
 
     public String name() {

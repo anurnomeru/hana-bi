@@ -32,11 +32,10 @@ public class Bootstrap {
                 "| |__ | | ____ ____   ____| | _  _ \n" +
                 "|  __)| |/ _  |  _ \\ / _  | || \\| |\n" +
                 "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
-                "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n"+
+                "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
                 "           Hanabi     (ver 0.0.1)\n\n");
 
-
-        HanabiExecutors.execute(() -> {
+        HanabiExecutors.Companion.execute(() -> {
 
             /*
              * 日志一致性控制器
@@ -79,19 +78,16 @@ public class Bootstrap {
              * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
              */
             ElectOperator.getInstance()
-                         .resetGenerationAndOffset(logManager.getInitial())
                          .start();
 
-
-
             try {
-                Thread.sleep(15000);
+                Thread.sleep(1500);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
             try {
-                for (int i = 0; i < 100000; i++) {
+                for (int i = 0; i < 1000000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                     LogManager.INSTANCE.append(operation);
                 }
