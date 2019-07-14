@@ -25,6 +25,8 @@ import java.util.function.Consumer
  */
 object FollowerCoordinateManager : ReentrantReadWriteLocker() {
 
+    private val logger = LoggerFactory.getLogger(this.javaClass)
+
     init {
         HanabiListener.register(EventEnum.RECOVERY_COMPLETE) {
             if (!ElectMeta.isLeader) {
@@ -53,7 +55,6 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
         }
     }
 
-    private val logger = LoggerFactory.getLogger(FollowerCoordinateManager.javaClass)
 
     /**
      * 此字段用作版本控制，定时任务仅执行小于等于自己版本的任务

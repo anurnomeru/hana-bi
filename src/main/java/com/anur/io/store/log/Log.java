@@ -105,7 +105,7 @@ public class Log extends ReentrantLocker {
             segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
         }
 
-        currentOffset = activeSegment().lastOffset(generation);
+        currentOffset = activeSegment().lastOffset();
     }
 
     /**
@@ -261,13 +261,17 @@ public class Log extends ReentrantLocker {
     }
 
     /**
-     * 获取从包含 fromOffset 的那个 segment 开始，到包含 to-1（注意，要传最新的那个分片的start才有这个效果） 的那个 segment 结束的所有日志分片。
-     * 如果传入的 fromOffset 过小，则返回 从头 - toOffset的所有分片
+     * 如果这个世代下所有的日志分片文件不存在小于等于 fromOffset 的
+     *
+     * - 返回从头直到 toOffset 的 LogSegment
+     *
+     * - 否则返回区间内的 logSegment
      */
     public Iterable<LogSegment> getLogSegments(long fromOffset, long toOffset) {
         return lockSupplier(() -> {
 
             // 返回的最大键，小于或等于给定的键
+            // floorKey(K key) 方法用于返回的最大键小于或等于给定的键，或null，
             Long floor = segments.floorKey(fromOffset);
             if (floor == null) {// 代表 segments 的所有键都大于 fromOffset
                 return segments.headMap(toOffset)

@@ -214,8 +214,8 @@ public class LogSegment {
 
     /**
      * 传入 offset 如若有效，则
-     * 1、移除大于等于此 offset 的所有索引
-     * 2、移除大于等于此 offset 的所有操作日志
+     * 1、移除大于此 offset 的所有索引
+     * 2、移除大于此 offset 的所有操作日志
      */
     public int truncateTo(long offset) throws IOException {
         OffsetAndPosition offsetAndPosition = translateOffset(offset);
@@ -286,8 +286,8 @@ public class LogSegment {
      *
      * 然后取最后一个
      */
-    public long lastOffset(long gen) {
-        FetchDataInfo fetchDataInfo = read(gen, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
+    public long lastOffset() {
+        FetchDataInfo fetchDataInfo = read(-1, offsetIndex.getLastOffset(), null, fileOperationSet.sizeInBytes());
         if (fetchDataInfo == null) {
             return baseOffset;
         } else {

@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentSkipListMap
+import kotlin.math.log
 import kotlin.math.max
 
 /**
@@ -136,24 +137,29 @@ object LogManager {
         val gen = GAO.generation
         val offset = GAO.offset
 
-        val tail = generationDirs.tailMap(gen, true)
-        if (tail == null || tail.size == 0) {
+        val tailMap = generationDirs.tailMap(gen, true)
+        if (tailMap == null || tailMap.size == 0) {
             // 世代过大或者此世代还未有预日志
             return null
         }
 
-        val firstEntry = tail.firstEntry()
+        // 取其最小者
+        val firstEntry = tailMap.firstEntry()
 
         val needLoadGen = firstEntry.key
-        val needLoad = firstEntry.value
+        val needLoadLog = firstEntry.value
 
-        val logSegmentIterable = needLoad.getLogSegments(offset, java.lang.Long.MAX_VALUE)
-            .iterator()
+        if (needLoadGen != gen) {
+            logger.error("注意一下这种情况，比较奇怪！")
+        }
+
+        val logSegmentIterable =
+            needLoadLog.getLogSegments(offset, Long.MAX_VALUE).iterator()
 
         var needToRead: LogSegment? = null
         while (logSegmentIterable.hasNext()) {
             val tmp = logSegmentIterable.next()
-            if (needLoad.currentOffset != tmp.baseOffset) {// 代表这个 LogSegment 一条数据都没 append
+            if (needLoadLog.currentOffset != tmp.baseOffset) {// 代表这个 LogSegment 一条数据都没 append
                 needToRead = tmp
                 break
             }
@@ -161,7 +167,72 @@ object LogManager {
 
         return if (needToRead == null) {
             getAfter(GenerationAndOffset(needLoadGen + 1, offset))
-        } else needToRead.read(needLoadGen, offset, java.lang.Long.MAX_VALUE, Integer.MAX_VALUE)
+        } else needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Int.MAX_VALUE)
+    }
 
+    /**
+     * 丢弃某个 GAO 往后的所有消息
+     */
+    fun discardAfter(GAO: GenerationAndOffset) {
+        while (doDiscardAfter(GAO)) {
+        }
+    }
+
+    /**
+     * 真正丢弃执行者，注意运行中不要乱调用这个，因为没加锁
+     */
+    private fun doDiscardAfter(GAO: GenerationAndOffset): Boolean {
+        val gen = GAO.generation
+        val offset = GAO.offset
+
+        val tailMap = generationDirs.tailMap(gen, true)
+        if (tailMap == null || tailMap.size == 0) {
+            // 世代过大或者此世代还未有预日志
+            return true
+        }
+
+        // 取其最大者
+        val lastEntry = tailMap.lastEntry()
+
+        val needDeleteGen = lastEntry.key
+        val needDeleteLog = lastEntry.value
+
+        // 若存在比当前更大的世代的日志，将其全部删除
+        val deleteAll = when {
+            needDeleteGen == gen -> false
+            needDeleteGen > gen -> true
+            else -> throw LogException("注意一下这种情况，比较奇怪！")
+        }
+
+        return if (deleteAll) {
+            val logSegmentIterable =
+                needDeleteLog.getLogSegments(0, Long.MAX_VALUE).iterator()
+
+            logger.info("当前需删除 $GAO 往后的日志，故世代 $needDeleteGen 日志将全部删去")
+            logSegmentIterable.forEach {
+                it.fileOperationSet.fileChannel.close()
+                val needToDelete = it.fileOperationSet.file
+                logger.info("删除日志分片 ${needToDelete.absoluteFile}" + if (needToDelete.delete()) "成功" else "失败")
+            }
+
+            logger.info("删除目录 ${needDeleteLog.dir}" + if (needDeleteLog.dir.delete()) "成功" else "失败")
+            true
+        } else {
+            val logSegmentIterable =
+                needDeleteLog.getLogSegments(offset, Long.MAX_VALUE).iterator()
+
+            logSegmentIterable.forEach {
+                if (it.baseOffset <= offset && offset <= it.lastOffset()) {
+                    it.truncateTo(offset)
+                    logger.info("删除日志分片 ${it.fileOperationSet.file} 中大于等于 $offset 的记录移除")
+                } else {
+                    it.fileOperationSet.fileChannel.close()
+                    val needToDelete = it.fileOperationSet.file
+                    logger.info("删除日志分片 ${needToDelete.absoluteFile}" + if (needToDelete.delete()) "成功" else "失败")
+                }
+            }
+            false
+        }
     }
 }
+
