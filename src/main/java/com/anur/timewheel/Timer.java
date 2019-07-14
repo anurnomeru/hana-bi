@@ -4,6 +4,7 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import com.anur.core.util.HanabiExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
@@ -16,9 +17,6 @@ public class Timer {
 
     /** 对于一个Timer以及附属的时间轮，都只有一个delayQueue */
     private DelayQueue<Bucket> delayQueue = new DelayQueue<>();
-
-    /** 只有一个线程的无限阻塞队列线程池 */
-    private ExecutorService workerThreadPool;
 
     private ExecutorService bossThreadPool;
 
@@ -39,9 +37,9 @@ public class Timer {
      * 新建一个Timer，同时新建一个时间轮
      */
     private Timer() {
-        workerThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactoryBuilder().setPriority(5)
-                                                                                       .setNameFormat("TimeWheelWorker")
-                                                                                       .build());
+        //        workerThreadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors(), new ThreadFactoryBuilder().setPriority(5)
+        //                                                                                       .setNameFormat("TimeWheelWorker")
+        //                                                                                       .build());
         bossThreadPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
                                                                                    .setNameFormat("TimeWheelBoss")
                                                                                    .build());
@@ -60,7 +58,7 @@ public class Timer {
     public void addTask(TimedTask timedTask) {
         if (!timeWheel.addTask(timedTask)) {
             if (!timedTask.isCancel()) {
-                workerThreadPool.submit(timedTask.getTask());
+                HanabiExecutors.Companion.execute(timedTask.getTask());
             }
         }
     }

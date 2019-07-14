@@ -13,6 +13,7 @@ import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.coordinate.apis.driver.ApisManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.server.CoordinateServer;
 import com.anur.core.struct.OperationTypeEnum;
@@ -31,13 +32,6 @@ public class CoordinateServerOperator implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(CoordinateServerOperator.class);
 
     private volatile static CoordinateServerOperator INSTANCE;
-
-    /**
-     * 协调器独享线程
-     */
-    private static Executor CoordinateServerPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
-                                                                                                             .setNameFormat("Coordinator")
-                                                                                                             .build());
 
     /**
      * 关闭本服务的钩子
@@ -89,7 +83,11 @@ public class CoordinateServerOperator implements Runnable {
                 if (INSTANCE == null) {
                     INSTANCE = new CoordinateServerOperator();
                     INSTANCE.init();
-                    CoordinateServerPool.execute(INSTANCE);
+
+                    Thread thread = new Thread(INSTANCE);
+                    thread.setName("CoordinateServerOperator");
+                    thread.setPriority(10);
+                    HanabiExecutors.Companion.execute(thread);
                 }
             }
         }

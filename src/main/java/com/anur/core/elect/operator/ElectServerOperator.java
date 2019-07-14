@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.elect.ElectMeta;
+import com.anur.core.util.HanabiExecutors;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.io.core.coder.ElectProtocolEnum;
@@ -30,13 +31,6 @@ public class ElectServerOperator implements Runnable {
     private static Logger logger = LoggerFactory.getLogger(ElectServerOperator.class);
 
     private volatile static ElectServerOperator INSTANCE;
-
-    /**
-     * 协调器独享线程
-     */
-    private static Executor ElectServerPool = Executors.newFixedThreadPool(1, new ThreadFactoryBuilder().setPriority(10)
-                                                                                                        .setNameFormat("Elector")
-                                                                                                        .build());
 
     /**
      * 关闭本服务的钩子
@@ -107,7 +101,10 @@ public class ElectServerOperator implements Runnable {
                 if (INSTANCE == null) {
                     INSTANCE = new ElectServerOperator();
                     INSTANCE.init();
-                    ElectServerPool.execute(INSTANCE);
+                    Thread thread = new Thread(INSTANCE);
+                    thread.setName("ElectServerOperator");
+                    thread.setPriority(10);
+                    HanabiExecutors.Companion.execute(thread);
                 }
             }
         }
