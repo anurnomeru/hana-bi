@@ -368,7 +368,7 @@ public class OffsetIndex extends ReentrantLocker {
                                              .clean();
             }
         } catch (Throwable e) {
-            throw new LogException("Error when freeing index buffer");
+            logger.error("Error when freeing index buffer");
         }
     }
 

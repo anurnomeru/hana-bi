@@ -1,5 +1,6 @@
 package com.anur.io.store
 
+import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.elect.operator.ElectOperator
 import com.anur.core.struct.OperationTypeEnum
 import com.anur.core.struct.base.Operation
@@ -15,14 +16,19 @@ fun main() {
     ElectOperator.getInstance().start()
 
     try {
-        for (i in 0..999999) {
+        for (i in 0..99999) {
             val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")
             LogManager.append(operation)
         }
     } catch (e: Exception) {
     }
 
+    LogManager.discardAfter(GenerationAndOffset(3, 0))
 
+    for (i in 0..99999) {
+        val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")
+        LogManager.append(operation)
+    }
 
     println()
 

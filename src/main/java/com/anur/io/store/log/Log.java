@@ -41,11 +41,11 @@ public class Log extends ReentrantLocker {
     /** 最近一个添加到 append 到日志文件中的 offset，默认取 baseOffset */
     private long currentOffset = 0L;
 
-    public Log(long generation, File dir, long recoveryPoint) throws IOException {
+    public Log(long generation, File dir) throws IOException {
         this.generation = generation;
         this.dir = dir;
-        this.recoveryPoint = recoveryPoint;
         load();
+        this.recoveryPoint = currentOffset;
     }
 
     private void load() throws IOException {

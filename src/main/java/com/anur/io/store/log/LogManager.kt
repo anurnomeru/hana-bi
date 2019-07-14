@@ -53,8 +53,9 @@ object LogManager {
 
         // 只要创建最新的那个 generation 即可
         try {
-            val latest = Log(latestGeneration, createGenDirIfNEX(latestGeneration), 0)
-            generationDirs[1L] = latest
+            val latest = Log(latestGeneration, createGenDirIfNEX(latestGeneration))
+            generationDirs[latestGeneration] = latest
+
             init = GenerationAndOffset(latestGeneration, latest.currentOffset)
         } catch (e: IOException) {
             throw LogException("操作日志初始化失败，项目无法启动")
@@ -96,7 +97,7 @@ object LogManager {
             val dir = createGenDirIfNEX(generation)
             val log: Log
             try {
-                log = Log(generation, dir, 0)
+                log = Log(generation, dir)
             } catch (e: IOException) {
                 throw LogException("创建世代为 $generation 的操作日志管理文件 Log 失败")
             }
@@ -113,7 +114,7 @@ object LogManager {
     /**
      * 创建世代目录
      */
-    private fun createGenDirIfNEX(generation: Long): File {
+    fun createGenDirIfNEX(generation: Long): File {
         return LogCommon.dirName(baseDir, generation)
     }
 
@@ -174,6 +175,12 @@ object LogManager {
      * 丢弃某个 GAO 往后的所有消息
      */
     fun discardAfter(GAO: GenerationAndOffset) {
+        for (i in GAO.generation..currentGAO.generation) {
+            if (!generationDirs.containsKey(i)) {
+                generationDirs[i] = Log(i, createGenDirIfNEX(i))
+            }
+        }
+
         while (doDiscardAfter(GAO)) {
         }
     }
@@ -212,10 +219,18 @@ object LogManager {
             logSegmentIterable.forEach {
                 it.fileOperationSet.fileChannel.close()
                 val needToDelete = it.fileOperationSet.file
-                logger.info("删除日志分片 ${needToDelete.absoluteFile}" + if (needToDelete.delete()) "成功" else "失败")
+                logger.info("删除日志分片 ${needToDelete.absoluteFile} "
+                    + (if (needToDelete.delete()) "成功" else "失败")
+                    + "。删除对应索引文件"
+                    + if (it.offsetIndex.delete()) "成功" else "失败")
             }
 
-            logger.info("删除目录 ${needDeleteLog.dir}" + if (needDeleteLog.dir.delete()) "成功" else "失败")
+            val dir = needDeleteLog.dir
+            val success: Boolean = needDeleteLog.dir.delete()
+            logger.info("删除目录 $dir" + if (success) {
+                generationDirs.remove(needDeleteGen)
+                "成功"
+            } else "失败")
             true
         } else {
             val logSegmentIterable =
