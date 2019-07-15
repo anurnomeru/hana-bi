@@ -3,6 +3,7 @@ package com.anur.core.coordinate.apis
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.ReentrantReadWriteLocker
+import com.anur.io.store.prelog.ByteBufPreLogManager
 import com.anur.io.store.prelog.CommitProcessManager
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
@@ -109,7 +110,6 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
                 commitMap[it]!!.remove(node)
             } ?: logger.info("节点 {} 已经 fetch 更新到了进度 {}", node, commitGAO.toString())
 
-
             currentCommitMap[node] = commitGAO//更新节点的 commit 进度
             commitMap.compute(commitGAO) { // 更新节点最近一次 commit 处于哪个 GAO
                 _, strings ->
@@ -122,6 +122,9 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
             commitMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }
                 ?.key
                 ?.also {
+                    // 写入 ByteBufPreLogManager
+                    ByteBufPreLogManager.cover(it)
+                    // 写入本地文件
                     CommitProcessManager.cover(it)
                     logger.info("进度 {} 已经完成 commit ~", it.toString())
                 }
