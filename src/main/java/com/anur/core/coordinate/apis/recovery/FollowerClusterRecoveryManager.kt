@@ -7,7 +7,9 @@ import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
+import com.anur.core.struct.coordinate.RecoveryComplete
 import com.anur.core.struct.coordinate.RecoveryReporter
+import com.anur.io.store.log.LogManager
 import com.anur.io.store.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.util.function.Consumer
@@ -76,14 +78,24 @@ object FollowerClusterRecoveryManager {
          */
         HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO_LEADER) {
             ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getCommitGAO()),
-                RequestProcessor(Consumer { }, Runnable {
+                RequestProcessor(Consumer {
+                    val recoveryComplete = RecoveryComplete(it)
+                    val rcc = recoveryComplete.getCommited()
+                    val rrc = ByteBufPreLogManager.getCommitGAO()
+                    if (rcc > rrc) {
+                        logger.debug("当前世代集群日志最高为 $rcc ，比本地 $rrc 小，故需删除大于集群日志的所有日志")
+                        LogManager.discardAfter(rcc)
+                    } else if (rcc < rrc) {
+                        logger.error("不可能出现的情况！！")
+                    }
+
                     logger.info("集群已经恢复正常，开始通知 Fetcher 进行日志同步")
 
                     /*
                      * 当集群同步完毕，通知 RECOVERY_COMPLETE
                      */
                     HanabiListener.onEvent(EventEnum.RECOVERY_COMPLETE)
-                }))
+                }, null))
         }
     }
 }

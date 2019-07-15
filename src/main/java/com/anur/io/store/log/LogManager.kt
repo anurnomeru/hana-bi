@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentSkipListMap
-import kotlin.math.log
 import kotlin.math.max
 
 /**
@@ -172,13 +171,22 @@ object LogManager {
     }
 
     /**
+     * 如果某世代日志还未初始化，则将其初始化，并加载部分到内存
+     */
+    @Synchronized
+    fun loadGenLog(gen: Long): Log {
+        if (!generationDirs.containsKey(gen) && LogCommon.dirName(baseDir, gen).exists()) {
+            generationDirs[gen] = Log(gen, createGenDirIfNEX(gen))
+        }
+        return generationDirs[gen]!!
+    }
+
+    /**
      * 丢弃某个 GAO 往后的所有消息
      */
     fun discardAfter(GAO: GenerationAndOffset) {
         for (i in GAO.generation..currentGAO.generation) {
-            if (!generationDirs.containsKey(i) && LogCommon.dirName(baseDir, i).exists()) {
-                generationDirs[i] = Log(i, createGenDirIfNEX(i))
-            }
+            loadGenLog(i)
         }
 
         var result = doDiscardAfter(GAO)
@@ -187,6 +195,7 @@ object LogManager {
             println(result)
         }
     }
+
 
     /**
      * 真正丢弃执行者，注意运行中不要乱调用这个，因为没加锁

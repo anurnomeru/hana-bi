@@ -9,6 +9,7 @@ import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
 import com.anur.core.struct.coordinate.RecoveryComplete
 import com.anur.core.util.TimeUtil
+import com.anur.io.store.log.LogManager
 import com.anur.io.store.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
@@ -88,7 +89,7 @@ object LeaderClusterRecoveryManager : Resetable {
     private var RecoveryTimer: Long = 0
 
     @Volatile
-    private var waitShutting = ConcurrentSkipListSet<String>()
+    private var waitShutting = ConcurrentHashMap<String, GenerationAndOffset>()
 
     @Volatile
     private var RecoveryMap = ConcurrentHashMap<String, GenerationAndOffset>()
@@ -119,23 +120,24 @@ object LeaderClusterRecoveryManager : Resetable {
             }
         }
 
-        sendRecoveryComplete(serverName)
+        sendRecoveryComplete(serverName, latestGao)
     }
 
     private fun shuttingWhileRecoveryComplete() {
         recoveryComplete = true
-        waitShutting.forEach(Consumer { sendRecoveryComplete(it) })
+        waitShutting.entries.forEach(Consumer { sendRecoveryComplete(it.key, it.value) })
     }
 
-    private fun sendRecoveryComplete(serverName: String) {
+    private fun sendRecoveryComplete(serverName: String, latestGao: GenerationAndOffset) {
         if (recoveryComplete) {
-            doSendRecoveryComplete(serverName)
+            doSendRecoveryComplete(serverName, latestGao)
         } else {
-            waitShutting.add(serverName)
+            waitShutting[serverName] = latestGao
         }
     }
 
-    private fun doSendRecoveryComplete(serverName: String) {
-        ApisManager.send(serverName, RecoveryComplete(), RequestProcessor.REQUIRE_NESS)
+    private fun doSendRecoveryComplete(serverName: String, latestGao: GenerationAndOffset) {
+        val GAO = GenerationAndOffset(latestGao.generation, LogManager.loadGenLog(latestGao.generation).currentOffset)
+        ApisManager.send(serverName, RecoveryComplete(GAO), RequestProcessor.REQUIRE_NESS)
     }
 }

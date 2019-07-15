@@ -15,29 +15,27 @@ import java.util.function.Consumer
  */
 class RecoveryReporter : AbstractTimedStruct {
 
-    private val LatestCommitGenerationOffset = TimestampOffset + TimestampLength
+    private val CommitedGenerationLength = 8
 
-    private val CanCommitGenerationLength = 8
+    private val CommitedOffsetOffset = OriginMessageOverhead + CommitedGenerationLength
 
-    private val LatestCommitOffsetOffset = LatestCommitGenerationOffset + CanCommitGenerationLength
+    private val CommitedOffsetLength = 8
 
-    private val CanCommitOffsetLength = 8
-
-    private val BaseMessageOverhead: Int = LatestCommitOffsetOffset + CanCommitOffsetLength
+    private val BaseMessageOverhead: Int = CommitedOffsetOffset + CommitedOffsetLength
 
     constructor(latestGAO: GenerationAndOffset) {
-        init(BaseMessageOverhead, OperationTypeEnum.RECOVERY, Consumer {
+        init(BaseMessageOverhead, OperationTypeEnum.RECOVERY) {
             byteBuffer.putLong(latestGAO.generation)
             byteBuffer.putLong(latestGAO.offset)
-        })
+        }
     }
 
     constructor(byteBuffer: ByteBuffer) {
         this.buffer = byteBuffer
     }
 
-    fun getLatestGAO(): GenerationAndOffset {
-        return GenerationAndOffset(buffer.getLong(LatestCommitGenerationOffset), buffer.getLong(LatestCommitOffsetOffset))
+    fun getCommited(): GenerationAndOffset {
+        return GenerationAndOffset(buffer.getLong(OriginMessageOverhead), buffer.getLong(CommitedOffsetOffset))
     }
 
 
@@ -50,7 +48,7 @@ class RecoveryReporter : AbstractTimedStruct {
     }
 
     override fun toString(): String {
-        return "Commiter{ GAO => ${getLatestGAO()} }"
+        return "RecoveryReporter { GAO => ${getCommited()} }"
     }
 
 }

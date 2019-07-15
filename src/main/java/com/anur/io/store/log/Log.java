@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfigHelper;
+import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.util.HanabiExecutors;
@@ -36,19 +37,19 @@ public class Log extends ReentrantLocker {
     private final AtomicLong lastFlushedTime = new AtomicLong(System.currentTimeMillis());
 
     /** 此 offset 之前的数据都已经刷盘 */
-    public long recoveryPoint = 0L;
+    public long recoveryPoint;
 
     /** 最近一个添加到 append 到日志文件中的 offset，默认取 baseOffset */
-    private long currentOffset = 0L;
+    private long currentOffset;
 
     public Log(long generation, File dir) throws IOException {
         this.generation = generation;
         this.dir = dir;
-        load();
+        this.currentOffset = load();
         this.recoveryPoint = currentOffset;
     }
 
-    private void load() throws IOException {
+    private long load() throws IOException {
         // 如果目录不存在，则创建此目录
         dir.mkdirs();
         logger.info("正在读取操作日志目录 {}", dir.getName());
@@ -105,7 +106,7 @@ public class Log extends ReentrantLocker {
             segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
         }
 
-        currentOffset = activeSegment().lastOffset(generation);
+        return activeSegment().lastOffset(generation);
     }
 
     /**
