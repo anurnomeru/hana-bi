@@ -97,6 +97,7 @@ public class OffsetIndex extends ReentrantLocker {
         this.entries = this.mmap.position() / FACTOR;
         this.maxEntries = this.mmap.limit() / FACTOR;
         this.lastOffset = readLastEntry().getOffset();
+        System.out.println();
     }
 
     /**
@@ -108,7 +109,14 @@ public class OffsetIndex extends ReentrantLocker {
             case 0:
                 return new OffsetAndPosition(baseOffset, 0);
             default:
-                return new OffsetAndPosition(baseOffset + relativeOffset(mmap, entries - 1), physical(mmap, entries - 1));
+                int relativeOffset = relativeOffset(mmap, entries - 1);
+                int physical = physical(mmap, entries - 1);
+
+                System.out.println("bos " + baseOffset);
+                System.out.println("relativeOffset " + relativeOffset);
+                System.out.println("physical " + physical);
+
+                return new OffsetAndPosition(baseOffset + relativeOffset, physical);
             }
         });
     }
@@ -231,10 +239,10 @@ public class OffsetIndex extends ReentrantLocker {
                 throw new LogException("Attempt to append to a full index (size = " + entries + ").");
             }
             if (entries == 0 || offset > lastOffset) {
-                logger.debug("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引", baseOffset + ".index", offset, position);
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
                 entries++;
+                logger.debug("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引，当前索引个数为 {}", baseOffset + ".index", offset, position, entries);
                 lastOffset = offset;
 
                 if (entries * 8 != mmap.position()) {

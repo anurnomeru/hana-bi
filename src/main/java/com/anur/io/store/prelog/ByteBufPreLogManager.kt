@@ -176,7 +176,6 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
             val byteBufPreLog = head.firstEntry()
                 .value
             byteBufPreLog.discardBefore(offset)
-            null
         })
     }
 }
