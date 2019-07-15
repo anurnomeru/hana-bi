@@ -45,7 +45,6 @@ object FollowerCoordinateManager : ReentrantReadWriteLocker() {
         HanabiListener.register(EventEnum.CLUSTER_INVALID
         ) {
             writeLocker {
-
                 cvc++
                 cancelFetchTask()
 

@@ -3,7 +3,7 @@ package com.anur.core.coordinate.apis
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.ReentrantReadWriteLocker
-import com.anur.io.store.OffsetManager
+import com.anur.io.store.prelog.CommitProcessManager
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
@@ -47,8 +47,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
      * 如果某个最大的 GAO 已经达到了 commit 条件，将返回此 GAO。
      */
     fun fetchReport(node: String, GAO: GenerationAndOffset): GenerationAndOffset {
-        val latestGAO = OffsetManager.getINSTANCE()
-            .load()!!
+        val latestGAO = CommitProcessManager.load()
 
         if (!ElectMeta.isLeader) {
             logger.error("不是leader不太可能收到 fetchReport！ 很可能是有BUG ")
@@ -87,8 +86,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
     }
 
     fun commitReport(node: String, commitGAO: GenerationAndOffset) {
-        val latestCommitGAO = OffsetManager.getINSTANCE()
-            .load()!!
+        val latestCommitGAO = CommitProcessManager.load()
 
         if (!ElectMeta.isLeader) {
             logger.error("不是leader不太可能收到 commitReport！ 很可能是有BUG ")
@@ -121,7 +119,12 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
             }
 
             // 找到最大的那个票数 >= quorum 的 commit GAO
-            commitMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }?.key?.also { logger.info("进度 {} 已经完成 commit ~", it.toString()) }
+            commitMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }
+                ?.key
+                ?.also {
+                    CommitProcessManager.cover(it)
+                    logger.info("进度 {} 已经完成 commit ~", it.toString())
+                }
                 ?: latestCommitGAO
         })
     }

@@ -293,6 +293,11 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                     // 取消所有任务
                     this.cancelAllTask();
 
+                    // 如果是leader。则先触发集群无效
+                    if (meta.isLeader()) {
+                        meta.electionStateChanged(false);
+                    }
+
                     // 成为follower
                     meta.becomeFollower();
 
