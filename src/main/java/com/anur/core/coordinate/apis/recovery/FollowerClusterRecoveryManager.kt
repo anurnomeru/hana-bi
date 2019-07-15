@@ -80,13 +80,11 @@ object FollowerClusterRecoveryManager {
             ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getCommitGAO()),
                 RequestProcessor(Consumer {
                     val recoveryComplete = RecoveryComplete(it)
-                    val rcc = recoveryComplete.getCommited()
-                    val rrc = ByteBufPreLogManager.getCommitGAO()
-                    if (rcc > rrc) {
-                        logger.debug("当前世代集群日志最高为 $rcc ，比本地 $rrc 小，故需删除大于集群日志的所有日志")
-                        LogManager.discardAfter(rcc)
-                    } else if (rcc < rrc) {
-                        logger.error("不可能出现的情况！！")
+                    val clusterGAO = recoveryComplete.getCommited()
+                    val localGAO = ByteBufPreLogManager.getCommitGAO()
+                    if (localGAO > clusterGAO) {
+                        logger.debug("当前世代集群日志最高为 $clusterGAO ，比本地 $localGAO 小，故需删除大于集群日志的所有日志")
+                        LogManager.discardAfter(clusterGAO)
                     }
 
                     logger.info("集群已经恢复正常，开始通知 Fetcher 进行日志同步")
