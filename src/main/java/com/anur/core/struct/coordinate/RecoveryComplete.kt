@@ -24,7 +24,7 @@ class RecoveryComplete : AbstractTimedStruct {
     private val BaseMessageOverhead: Int = CommitedOffsetOffset + CommitedOffsetLength
 
     constructor(latestGAO: GenerationAndOffset) {
-        init(BaseMessageOverhead, OperationTypeEnum.RECOVERY) {
+        init(BaseMessageOverhead, OperationTypeEnum.RECOVERY_RESPONSE) {
             byteBuffer.putLong(latestGAO.generation)
             byteBuffer.putLong(latestGAO.offset)
         }

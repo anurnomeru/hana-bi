@@ -150,7 +150,7 @@ object LogManager {
         val needLoadLog = firstEntry.value
 
         if (needLoadGen != gen) {
-            logger.error("注意一下这种情况，比较奇怪！")
+            logger.error("注意一下这种情况，比较奇怪！请求获取的世代为 $needLoadGen，当前世代为 $gen")
         }
 
         val logSegmentIterable =

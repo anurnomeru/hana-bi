@@ -81,7 +81,7 @@ public class Bootstrap {
                          .start();
 
             try {
-                Thread.sleep(1500);
+                Thread.sleep(15000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
