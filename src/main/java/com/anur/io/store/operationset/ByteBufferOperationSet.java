@@ -22,6 +22,9 @@ import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.core.struct.base.Operation;
 import com.anur.exception.LogException;
@@ -125,12 +128,29 @@ public class ByteBufferOperationSet extends OperationSet {
         return byteBuffer;
     }
 
+    public static Stream<ByteBufferOperationSet> cast(Collection<OperationAndOffset> operations) {
+        return operations.parallelStream()
+                         .map(oao -> {
+                             int allocate = oao.getOperation()
+                                               .totalSize();
+                             ByteBuffer byteBuffer = ByteBuffer.allocate(allocate + LogOverhead);
+                             byteBuffer.putLong(oao.getOffset());
+                             byteBuffer.putInt(oao.getOperation()
+                                                  .totalSize());
+                             byteBuffer.put(oao.getOperation()
+                                               .getByteBuffer());
+                             byteBuffer.flip();
+                             return byteBuffer;
+                         })
+                         .map(ByteBufferOperationSet::new);
+    }
+
     private static ByteBuffer create(Collection<OperationAndOffset> operations) {
         int count = operations.size();
         int needToAllocate = operations.stream()
                                        .map(operationAndOffset -> operationAndOffset.getOperation()
                                                                                     .totalSize())
-                                       .reduce((i1, i2) -> i1 + i2)
+                                       .reduce(Integer::sum)
                                        .orElse(0);
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(needToAllocate + count * LogOverhead);

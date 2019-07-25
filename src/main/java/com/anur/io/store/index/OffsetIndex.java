@@ -97,7 +97,6 @@ public class OffsetIndex extends ReentrantLocker {
         this.entries = this.mmap.position() / FACTOR;
         this.maxEntries = this.mmap.limit() / FACTOR;
         this.lastOffset = readLastEntry().getOffset();
-        System.out.println();
     }
 
     /**
@@ -111,11 +110,6 @@ public class OffsetIndex extends ReentrantLocker {
             default:
                 int relativeOffset = relativeOffset(mmap, entries - 1);
                 int physical = physical(mmap, entries - 1);
-
-                System.out.println("bos " + baseOffset);
-                System.out.println("relativeOffset " + relativeOffset);
-                System.out.println("physical " + physical);
-
                 return new OffsetAndPosition(baseOffset + relativeOffset, physical);
             }
         });

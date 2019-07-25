@@ -141,11 +141,13 @@ public class Log extends ReentrantLocker {
      */
     public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
         if (startOffset < currentOffset) {
-            throw new LogException("一定是哪里有问题");
+            throw new LogException(String.format("一定是哪里有问题，start：%s current：%s", startOffset, currentOffset));
         }
 
-        LogSegment logSegment = maybeRoll(byteBufferOperationSet.getByteBuffer()
-                                                                .limit());
+        int limit = byteBufferOperationSet.getByteBuffer()
+                                          .limit();
+
+        LogSegment logSegment = maybeRoll(limit);
         try {
             logSegment.append(startOffset, byteBufferOperationSet);
         } catch (IOException e) {

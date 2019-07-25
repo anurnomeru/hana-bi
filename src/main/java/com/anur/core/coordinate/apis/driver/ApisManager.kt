@@ -85,6 +85,9 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
 
         // serverName 是不会为空的，但是有一种情况例外，便是服务还未注册时 这里做特殊处理
         when {
+            /*
+             * 业务先验的条件判断
+             */
             typeEnum == OperationTypeEnum.REGISTER -> LeaderApisHandler.handleRegisterRequest(msg, channel)
             serverName == null -> logger.error("没有注册却发来了信息，猜想是过期的消息，或者出现了BUG！")
             writeLockSupplierCompel(Supplier {
@@ -120,7 +123,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
             OperationTypeEnum.COMMIT -> FollowerApisHandler.handleCommitRequest(msg, channel)
             else -> {
                 /*
-                *  response 处理
+                *  默认请求处理，也就是 response 处理
                 */
                 val requestType = ResponseAndRequestType[typeEnum]!!
                 if (StringUtil.isNullOrEmpty(serverName)) {
