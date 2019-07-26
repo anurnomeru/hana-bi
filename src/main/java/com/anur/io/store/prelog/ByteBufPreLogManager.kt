@@ -129,9 +129,6 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
 
                     val preLogMeta = getBefore(canCommit) ?: throw LogException("有bug请注意排查！！，不应该出现这个情况")
 
-                    val oao = preLogMeta.oao
-                    logger.error("${oao.first().offset}")
-
                     val byteBufferOperationSet = ByteBufferOperationSet.cast((preLogMeta.oao))
 
                     // 追加到磁盘

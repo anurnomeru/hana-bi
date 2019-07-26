@@ -52,7 +52,7 @@ public class Log extends ReentrantLocker {
     private long load() throws IOException {
         // 如果目录不存在，则创建此目录
         dir.mkdirs();
-        logger.info("正在读取操作日志目录 {}", dir.getName());
+        logger.info("正在读取日志文件目录 {}", dir.getName());
 
         for (File file : dir.listFiles()) {
             if (file.isFile()) {
@@ -104,7 +104,7 @@ public class Log extends ReentrantLocker {
 
         if (segments.size() == 0) {
             logger.info("当前世代 {} 目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", generation, dir.getAbsolutePath());
-            segments.put(0L, new LogSegment(dir, 1, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
+            segments.put(0L, new LogSegment(dir, 0, LogConfigHelper.getIndexInterval(), LogConfigHelper.getMaxIndexSize()));
         }
 
         return activeSegment().lastOffset(generation);
@@ -131,7 +131,7 @@ public class Log extends ReentrantLocker {
         try {
             logSegment.append(offset, byteBufferOperationSet);
         } catch (IOException e) {
-            throw new LogException("写入操作日志失败：" + operation.toString());
+            throw new LogException("写入日志文件失败：" + operation.toString());
         }
         currentOffset = offset;
     }
@@ -141,7 +141,9 @@ public class Log extends ReentrantLocker {
      */
     public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
         if (startOffset < currentOffset) {
-            throw new LogException(String.format("一定是哪里有问题，start：%s current：%s", startOffset, currentOffset));
+            throw new LogException(String.format("一定是哪里有问题，追加日志文件段 start：%s end：%s，但当前 current：%s", startOffset, endOffset, currentOffset));
+        }else {
+            logger.info(String.format("追加日志文件段 start：%s end：%s，当前 current：%s", startOffset, endOffset, currentOffset));
         }
 
         int limit = byteBufferOperationSet.getByteBuffer()
@@ -151,9 +153,10 @@ public class Log extends ReentrantLocker {
         try {
             logSegment.append(startOffset, byteBufferOperationSet);
         } catch (IOException e) {
-            throw new LogException("写入操作日志失败：" + startOffset + " => " + endOffset);
+            throw new LogException("写入日志文件失败：" + startOffset + " => " + endOffset);
         }
         currentOffset = endOffset;
+        logger.info(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s", startOffset, endOffset, currentOffset));
     }
 
     /**
