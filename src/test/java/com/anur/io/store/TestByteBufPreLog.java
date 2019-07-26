@@ -10,6 +10,8 @@ import com.anur.io.store.prelog.ByteBufPreLogManager;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/22
+ *
+ * 测试能否正确写入预日志，并进行提交
  */
 public class TestByteBufPreLog {
 
@@ -22,14 +24,16 @@ public class TestByteBufPreLog {
 
         HanabiExecutors.Companion.execute(() -> {
             long start = System.currentTimeMillis();
-            for (int i = 30000000; i < 30000999; i++) {
+            for (int i = 1000; i < 2000; i++) {
                 byteBufPreLogManager
                     .append(0, new ByteBufferOperationSet(
-                        new Operation(OperationTypeEnum.SETNX, "Asssssssss", "YYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSB"), i));
+                        new Operation(OperationTypeEnum.SETNX, "Asssssssss",
+                            "YYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSB"), i));
             }
             System.out.println(start - System.currentTimeMillis());
         });
 
+        byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
         HanabiExecutors.Companion.submit(() -> {
             while (true) {
                 Thread.sleep(100);
