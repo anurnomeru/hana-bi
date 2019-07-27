@@ -38,9 +38,8 @@ public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
     public boolean equals(Object obj) {
         return Optional.ofNullable(obj)
                        .filter(o -> o instanceof GenerationAndOffset)
-                       .map(o ->
-                           ((GenerationAndOffset) o).generation == this.generation
-                               && ((GenerationAndOffset) o).offset == this.offset)
+                       .map(o -> (GenerationAndOffset) o)
+                       .map(o -> o.generation == this.generation && o.offset == this.offset)
                        .orElse(false);
     }
 

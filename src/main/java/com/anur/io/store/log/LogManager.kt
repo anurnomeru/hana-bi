@@ -6,12 +6,12 @@ import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.elect.operator.ElectOperator
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
+import com.anur.core.lock.ReentrantLocker
 import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
 import com.anur.io.store.common.FetchDataInfo
 import com.anur.io.store.common.LogCommon
 import com.anur.io.store.common.PreLogMeta
-import com.anur.io.store.operationset.ByteBufferOperationSet
 import com.anur.io.store.prelog.CommitProcessManager
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -22,7 +22,7 @@ import kotlin.math.max
 /**
  * Created by Anur IjuoKaruKas on 2019/7/12
  */
-object LogManager {
+object LogManager : ReentrantLocker() {
 
     private val logger = LoggerFactory.getLogger(LogManager::class.java)
 
@@ -41,7 +41,7 @@ object LogManager {
 
     /** Leader节点比较特殊，在集群不可用以后，要销毁掉集群内未提交的操作日志 */
     @Volatile
-    private var isLeaderCurrnet: Boolean = false
+    private var isLeaderCurrent: Boolean = false
 
     /**
      * 加载既存的目录们
@@ -49,12 +49,12 @@ object LogManager {
     private fun init(): GenerationAndOffset {
         HanabiListener.register(EventEnum.CLUSTER_VALID) {
             if (ElectMeta.isLeader) {
-                isLeaderCurrnet = true
+                isLeaderCurrent = true
             }
         }
 
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
-            if (isLeaderCurrnet) {
+            if (isLeaderCurrent) {
                 CommitProcessManager.discardInvalidMsg()
             }
         }
@@ -89,24 +89,28 @@ object LogManager {
      * 添加一条操作日志到磁盘的入口
      */
     fun append(operation: Operation) {
-        val operationId = ElectOperator.getInstance()
-            .genOperationId()
+        lockSupplier {
+            val operationId = ElectOperator.getInstance()
+                .genOperationId()
 
-        currentGAO = operationId
+            currentGAO = operationId
 
-        val log = maybeRoll(operationId.generation)
-        log.append(operation, operationId.offset)
+            val log = maybeRoll(operationId.generation)
+            log.append(operation, operationId.offset)
+        }
     }
 
     /**
      * 添加多条操作日志到磁盘的入口
      */
     fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
-        val log = maybeRoll(generation)
+        lockSupplier {
+            val log = maybeRoll(generation)
 
-        log.append(preLogMeta, startOffset, endOffset)
+            log.append(preLogMeta, startOffset, endOffset)
 
-        currentGAO = GenerationAndOffset(generation, endOffset)
+            currentGAO = GenerationAndOffset(generation, endOffset)
+        }
     }
 
     /**
@@ -203,13 +207,15 @@ object LogManager {
      * 丢弃某个 GAO 往后的所有消息
      */
     fun discardAfter(GAO: GenerationAndOffset) {
-        for (i in GAO.generation..currentGAO.generation) {
-            loadGenLog(i)
-        }
+        lockSupplier {
+            for (i in GAO.generation..currentGAO.generation) {
+                loadGenLog(i)
+            }
 
-        var result = doDiscardAfter(GAO)
-        while (result) {
-            result = doDiscardAfter(GAO)
+            var result = doDiscardAfter(GAO)
+            while (result) {
+                result = doDiscardAfter(GAO)
+            }
         }
     }
 

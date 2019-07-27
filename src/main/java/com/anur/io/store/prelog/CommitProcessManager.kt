@@ -20,6 +20,8 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
+    private val dir = File(LogConfigHelper.getBaseDir()!!)
+
     private val offsetFile = File(LogConfigHelper.getBaseDir(), "commitOffset.temp")
 
     private val mmap: MappedByteBuffer
@@ -27,6 +29,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
     private var commitGAO: GenerationAndOffset? = null
 
     init {
+        dir.mkdir()
         offsetFile.createNewFile()
         val raf = RandomAccessFile(offsetFile, "rw")
         raf.setLength((8 + 8).toLong())
@@ -38,9 +41,10 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
     }
 
     fun discardInvalidMsg() {
-        if (commitGAO != GenerationAndOffset.INVALID) {
+        if (commitGAO != null && commitGAO != GenerationAndOffset.INVALID) {
             logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
             LogManager.discardAfter(commitGAO!!)
+            ByteBufPreLogManager.cover(commitGAO!!)
             cover(GenerationAndOffset.INVALID)
         }
     }
