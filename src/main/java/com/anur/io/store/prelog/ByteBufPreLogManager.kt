@@ -89,8 +89,6 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
                 if (oaoOffset <= currentLast) {
                     logger.error("追加到预日志的日志 offset $oaoOffset 小于当前预日志 offset $currentLast，追加失败！！")
                     break
-                } else {
-                    logger.info("追加预日志 offset $oaoOffset 成功，当前预日志 offset 为 $currentLast")
                 }
 
                 byteBufPreLogOperated!!.append(oao.operation, oao.offset)
@@ -129,12 +127,8 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
 
                     val preLogMeta = getBefore(canCommit) ?: throw LogException("有bug请注意排查！！，不应该出现这个情况")
 
-                    val byteBufferOperationSet = ByteBufferOperationSet.cast((preLogMeta.oao))
-
                     // 追加到磁盘
-                    for (bos in byteBufferOperationSet) {
-                        LogManager.append(bos, GAO.generation, preLogMeta.startOffset, preLogMeta.endOffset)
-                    }
+                    LogManager.append(preLogMeta, GAO.generation, preLogMeta.startOffset, preLogMeta.endOffset)
 
                     // 强制刷盘
                     LogManager.activeLog().flush(preLogMeta.endOffset)

@@ -7,6 +7,7 @@ import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
 import com.anur.io.store.common.FetchDataInfo
 import com.anur.io.store.common.LogCommon
+import com.anur.io.store.common.PreLogMeta
 import com.anur.io.store.operationset.ByteBufferOperationSet
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -80,9 +81,10 @@ object LogManager {
     /**
      * 添加多条操作日志到磁盘的入口
      */
-    fun append(byteBufferOperationSet: ByteBufferOperationSet, generation: Long, startOffset: Long, endOffset: Long) {
+    fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
         val log = maybeRoll(generation)
-        log.append(byteBufferOperationSet, startOffset, endOffset)
+
+        log.append(preLogMeta, startOffset, endOffset)
 
         currentGAO = GenerationAndOffset(generation, endOffset)
     }

@@ -14,6 +14,8 @@ import com.anur.core.struct.base.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.exception.LogException;
 import com.anur.io.store.common.LogCommon;
+import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.store.common.PreLogMeta;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.google.common.collect.Lists;
 
@@ -139,24 +141,25 @@ public class Log extends ReentrantLocker {
     /**
      * 将多个操作添加到日志文件中
      */
-    public void append(ByteBufferOperationSet byteBufferOperationSet, long startOffset, long endOffset) {
+    public void append(PreLogMeta preLogMeta, long startOffset, long endOffset) {
         if (startOffset < currentOffset) {
             throw new LogException(String.format("一定是哪里有问题，追加日志文件段 start：%s end：%s，但当前 current：%s", startOffset, endOffset, currentOffset));
-        }else {
-            logger.info(String.format("追加日志文件段 start：%s end：%s，当前 current：%s", startOffset, endOffset, currentOffset));
+        } else {
+            logger.info(String.format("追加日志文件段 start：%s end：%s 准备，当前 current：%s", startOffset, endOffset, currentOffset));
         }
 
-        int limit = byteBufferOperationSet.getByteBuffer()
-                                          .limit();
+        int count = 0;
 
-        LogSegment logSegment = maybeRoll(limit);
         try {
-            logSegment.append(startOffset, byteBufferOperationSet);
-        } catch (IOException e) {
+            for (OperationAndOffset operationAndOffset : preLogMeta.getOao()) {
+                count++;
+                append(operationAndOffset.getOperation(), operationAndOffset.getOffset());
+            }
+        } catch (Throwable e) {
             throw new LogException("写入日志文件失败：" + startOffset + " => " + endOffset);
         }
         currentOffset = endOffset;
-        logger.info(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s", startOffset, endOffset, currentOffset));
+        logger.info(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s，共追加 %s 条操作日志", startOffset, endOffset, currentOffset, count));
     }
 
     /**
