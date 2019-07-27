@@ -41,6 +41,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
         if (commitGAO != GenerationAndOffset.INVALID) {
             logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
             LogManager.discardAfter(commitGAO!!)
+            cover(GenerationAndOffset.INVALID)
         }
     }
 
@@ -62,6 +63,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
             mmap.putLong(GAO.generation)
             mmap.putLong(GAO.offset)
             mmap.rewind()
+            mmap.force()
             commitGAO = null
         }
     }

@@ -1,4 +1,4 @@
-package com.anur.core.coordinate.apis
+package com.anur.core.coordinate.apis.fetch
 
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
@@ -74,9 +74,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
                 currentFetchMap[node] = GAO// 更新节点的 fetch 进度
                 fetchMap.compute(GAO) { // 更新节点最近一次 fetch 处于哪个 GAO
                     _, strings ->
-                    (strings ?: mutableSetOf()).also {
-                        it.add(node)
-                    }
+                    (strings ?: mutableSetOf()).also { it.add(node) }
                 }
 
                 // 找到最大的那个票数 >= quorum 的 fetch GAO
@@ -104,12 +102,20 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
         }
 
         writeLockSupplierCompel(Supplier {
-            // 移除之前的 commit 记录
+            /*
+             * 1、移除节点旧的 commit 进度
+             */
             currentCommitGAO?.also {
-                logger.info("节点 {} 已经 commit 进度由 {} 更新到了进度 {}", node, it.toString(), commitGAO.toString())
+                logger.info("节点 {} 的 commit 进度由 {} 更新到了进度 {}", node, it.toString(), commitGAO.toString())
                 commitMap[it]!!.remove(node)
-            } ?: logger.info("节点 {} 已经 fetch 更新到了进度 {}", node, commitGAO.toString())
+            } ?: logger.info("节点 {} 的 commit 更新到了进度 {}", node, commitGAO.toString())
 
+            /*
+             * 2、移除节点旧的 commit进度，并记录最新的一次 commit 进度
+             *
+             * 记录在 currentCommitMap 记录一次
+             *    在 commitMap 记录一次
+             */
             currentCommitMap[node] = commitGAO//更新节点的 commit 进度
             commitMap.compute(commitGAO) { // 更新节点最近一次 commit 处于哪个 GAO
                 _, strings ->
@@ -118,7 +124,11 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
                 }
             }
 
-            // 找到最大的那个票数 >= quorum 的 commit GAO
+            /*
+             * 3、找到最大的那个票数 >= quorum 的 commit GAO
+             *
+             * 将最高记录写入本地
+             */
             commitMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }
                 ?.key
                 ?.also {

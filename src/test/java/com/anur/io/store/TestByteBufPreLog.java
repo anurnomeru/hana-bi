@@ -19,9 +19,7 @@ public class TestByteBufPreLog {
         new Operation(OperationTypeEnum.SETNX, "1", "");
 
         LogManager instance = LogManager.INSTANCE;
-
         ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
-
         HanabiExecutors.Companion.submit(() -> {
             while (true) {
                 Thread.sleep(100);
@@ -30,7 +28,6 @@ public class TestByteBufPreLog {
         });
 
         HanabiExecutors.Companion.execute(() -> {
-            long start = System.currentTimeMillis();
             for (int i = 1000; i < 2000; i++) {
                 byteBufPreLogManager
                     .append(0, new ByteBufferOperationSet(
@@ -40,7 +37,6 @@ public class TestByteBufPreLog {
         });
 
         byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
-
         Thread.sleep(100000);
     }
 }

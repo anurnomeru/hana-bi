@@ -2,10 +2,10 @@ package com.anur;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.coordinate.apis.LeaderCoordinateManager;
+import com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager;
 import com.anur.core.coordinate.apis.recovery.FollowerClusterRecoveryManager;
 import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager;
-import com.anur.core.coordinate.apis.FollowerCoordinateManager;
+import com.anur.core.coordinate.apis.fetch.FollowerCoordinateManager;
 import com.anur.core.coordinate.operator.CoordinateServerOperator;
 import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.operator.ElectServerOperator;
@@ -13,6 +13,7 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.io.store.log.LogManager;
+import com.anur.io.store.prelog.CommitProcessManager;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/13
@@ -56,6 +57,11 @@ public class Bootstrap {
              * 集群日志恢复器
              */
             FollowerClusterRecoveryManager forInitial04 = FollowerClusterRecoveryManager.INSTANCE;
+
+            /*
+             * 提交记录管理者（仅leader）
+             */
+            CommitProcessManager forInitial05 = CommitProcessManager.INSTANCE;
 
             /*
              * 初始化日志管理

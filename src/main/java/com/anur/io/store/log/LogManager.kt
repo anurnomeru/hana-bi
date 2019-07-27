@@ -1,14 +1,18 @@
 package com.anur.io.store.log
 
 import com.anur.config.LogConfigHelper
+import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.elect.operator.ElectOperator
+import com.anur.core.listener.EventEnum
+import com.anur.core.listener.HanabiListener
 import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
 import com.anur.io.store.common.FetchDataInfo
 import com.anur.io.store.common.LogCommon
 import com.anur.io.store.common.PreLogMeta
 import com.anur.io.store.operationset.ByteBufferOperationSet
+import com.anur.io.store.prelog.CommitProcessManager
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -35,10 +39,26 @@ object LogManager {
     @Volatile
     private var currentGAO = initial
 
+    /** Leader节点比较特殊，在集群不可用以后，要销毁掉集群内未提交的操作日志 */
+    @Volatile
+    private var isLeaderCurrnet: Boolean = false
+
     /**
      * 加载既存的目录们
      */
     private fun init(): GenerationAndOffset {
+        HanabiListener.register(EventEnum.CLUSTER_VALID) {
+            if (ElectMeta.isLeader) {
+                isLeaderCurrnet = true
+            }
+        }
+
+        HanabiListener.register(EventEnum.CLUSTER_INVALID) {
+            if (isLeaderCurrnet) {
+                CommitProcessManager.discardInvalidMsg()
+            }
+        }
+
         baseDir.mkdirs()
 
         var latestGeneration = 0L
@@ -190,7 +210,6 @@ object LogManager {
         var result = doDiscardAfter(GAO)
         while (result) {
             result = doDiscardAfter(GAO)
-            println(result)
         }
     }
 

@@ -11,23 +11,24 @@ object HanabiListener {
 
     private val logger = LoggerFactory.getLogger(FollowerClusterRecoveryManager::class.java)
 
-    private val EVENT: MutableMap<EventEnum, Registion> = mutableMapOf()
+    private val EVENT: MutableMap<String, Registion> = mutableMapOf()
+
 
     @Synchronized
-    fun register(event: EventEnum, action: () -> Unit) {
-        EVENT.compute(event, BiFunction { _, v ->
-            var registion = v
-            if (registion == null) {
-                registion = Registion()
-            }
-            registion.register(action)
-            return@BiFunction registion
+    fun register(event: EventEnum, key: String? = null, action: () -> Unit) {
+        EVENT.compute(event.name + key?.let { " - $it" }, BiFunction { _, v ->
+            return@BiFunction (v ?: Registion()).also { r -> r.register(action) }
         })
     }
 
-    fun onEvent(event: EventEnum) {
-        logger.info("Event ${event.name} is triggered")
-        EVENT[event]?.onEvent()
+    @Synchronized
+    fun clear(event: EventEnum, key: String? = null) {
+        EVENT.remove(event.name + key?.let { " - $it" })
+    }
+
+    fun onEvent(event: EventEnum, key: String? = null) {
+        logger.info("Event ${event.name + key?.let { " - $it" }} is triggered")
+        EVENT[event.name]?.onEvent()
     }
 
     class Registion {

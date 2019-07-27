@@ -1,19 +1,22 @@
 package com.anur.core.coordinate.apis.recovery
 
+import com.anur.config.InetSocketAddressConfigHelper
 import com.anur.core.common.Resetable
 import com.anur.core.coordinate.apis.driver.ApisManager
+import com.anur.core.coordinate.apis.fetch.CoordinateFetcher
 import com.anur.core.coordinate.model.RequestProcessor
+import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
+import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.RecoveryComplete
 import com.anur.core.util.TimeUtil
 import com.anur.io.store.log.LogManager
 import com.anur.io.store.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentSkipListSet
 import java.util.function.Consumer
 
 /**
@@ -54,12 +57,14 @@ import java.util.function.Consumer
  *
  * 需要检查当前世代 的last Offset，进行check，如果与leader不符，则需要truncate后恢复可用。
  */
-object LeaderClusterRecoveryManager : Resetable {
+object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
 
     override fun reset() {
-        logger.debug("LeaderClusterRecoveryManager RESET is triggered")
-        RecoveryMap.clear()
-        recoveryComplete = false
+        writeLocker {
+            logger.debug("LeaderClusterRecoveryManager RESET is triggered")
+            RecoveryMap.clear()
+            recoveryComplete = false
+        }
     }
 
     init {
@@ -103,19 +108,37 @@ object LeaderClusterRecoveryManager : Resetable {
 
         if (!recoveryComplete) {
             if (RecoveryMap.size >= ElectMeta.quorum) {
-                var newest: MutableMap.MutableEntry<String, GenerationAndOffset>? = null
+                var latest: MutableMap.MutableEntry<String, GenerationAndOffset>? = null
                 RecoveryMap.entries.forEach(Consumer {
-                    if (newest == null || it.value > newest!!.value) {
-                        newest = it
+                    if (latest == null || it.value > latest!!.value) {
+                        latest = it
                     }
                 })
 
-                if (newest!!.value == ByteBufPreLogManager.getCommitGAO()) {
+                if (latest!!.value == ByteBufPreLogManager.getCommitGAO()) {
                     val cost = TimeUtil.getTime() - RecoveryTimer
-                    logger.info("已有过半节点提交了最大进度，且集群最大进度 ${newest!!.value} 与 Leader 节点相同，集群已恢复，耗时 $cost ms ")
+                    logger.info("已有过半节点提交了最大进度，且集群最大进度 ${latest!!.value} 与 Leader 节点相同，集群已恢复，耗时 $cost ms ")
                     shuttingWhileRecoveryComplete()
                 } else {
-                    logger.info("已有过半节点提交了最大进度，集群最大进度于节点 ${newest!!.key} ，进度为 ${newest!!.value}")
+                    val serverName = latest!!.key
+                    val GAO = latest!!.value
+                    val node = InetSocketAddressConfigHelper.getNode(serverName);
+
+                    logger.info("已有过半节点提交了最大进度，集群最大进度于节点 $serverName ，进度为 $GAO ，Leader 将从其同步最新数据")
+
+                    HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO, serverName) {
+                        startToFetchFrom(serverName)
+                    }
+                    HanabiListener.register(EventEnum.COORDINATE_DISCONNECT_TO, serverName) {
+                        cancelFetchTask()
+                    }
+                    HanabiListener.register(EventEnum.CLUSTER_INVALID) {
+                        HanabiListener.clear(EventEnum.COORDINATE_CONNECT_TO, serverName)
+                        HanabiListener.clear(EventEnum.COORDINATE_DISCONNECT_TO, serverName)
+                        CoordinateClientOperator.getInstance(node).shutDown()
+                    }
+
+                    CoordinateClientOperator.getInstance(node).tryStartWhileDisconnected()
                 }
             }
         }
@@ -139,5 +162,9 @@ object LeaderClusterRecoveryManager : Resetable {
     private fun doSendRecoveryComplete(serverName: String, latestGao: GenerationAndOffset) {
         val GAO = GenerationAndOffset(latestGao.generation, LogManager.loadGenLog(latestGao.generation).currentOffset)
         ApisManager.send(serverName, RecoveryComplete(GAO), RequestProcessor.REQUIRE_NESS)
+    }
+
+    override fun howToConsumeFetchResponse(fetchFrom: String, fetchResponse: FetchResponse) {
+
     }
 }

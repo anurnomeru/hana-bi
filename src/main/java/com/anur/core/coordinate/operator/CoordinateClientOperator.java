@@ -152,8 +152,11 @@ public class CoordinateClientOperator implements Runnable {
         this.hanabiNode = node;
         if (node.getServerName()
                 .equals(ElectMeta.INSTANCE.getLeader())) {
-            this.doWhenConnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_CONNECT_TO_LEADER));
-            this.doWhenDisconnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_DISCONNECT_TO_LEADER));
+            this.doWhenConnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_CONNECT_TO_LEADER, null));
+            this.doWhenDisconnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_DISCONNECT_TO_LEADER, null));
+        }else {
+            this.doWhenConnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_CONNECT_TO, node.getServerName()));
+            this.doWhenDisconnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_DISCONNECT_TO, node.getServerName()));
         }
     }
 

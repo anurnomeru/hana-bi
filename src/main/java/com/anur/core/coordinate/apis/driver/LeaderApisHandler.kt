@@ -2,7 +2,7 @@ package com.anur.core.coordinate.apis.driver
 
 import com.anur.config.InetSocketAddressConfigHelper
 import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager
-import com.anur.core.coordinate.apis.LeaderCoordinateManager
+import com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.struct.coordinate.CommitResponse
 import com.anur.core.struct.coordinate.Commiter
