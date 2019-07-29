@@ -119,6 +119,10 @@ public class Log extends ReentrantLocker {
         return currentOffset;
     }
 
+    public void setCurrentOffset(long currentOffset) {
+        this.currentOffset = currentOffset;
+    }
+
     /**
      * 将一个操作添加到日志文件中
      */

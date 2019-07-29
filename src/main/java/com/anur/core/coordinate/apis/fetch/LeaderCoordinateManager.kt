@@ -4,7 +4,7 @@ import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.io.store.prelog.ByteBufPreLogManager
-import com.anur.io.store.prelog.CommitProcessManager
+import com.anur.io.store.log.CommitProcessManager
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier

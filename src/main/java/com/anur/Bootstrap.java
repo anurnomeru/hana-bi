@@ -14,7 +14,7 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.io.store.log.LogManager;
-import com.anur.io.store.prelog.CommitProcessManager;
+import com.anur.io.store.log.CommitProcessManager;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/13

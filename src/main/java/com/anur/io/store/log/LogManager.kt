@@ -12,7 +12,6 @@ import com.anur.exception.LogException
 import com.anur.io.store.common.FetchDataInfo
 import com.anur.io.store.common.LogCommon
 import com.anur.io.store.common.PreLogMeta
-import com.anur.io.store.prelog.CommitProcessManager
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -53,6 +52,9 @@ object LogManager : ReentrantLocker() {
             }
         }
 
+        /**
+         * 当集群不可用，必须抛弃未 commit 部分，避免将未提交的数据当做
+         */
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
             if (isLeaderCurrent) {
                 CommitProcessManager.discardInvalidMsg()
@@ -163,6 +165,10 @@ object LogManager : ReentrantLocker() {
         val gen = GAO.generation
         val offset = GAO.offset
 
+        if (!generationDirs.containsKey(gen)) {
+            loadGenLog(gen)
+        }
+
         val tailMap = generationDirs.tailMap(gen, true)
         if (tailMap == null || tailMap.size == 0) {
             // 世代过大或者此世代还未有预日志
@@ -216,6 +222,7 @@ object LogManager : ReentrantLocker() {
             while (result) {
                 result = doDiscardAfter(GAO)
             }
+            currentGAO = GAO
         }
     }
 
@@ -276,6 +283,7 @@ object LogManager : ReentrantLocker() {
                 if (it.baseOffset <= offset && offset <= it.lastOffset(needDeleteGen)) {
                     it.truncateTo(offset)
                     logger.debug("删除日志分片 ${it.fileOperationSet.file} 中大于等于 $offset 的记录移除")
+                    needDeleteLog.currentOffset = offset
                 } else {
                     it.fileOperationSet.fileChannel.close()
                     val needToDelete = it.fileOperationSet.file

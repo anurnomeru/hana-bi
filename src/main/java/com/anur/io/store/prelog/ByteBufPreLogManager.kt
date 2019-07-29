@@ -4,6 +4,7 @@ import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.exception.LogException
 import com.anur.io.store.common.PreLogMeta
+import com.anur.io.store.log.CommitProcessManager
 import com.anur.io.store.log.LogManager
 import com.anur.io.store.operationset.ByteBufferOperationSet
 import org.slf4j.LoggerFactory

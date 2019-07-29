@@ -1,12 +1,9 @@
-package com.anur.io.store.prelog
+package com.anur.io.store.log
 
 import com.anur.config.LogConfigHelper
-import com.anur.core.coordinate.apis.recovery.FollowerClusterRecoveryManager
 import com.anur.core.elect.model.GenerationAndOffset
-import com.anur.core.listener.EventEnum
-import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.ReentrantReadWriteLocker
-import com.anur.io.store.log.LogManager
+import com.anur.io.store.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.RandomAccessFile
@@ -34,7 +31,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
         val raf = RandomAccessFile(offsetFile, "rw")
         raf.setLength((8 + 8).toLong())
 
-        this.mmap = raf.channel.map(FileChannel.MapMode.READ_WRITE, 0, (8 + 8).toLong())
+        mmap = raf.channel.map(FileChannel.MapMode.READ_WRITE, 0, (8 + 8).toLong())
 
         load()
         discardInvalidMsg()
@@ -42,14 +39,10 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
     fun discardInvalidMsg() {
         if (commitGAO != null && commitGAO != GenerationAndOffset.INVALID) {
-            try {
-                logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
-                LogManager.discardAfter(commitGAO!!)
-                ByteBufPreLogManager.cover(commitGAO!!)
-                cover(GenerationAndOffset.INVALID)
-            } catch (e: Exception) {
-                println()
-            }
+            logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
+            LogManager.discardAfter(commitGAO!!)
+            ByteBufPreLogManager.cover(commitGAO!!)
+            cover(GenerationAndOffset.INVALID)
         }
     }
 

@@ -14,7 +14,6 @@ class TestAppendThenDiscard
 fun main() {
 
     ElectOperator.getInstance().start()
-
     try {
         for (i in 0..99999) {
             val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")
@@ -22,14 +21,11 @@ fun main() {
         }
     } catch (e: Exception) {
     }
-
     LogManager.discardAfter(GenerationAndOffset(5, 5))
 
     for (i in 0..99999) {
         val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")
         LogManager.append(operation)
     }
-
     println()
-
 }
