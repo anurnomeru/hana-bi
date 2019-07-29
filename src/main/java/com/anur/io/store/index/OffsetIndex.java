@@ -236,7 +236,7 @@ public class OffsetIndex extends ReentrantLocker {
                 mmap.putInt((int) (offset - baseOffset));
                 mmap.putInt(position);
                 entries++;
-                logger.debug("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引，当前索引个数为 {}", baseOffset + ".index", offset, position, entries);
+                logger.trace("在索引文件 {} 为 offset 为 {} 的日志添加 position 为 {} 的索引，当前索引个数为 {}", baseOffset + ".index", offset, position, entries);
                 lastOffset = offset;
 
                 if (entries * 8 != mmap.position()) {

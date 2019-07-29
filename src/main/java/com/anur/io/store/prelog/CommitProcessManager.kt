@@ -42,10 +42,14 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
     fun discardInvalidMsg() {
         if (commitGAO != null && commitGAO != GenerationAndOffset.INVALID) {
-            logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
-            LogManager.discardAfter(commitGAO!!)
-            ByteBufPreLogManager.cover(commitGAO!!)
-            cover(GenerationAndOffset.INVALID)
+            try {
+                logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
+                LogManager.discardAfter(commitGAO!!)
+                ByteBufPreLogManager.cover(commitGAO!!)
+                cover(GenerationAndOffset.INVALID)
+            } catch (e: Exception) {
+                println()
+            }
         }
     }
 

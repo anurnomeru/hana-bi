@@ -51,7 +51,6 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
         val latestGAO = CommitProcessManager.load()
 
         if (!ElectMeta.isLeader) {
-            logger.error("不是leader不太可能收到 fetchReport！ 很可能是有BUG ")
             return latestGAO
         }
 

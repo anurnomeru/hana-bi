@@ -36,7 +36,7 @@ object LeaderApisHandler {
             .getChannelName(channel)
         val GAO = recoveryReporter.getCommited()
 
-        logger.debug("收到来自协调节点 {} 的 RecoveryReport 请求 {} ", serverName, GAO)
+        logger.trace("收到来自协调节点 {} 的 RecoveryReport 请求 {} ", serverName, GAO)
         LeaderClusterRecoveryManager.receive(serverName, GAO)
     }
 
@@ -48,7 +48,7 @@ object LeaderApisHandler {
         val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE)
             .getChannelName(channel)
 
-        logger.debug("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.fetchGAO)
+        logger.trace("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.fetchGAO)
 
         val canCommit = LeaderCoordinateManager.fetchReport(serverName, fetcher.fetchGAO)
 

@@ -2,6 +2,7 @@ package com.anur;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager;
 import com.anur.core.coordinate.apis.recovery.FollowerClusterRecoveryManager;
 import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager;
@@ -34,7 +35,8 @@ public class Bootstrap {
                 "|  __)| |/ _  |  _ \\ / _  | || \\| |\n" +
                 "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
                 "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
-                "           Hanabi     (ver 0.0.1)\n\n");
+                "           Hanabi     (ver 0.0.1)\n\n" +
+                "节点 - " + InetSocketAddressConfigHelper.getServerName() + "\n");
 
         HanabiExecutors.Companion.execute(() -> {
 

@@ -28,7 +28,7 @@ object FollowerApisHandler {
         val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE)
             .getChannelName(channel)
 
-        logger.debug("收到来自协调 Leader {} 的 commit 请求 {} ", serverName, commiter.canCommitGAO)
+        logger.trace("收到来自协调 Leader {} 的 commit 请求 {} ", serverName, commiter.canCommitGAO)
         ByteBufPreLogManager.commit(commiter.canCommitGAO)
 
         val commitGAO = ByteBufPreLogManager.getCommitGAO()

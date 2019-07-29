@@ -276,7 +276,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             // 世代大于当前世代
             if (generation >= meta.getGeneration()) {
                 needToSendHeartBeatInfection = false;
-                logger.debug(msg);
+                logger.trace(msg);
 
                 if (meta.getLeader() == null) {
 
@@ -459,7 +459,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      */
     private void cancelCandidateAndBeginElectTask(String msg) {
         this.lockSupplier(() -> {
-            logger.debug(msg);
+            logger.trace(msg);
             Optional.ofNullable(taskMap.get(TaskEnum.BECOME_CANDIDATE))
                     .ifPresent(TimedTask::cancel);
             return null;

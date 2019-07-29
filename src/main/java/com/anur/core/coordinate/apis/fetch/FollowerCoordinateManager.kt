@@ -48,7 +48,7 @@ object FollowerCoordinateManager : CoordinateFetcher() {
     }
 
     override fun howToConsumeFetchResponse(fetchFrom: String, fetchResponse: FetchResponse) {
-        logger.debug("收到节点 {} 返回的 FETCH_RESPONSE", fetchFrom)
+        logger.trace("收到节点 {} 返回的 FETCH_RESPONSE", fetchFrom)
         ElectMeta.takeIf { it.isLeader }?.run { logger.error("出现了不应该出现的情况！") }
         if (fetchResponse.fileOperationSetSize == 0) return
         ByteBufPreLogManager

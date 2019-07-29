@@ -58,7 +58,7 @@ public abstract class ReconnectableClient {
             if (shutDownHooker.isShutDown()) {
                 logger.debug("与节点 {} [{}:{}] 的连接已被终止，无需再进行重连", serverName, host, port);
             } else {
-                logger.debug("正在重新连接节点 {} [{}:{}] ...", serverName, host, port);
+                logger.trace("正在重新连接节点 {} [{}:{}] ...", serverName, host, port);
                 this.howToRestart();
             }
         });
@@ -83,7 +83,7 @@ public abstract class ReconnectableClient {
             channelFuture.addListener(future -> {
                 if (!future.isSuccess()) {
                     if (reconnectLatch.getCount() == 1) {
-                        logger.debug("连接节点 {} [{}:{}] 失败，准备进行重连 ...", serverName, host, port);
+                        logger.trace("连接节点 {} [{}:{}] 失败，准备进行重连 ...", serverName, host, port);
                     }
 
                     reconnectLatch.countDown();

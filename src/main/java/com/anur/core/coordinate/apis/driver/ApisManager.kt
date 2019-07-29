@@ -134,7 +134,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
                 if (requestProcessor != null) {
                     requestProcessor.complete(msg)
                     removeFromInFlightRequest(serverName, requestType)
-                    logger.debug("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name)
+                    logger.trace("收到来自节点 {} 关于 {} 的 response", serverName, requestType.name)
                 }
             }
         }
@@ -147,7 +147,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
         val typeEnum = command.operationTypeEnum
 
         return if (getRequestProcessorIfInFlight(serverName, typeEnum) != null) {
-            logger.debug("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name)
+            logger.trace("尝试创建发送到节点 {} 的 {} 任务失败，上次的指令还未收到 response", serverName, typeEnum.name)
             false
         } else {
             appendToInFlightRequest(serverName, typeEnum, requestProcessor)
@@ -169,7 +169,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
             val task = TimedTask(CoordinateConfigHelper.getFetchBackOfMs().toLong()) { sendImpl(serverName, command, requestProcessor, operationTypeEnum) }
             if (reAppendToInFlightRequest(serverName, operationTypeEnum, task)) {
 
-                logger.debug("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum)
+                logger.trace("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum)
                 Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
                     .addTask(task)
             }
@@ -182,7 +182,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
      */
     private fun appendToInFlightRequest(serverName: String, typeEnum: OperationTypeEnum, requestProcessor: RequestProcessor?) {
         writeLockSupplier(Supplier {
-            logger.debug("InFlight {} {} => 创建发送任务", serverName, typeEnum)
+            logger.trace("InFlight {} {} => 创建发送任务", serverName, typeEnum)
             inFlight.compute(serverName) { _, enums -> (enums ?: mutableMapOf()).also { it[typeEnum] = requestProcessor } }
         })
     }
@@ -194,7 +194,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
      */
     private fun reAppendToInFlightRequest(serverName: String, typeEnum: OperationTypeEnum, timedTask: TimedTask): Boolean {
         return writeLockSupplierCompel(Supplier {
-            logger.debug("InFlight {} {} => 预设重发定时任务", serverName, typeEnum)
+            logger.trace("InFlight {} {} => 预设重发定时任务", serverName, typeEnum)
             inFlight[serverName]?.let { it[typeEnum] }?.registerTask(timedTask) ?: false
         })
     }
@@ -227,7 +227,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
         return writeLockSupplierCompel(Supplier {
             var exist = false
             inFlight.compute(serverName) { _, enums ->
-                logger.debug("InFlight {} {} => 移除发送任务", serverName, typeEnum)
+                logger.trace("InFlight {} {} => 移除发送任务", serverName, typeEnum)
                 val removal = (enums ?: mutableMapOf()).remove(typeEnum)
                 exist = removal != null
                 removal.takeIf { exist }?.cancel()
