@@ -41,6 +41,7 @@ public class FetchResponse extends AbstractTimedStruct {
     private FileOperationSet fileOperationSet;
 
     public FetchResponse(FetchDataInfo fetchDataInfo) {
+
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
         init(byteBuffer, OperationTypeEnum.FETCH_RESPONSE);
 
@@ -76,6 +77,10 @@ public class FetchResponse extends AbstractTimedStruct {
 
     public int getFileOperationSetSize() {
         return fileOperationSetSize;
+    }
+
+    public FileOperationSet getFileOperationSet(){
+        return fileOperationSet;
     }
 
     @Override

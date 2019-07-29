@@ -7,6 +7,7 @@ import com.anur.core.elect.operator.ElectOperator
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.ReentrantLocker
+import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
 import com.anur.io.store.common.FetchDataInfo
@@ -16,12 +17,13 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentSkipListMap
+import java.util.function.Supplier
 import kotlin.math.max
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/12
  */
-object LogManager : ReentrantLocker() {
+object LogManager : ReentrantReadWriteLocker() {
 
     private val logger = LoggerFactory.getLogger(LogManager::class.java)
 
@@ -91,7 +93,7 @@ object LogManager : ReentrantLocker() {
      * 添加一条操作日志到磁盘的入口
      */
     fun append(operation: Operation) {
-        lockSupplier {
+        writeLocker {
             val operationId = ElectOperator.getInstance()
                 .genOperationId()
 
@@ -106,7 +108,7 @@ object LogManager : ReentrantLocker() {
      * 添加多条操作日志到磁盘的入口
      */
     fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
-        lockSupplier {
+        writeLocker {
             val log = maybeRoll(generation)
 
             log.append(preLogMeta, startOffset, endOffset)
@@ -162,58 +164,75 @@ object LogManager : ReentrantLocker() {
      * 如果拿不到 needToRead，则进行递归
      */
     fun getAfter(GAO: GenerationAndOffset): FetchDataInfo? {
-        val gen = GAO.generation
-        val offset = GAO.offset
+        return readLockSupplier(Supplier {
+            val gen = GAO.generation
+            val offset = GAO.offset
 
-        if (!generationDirs.containsKey(gen)) {
-            loadGenLog(gen)
-        }
-
-        val tailMap = generationDirs.tailMap(gen, true)
-        if (tailMap == null || tailMap.size == 0) {
-            // 世代过大或者此世代还未有预日志
-            return null
-        }
-
-        // 取其最小者
-        val firstEntry = tailMap.firstEntry()
-
-        val needLoadGen = firstEntry.key
-        val needLoadLog = firstEntry.value
-
-        val logSegmentIterable =
-            needLoadLog.getLogSegments(offset, Long.MAX_VALUE).iterator()
-
-        var needToRead: LogSegment? = null
-        while (logSegmentIterable.hasNext()) {
-            val tmp = logSegmentIterable.next()
-            if (needLoadLog.currentOffset != tmp.baseOffset) {// 代表这个 LogSegment 一条数据都没 append
-                needToRead = tmp
-                break
+            //  GAO 过大直接返回null
+            if (GAO > currentGAO) {
+                return@Supplier null
             }
-        }
 
-        return if (needToRead == null) {
-            getAfter(GenerationAndOffset(needLoadGen + 1, offset))
-        } else needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Int.MAX_VALUE)
+            /*
+             * 如果不存在此世代，则加载此世代
+             */
+            if (!generationDirs.containsKey(gen)) {
+                loadGenLog(gen)
+
+                /*
+                 * 如果还是不存在，则拉取更大世代
+                 */
+                if (!generationDirs.containsKey(gen)) {
+                    return@Supplier getAfter(GenerationAndOffset(gen + 1, 0))
+                }
+            }
+
+            val tailMap = generationDirs.tailMap(gen, true)
+            if (tailMap == null || tailMap.size == 0) {
+                //此世代还未有预日志
+                return@Supplier null
+            }
+
+            // 取其最小者
+            val firstEntry = tailMap.firstEntry()
+
+            val needLoadGen = firstEntry.key
+            val needLoadLog = firstEntry.value
+
+            val logSegmentIterable =
+                needLoadLog.getLogSegments(offset, Long.MAX_VALUE).iterator()
+
+            var needToRead: LogSegment? = null
+            while (logSegmentIterable.hasNext()) {
+                val tmp = logSegmentIterable.next()
+                if (needLoadLog.currentOffset != tmp.baseOffset) {// 代表这个 LogSegment 一条数据都没 append
+                    needToRead = tmp
+                    break
+                }
+            }
+
+            return@Supplier if (needToRead == null) {
+                getAfter(GenerationAndOffset(needLoadGen + 1, offset))
+            } else needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Int.MAX_VALUE)
+        })
     }
 
     /**
      * 如果某世代日志还未初始化，则将其初始化，并加载部分到内存
      */
     @Synchronized
-    fun loadGenLog(gen: Long): Log {
+    fun loadGenLog(gen: Long): Log? {
         if (!generationDirs.containsKey(gen) && LogCommon.dirName(baseDir, gen).exists()) {
             generationDirs[gen] = Log(gen, createGenDirIfNEX(gen))
         }
-        return generationDirs[gen]!!
+        return generationDirs[gen]
     }
 
     /**
      * 丢弃某个 GAO 往后的所有消息
      */
     fun discardAfter(GAO: GenerationAndOffset) {
-        lockSupplier {
+        writeLocker {
             for (i in GAO.generation..currentGAO.generation) {
                 loadGenLog(i)
             }

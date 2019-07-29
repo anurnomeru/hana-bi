@@ -160,7 +160,7 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
     }
 
     private fun doSendRecoveryComplete(serverName: String, latestGao: GenerationAndOffset) {
-        val GAO = GenerationAndOffset(latestGao.generation, LogManager.loadGenLog(latestGao.generation).currentOffset)
+        val GAO = GenerationAndOffset(latestGao.generation, LogManager.loadGenLog(latestGao.generation)!!.currentOffset)
         ApisManager.send(serverName, RecoveryComplete(GAO), RequestProcessor.REQUIRE_NESS)
     }
 
