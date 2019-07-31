@@ -23,7 +23,7 @@ public class Bootstrap {
 
     private static Logger logger = LoggerFactory.getLogger(Bootstrap.class);
 
-    private static boolean RUNNING = true;
+    private static volatile boolean RUNNING = true;
 
     public static void main(String[] args) throws InterruptedException {
 
