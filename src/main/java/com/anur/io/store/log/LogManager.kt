@@ -6,7 +6,6 @@ import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.elect.operator.ElectOperator
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
-import com.anur.core.lock.ReentrantLocker
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
@@ -17,15 +16,23 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentSkipListMap
+import java.util.concurrent.locks.AbstractQueuedLongSynchronizer
+import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 import kotlin.math.max
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/12
  */
-object LogManager : ReentrantReadWriteLocker() {
+object LogManager {
 
     private val logger = LoggerFactory.getLogger(LogManager::class.java)
+
+    /** 显式锁 */
+    private val appendLock = ReentrantReadWriteLocker()
+
+    /** 显式锁 */
+    private val explicitLock = ReentrantReadWriteLocker()
 
     /** 管理所有 Log  */
     private val generationDirs = ConcurrentSkipListMap<Long, Log>()
@@ -54,15 +61,6 @@ object LogManager : ReentrantReadWriteLocker() {
             }
         }
 
-        /**
-         * 当集群不可用，必须抛弃未 commit 部分，避免将未提交的数据当做
-         */
-        HanabiListener.register(EventEnum.CLUSTER_INVALID) {
-            if (isLeaderCurrent) {
-                CommitProcessManager.discardInvalidMsg()
-            }
-        }
-
         baseDir.mkdirs()
 
         var latestGeneration = 0L
@@ -86,29 +84,61 @@ object LogManager : ReentrantReadWriteLocker() {
         }
 
         logger.info("初始化日志管理器，当前最大进度为 {}", init.toString())
+
+        /**
+         * 当集群不可用
+         *
+         *  - 关闭追加入口
+         *  - 必须抛弃未 commit 部分，避免将未提交的数据恢复到集群日志中
+         */
+        HanabiListener.register(EventEnum.CLUSTER_INVALID) {
+            appendLock.switchOff()
+            logger.info("追加入口关闭~")
+
+            if (isLeaderCurrent) {
+                CommitProcessManager.discardInvalidMsg()
+            }
+        }
+
+        /**
+         * 当集群日志恢复完毕
+         *
+         *  - 开放追加入口
+         */
+        HanabiListener.register(EventEnum.RECOVERY_COMPLETE) {
+
+            appendLock.switchOn()
+            logger.info("追加入口启用~")
+        }
+
+        appendLock.switchOff()
+        logger.info("追加入口关闭~")
+
         return init
     }
 
     /**
-     * 添加一条操作日志到磁盘的入口
+     * 追加操作日志到磁盘，如果集群不可用，追加将阻塞
      */
-    fun append(operation: Operation) {
-        writeLocker {
-            val operationId = ElectOperator.getInstance()
-                .genOperationId()
+    fun appendUntilClusterValid(operation: Operation) {
+        appendLock.writeLocker {
+            explicitLock.writeLocker {
+                val operationId = ElectOperator.getInstance()
+                    .genOperationId()
 
-            currentGAO = operationId
+                currentGAO = operationId
 
-            val log = maybeRoll(operationId.generation)
-            log.append(operation, operationId.offset)
+                val log = maybeRoll(operationId.generation)
+                log.append(operation, operationId.offset)
+            }
         }
     }
 
     /**
-     * 添加多条操作日志到磁盘的入口
+     * 追加操作日志到磁盘，如果集群不可用，不会阻塞，供内部集群恢复时调用
      */
     fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
-        writeLocker {
+        explicitLock.writeLocker {
             val log = maybeRoll(generation)
 
             log.append(preLogMeta, startOffset, endOffset)
@@ -164,7 +194,7 @@ object LogManager : ReentrantReadWriteLocker() {
      * 如果拿不到 needToRead，则进行递归
      */
     fun getAfter(GAO: GenerationAndOffset): FetchDataInfo? {
-        return readLockSupplier(Supplier {
+        return explicitLock.readLockSupplier(Supplier {
             val gen = GAO.generation
             val offset = GAO.offset
 
@@ -232,7 +262,7 @@ object LogManager : ReentrantReadWriteLocker() {
      * 丢弃某个 GAO 往后的所有消息
      */
     fun discardAfter(GAO: GenerationAndOffset) {
-        writeLocker {
+        explicitLock.writeLocker {
             for (i in GAO.generation..currentGAO.generation) {
                 loadGenLog(i)
             }

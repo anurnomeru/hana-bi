@@ -4,6 +4,7 @@ import com.anur.config.InetSocketAddressConfigHelper
 import com.anur.core.common.Resetable
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.apis.fetch.CoordinateFetcher
+import com.anur.core.coordinate.apis.fetch.FollowerCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
@@ -102,6 +103,9 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
     @Volatile
     private var recoveryComplete = false
 
+    @Volatile
+    private var fetchTo: GenerationAndOffset? = null
+
     fun receive(serverName: String, latestGao: GenerationAndOffset) {
         logger.info("节点 $serverName 提交了其最大进度 $latestGao ")
         RecoveryMap[serverName] = latestGao
@@ -122,22 +126,38 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
                 } else {
                     val serverName = latest!!.key
                     val GAO = latest!!.value
-                    val node = InetSocketAddressConfigHelper.getNode(serverName);
+                    val node = InetSocketAddressConfigHelper.getNode(serverName)
+                    fetchTo = GAO
 
                     logger.info("已有过半节点提交了最大进度，集群最大进度于节点 $serverName ，进度为 $GAO ，Leader 将从其同步最新数据")
 
+                    /*
+                     * 当连接上子节点，开始日志同步，同步具体逻辑在 {@link #howToConsumeFetchResponse}
+                     */
                     HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO, serverName) {
                         startToFetchFrom(serverName)
                     }
+
+                    /*
+                     * 当断开子节点，取消同步任务
+                     */
                     HanabiListener.register(EventEnum.COORDINATE_DISCONNECT_TO, serverName) {
                         cancelFetchTask()
                     }
+
+                    /*
+                     * 当集群不可用，清除注册 COORDINATE_CONNECT 的注册
+                     */
                     HanabiListener.register(EventEnum.CLUSTER_INVALID) {
                         HanabiListener.clear(EventEnum.COORDINATE_CONNECT_TO, serverName)
                         HanabiListener.clear(EventEnum.COORDINATE_DISCONNECT_TO, serverName)
                         CoordinateClientOperator.getInstance(node).shutDown()
+                        fetchTo = null
                     }
 
+                    /*
+                     * 真正开始连接子节点
+                     */
                     CoordinateClientOperator.getInstance(node).tryStartWhileDisconnected()
                 }
             }
@@ -149,6 +169,7 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
     private fun shuttingWhileRecoveryComplete() {
         recoveryComplete = true
         waitShutting.entries.forEach(Consumer { sendRecoveryComplete(it.key, it.value) })
+        HanabiListener.onEvent(EventEnum.RECOVERY_COMPLETE)
     }
 
     private fun sendRecoveryComplete(serverName: String, latestGao: GenerationAndOffset) {
@@ -165,6 +186,19 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
     }
 
     override fun howToConsumeFetchResponse(fetchFrom: String, fetchResponse: FetchResponse) {
+        logger.debug("集群恢复：收到节点 {} 返回的 FETCH_RESPONSE", fetchFrom)
+        ElectMeta.takeIf { !it.isLeader }?.run { logger.error("出现了不应该出现的情况！") }
 
+        val operationSet = fetchResponse.read()
+        operationSet.byteBuffer
+        if (fetchResponse.fileOperationSetSize == 0) {
+            cancelFetchTask()
+
+            logger.info("leader 已经同步了最新的日志，当前进度 ${ByteBufPreLogManager.getCommitGAO()}")
+            shuttingWhileRecoveryComplete()
+
+        }
+        ByteBufPreLogManager
+            .append(fetchResponse.generation, operationSet)
     }
 }

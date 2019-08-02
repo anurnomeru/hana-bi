@@ -48,7 +48,7 @@ object LeaderApisHandler {
         val serverName = ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE)
             .getChannelName(channel)
 
-        logger.trace("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.fetchGAO)
+        logger.debug("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.fetchGAO)
 
         val canCommit = LeaderCoordinateManager.fetchReport(serverName, fetcher.fetchGAO)
 

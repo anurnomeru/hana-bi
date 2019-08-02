@@ -97,7 +97,7 @@ public class Bootstrap {
             try {
                 for (int i = 0; i < 1000000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
-                    LogManager.INSTANCE.append(operation);
+                    LogManager.INSTANCE.appendUntilClusterValid(operation);
                 }
             } catch (Exception e) {
             }

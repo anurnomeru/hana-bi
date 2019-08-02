@@ -17,7 +17,7 @@ fun main() {
     try {
         for (i in 0..99999) {
             val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")
-            LogManager.append(operation)
+            LogManager.appendUntilClusterValid(operation)
         }
     } catch (e: Exception) {
     }
@@ -25,7 +25,7 @@ fun main() {
 
     for (i in 0..99999) {
         val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas")
-        LogManager.append(operation)
+        LogManager.appendUntilClusterValid(operation)
     }
     println()
 }
