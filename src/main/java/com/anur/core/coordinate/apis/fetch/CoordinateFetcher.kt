@@ -4,6 +4,8 @@ import com.anur.config.CoordinateConfigHelper
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.elect.ElectMeta
+import com.anur.core.listener.EventEnum
+import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.Fetcher
@@ -113,7 +115,6 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
             fetchLock.unlock()
         }
     }
-
 
     /**
      * 子类定义如何消费Response

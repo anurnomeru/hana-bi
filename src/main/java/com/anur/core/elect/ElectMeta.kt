@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory
  */
 object ElectMeta {
 
-    val logger: Logger = LoggerFactory.getLogger(ElectMeta.javaClass);
+    val logger: Logger = LoggerFactory.getLogger(ElectMeta.javaClass)
 
     /**
      * 该投票箱的世代信息，如果一直进行选举，一直能达到 [.ELECTION_TIMEOUT_MS]，而选不出 Leader ，也需要15年，generation才会不够用，如果

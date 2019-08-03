@@ -49,7 +49,7 @@ object FollowerCoordinateManager : CoordinateFetcher() {
 
     override fun howToConsumeFetchResponse(fetchFrom: String, fetchResponse: FetchResponse) {
         logger.trace("收到节点 {} 返回的 FETCH_RESPONSE", fetchFrom)
-        ElectMeta.takeIf { it.isLeader }?.run { logger.error("出现了不应该出现的情况！") }
+        ElectMeta.takeIf { it.isLeader }?.run { this.logger.error("出现了不应该出现的情况！") }
         if (fetchResponse.fileOperationSetSize == 0) return
         ByteBufPreLogManager
             .append(fetchResponse.generation, fetchResponse.read())

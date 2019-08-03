@@ -186,19 +186,27 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
     }
 
     override fun howToConsumeFetchResponse(fetchFrom: String, fetchResponse: FetchResponse) {
-        logger.debug("集群恢复：收到节点 {} 返回的 FETCH_RESPONSE", fetchFrom)
-        ElectMeta.takeIf { !it.isLeader }?.run { logger.error("出现了不应该出现的情况！") }
+        logger.trace("收到节点 {} 返回的 FETCH_RESPONSE", fetchFrom)
 
-        val operationSet = fetchResponse.read()
-        operationSet.byteBuffer
-        if (fetchResponse.fileOperationSetSize == 0) {
-            cancelFetchTask()
+        ElectMeta.takeIf { !it.isLeader }?.run { logger.error("出现了不应该出现的情况！喵喵锤！") }
+        val read = fetchResponse.read()
+        val iterator = read.iterator()
 
-            logger.info("leader 已经同步了最新的日志，当前进度 ${ByteBufPreLogManager.getCommitGAO()}")
-            shuttingWhileRecoveryComplete()
+        val gen = fetchResponse.generation
+        val fetchToGen = fetchTo!!.generation
 
+        iterator.forEach {
+            LogManager
+                .append(it.operation)
+            if (gen == fetchToGen) {
+                val offset = it.offset
+                val fetchToOffset = fetchTo!!.offset
+                if (offset == fetchToOffset) {// 如果已经同步完毕，则通知集群同步完成
+                    cancelFetchTask()
+                    fetchTo = null
+                    shuttingWhileRecoveryComplete()
+                }
+            }
         }
-        ByteBufPreLogManager
-            .append(fetchResponse.generation, operationSet)
     }
 }

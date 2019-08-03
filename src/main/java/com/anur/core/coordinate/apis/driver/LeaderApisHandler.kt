@@ -4,6 +4,7 @@ import com.anur.config.InetSocketAddressConfigHelper
 import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager
 import com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
+import com.anur.core.elect.ElectMeta
 import com.anur.core.struct.coordinate.CommitResponse
 import com.anur.core.struct.coordinate.Commiter
 import com.anur.core.struct.coordinate.FetchResponse
@@ -50,14 +51,17 @@ object LeaderApisHandler {
 
         logger.debug("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.fetchGAO)
 
-        val canCommit = LeaderCoordinateManager.fetchReport(serverName, fetcher.fetchGAO)
+        // TODO 虽然当前类叫做 Leader Api 管理，但是集群恢复阶段，Follower 也会收到 FetchRequest，这里做特殊处理
+        if (ElectMeta.isLeader) {
+            val canCommit = LeaderCoordinateManager.fetchReport(serverName, fetcher.fetchGAO)
 
-        ApisManager.send(serverName, Commiter(canCommit), RequestProcessor(
-            Consumer { byteBuffer ->
-                val commitResponse = CommitResponse(byteBuffer)
-                LeaderCoordinateManager.commitReport(serverName, commitResponse.commitGAO)
-            },
-            null))
+            ApisManager.send(serverName, Commiter(canCommit), RequestProcessor(
+                Consumer { byteBuffer ->
+                    val commitResponse = CommitResponse(byteBuffer)
+                    LeaderCoordinateManager.commitReport(serverName, commitResponse.commitGAO)
+                },
+                null))
+        }
 
         // 为什么要。next，因为 fetch 过来的是客户端最新的 GAO 进度，而获取的要从 GAO + 1开始
         val fetchDataInfo = LogManager.getAfter(fetcher.fetchGAO.next())

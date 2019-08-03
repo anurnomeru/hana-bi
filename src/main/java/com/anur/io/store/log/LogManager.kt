@@ -137,6 +137,21 @@ object LogManager {
     /**
      * 追加操作日志到磁盘，如果集群不可用，不会阻塞，供内部集群恢复时调用
      */
+    fun append(operation: Operation) {
+        explicitLock.writeLocker {
+            val operationId = ElectOperator.getInstance()
+                .genOperationId()
+
+            currentGAO = operationId
+
+            val log = maybeRoll(operationId.generation)
+            log.append(operation, operationId.offset)
+        }
+    }
+
+    /**
+     * 追加操作日志到磁盘，如果集群不可用，不会阻塞，供内部集群恢复时调用
+     */
     fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
         explicitLock.writeLocker {
             val log = maybeRoll(generation)

@@ -43,8 +43,9 @@ object HanabiListener {
     }
 
     fun onEvent(event: EventEnum, key: String) {
-        logger.info("Event ${event.name + key.let { " - $it" }} is triggered")
-        EVENT[event.name]?.onEvent()
+        val event = event.name + key.let { " - $it" }
+        logger.info("Event $event is triggered")
+        EVENT[event]?.onEvent()
     }
 
     class Registion {
