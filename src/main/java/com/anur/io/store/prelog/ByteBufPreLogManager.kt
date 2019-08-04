@@ -85,15 +85,13 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
                 val oao = iterator.next()
 
                 val oaoOffset = oao.offset
-                val currentLast = preLogOffset!!.offset
 
-                if (oaoOffset <= currentLast) {
-                    logger.error("追加到预日志的日志 offset $oaoOffset 小于当前预日志 offset $currentLast，追加失败！！")
+                if (GenerationAndOffset(generation, oaoOffset) <= preLogOffset!!) {
+                    logger.error("追加到预日志的日志 offset $oaoOffset 小于当前预日志 offset ${preLogOffset!!.offset}，追加失败！！")
                     break
                 }
 
-                byteBufPreLogOperated!!.append(oao.operation, oao.offset)
-
+                byteBufPreLogOperated!!.append(oao.operation, oaoOffset)
                 lastOffset = oaoOffset
             }
 
@@ -177,7 +175,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
 
             val byteBufPreLog = head.firstEntry()
                 .value
-            byteBufPreLog.discardBefore(offset)
+            if (byteBufPreLog.discardBefore(offset)) preLog.remove(byteBufPreLog.generation)
         })
     }
 }

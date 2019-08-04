@@ -19,9 +19,13 @@ import com.anur.io.store.operationset.ByteBufferOperationSet;
 public class TestFetchLog {
 
     public static void main(String[] args) throws IOException {
-        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(1, 1));
+        //        1000000
+        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(6, 1000000));
 
         FetchResponse fetchResponse = new FetchResponse(after);
+
+        long generation = fetchResponse.getGeneration();
+        System.out.println("gen: " + generation);
 
         int start = fetchResponse.getFileOperationSet()
                                  .getStart();
@@ -32,20 +36,23 @@ public class TestFetchLog {
         ByteBuffer byteBuffer = ByteBuffer.allocate(count);
         FileIOUtil.openChannel(fetchResponse.getFileOperationSet()
                                             .getFile(), false)
+                  .position(start)
                   .read(byteBuffer);
         byteBuffer.flip();
 
         ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(byteBuffer);
+        OperationAndOffset last = null;
 
         Iterator<OperationAndOffset> iterator = byteBufferOperationSet.iterator();
-
         while (iterator.hasNext()) {
             OperationAndOffset next = iterator.next();
-            System.out.println(
-                next.getOffset());
-            System.out.println(next
-                .getOperation());
+            System.out.println(next.getOffset());
+            last = next;
         }
+
+        System.out.println("off " + last.getOffset());
+
+        //        ByteBufPreLogManager.INSTANCE.append(generation, byteBufferOperationSet);
 
         System.out.println();
     }

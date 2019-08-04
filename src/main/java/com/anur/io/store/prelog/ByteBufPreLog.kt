@@ -37,13 +37,14 @@ class ByteBufPreLog(val generation: Long) : ReentrantLocker() {
     /**
      * 丢弃之前的消息们
      */
-    fun discardBefore(targetOffset: Long) {
+    fun discardBefore(targetOffset: Long): Boolean {
         val discardMap = preLog.headMap(targetOffset, true)
         val count = discardMap.size
         for (key in discardMap.keys) {
             preLog.remove(key)
         }
-        logger.info("丢弃小于等于 {} 的共 {} 条预日志", targetOffset, count)
+        logger.info("丢弃世代 {} 小于等于 {} 的共 {} 条预日志", generation, targetOffset, count)
+        return preLog.size == 0
     }
 
 }

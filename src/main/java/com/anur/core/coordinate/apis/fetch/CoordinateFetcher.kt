@@ -21,7 +21,7 @@ import java.util.function.Consumer
  */
 abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
 
-    private val logger = LoggerFactory.getLogger(this::class.java)
+    private var logger = LoggerFactory.getLogger(this::class.java)
 
     /**
      * 此字段用作版本控制，定时任务仅执行小于等于自己版本的任务
@@ -39,7 +39,7 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
     /**
      * Fetch 锁
      */
-    private val fetchLock = ReentrantLock()
+    private var fetchLock = ReentrantLock()
 
     protected fun fetchLocker(doSomething: () -> Unit) {
         fetchLock.lock()
@@ -62,9 +62,9 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
      */
     protected fun startToFetchFromLeader() {
         if (!ElectMeta.isLeader) {
-            FollowerCoordinateManager.writeLocker {
+            writeLocker {
                 // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
-                FollowerCoordinateManager.fetchLocker { FollowerCoordinateManager.rebuildFetchTask(cvc, ElectMeta.leader!!) }
+                fetchLocker { rebuildFetchTask(cvc, ElectMeta.leader!!) }
             }
         }
     }
@@ -73,9 +73,9 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
      * 构建开始从 某节点 同步操作日志的定时任务
      */
     protected fun startToFetchFrom(serverName: String) {
-        FollowerCoordinateManager.writeLocker {
+        writeLocker {
             // 如果节点非Leader，需要连接 Leader，并创建 Fetch 定时任务
-            FollowerCoordinateManager.fetchLocker { FollowerCoordinateManager.rebuildFetchTask(cvc, serverName) }
+            fetchLocker { rebuildFetchTask(cvc, serverName) }
         }
     }
 
@@ -84,7 +84,7 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
      *
      * 实际上就是不断创建定时任务，扔进时间轮，任务的内容则是调用 sendFetchPreLog 方法
      */
-    protected fun rebuildFetchTask(myVersion: Long, fetchFrom: String) {
+    private fun rebuildFetchTask(myVersion: Long, fetchFrom: String) {
         if (cvc > myVersion) {
             logger.debug("sendFetchPreLog Task is out of version.")
             return

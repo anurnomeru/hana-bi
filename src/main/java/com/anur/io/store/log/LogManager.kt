@@ -16,8 +16,6 @@ import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.ConcurrentSkipListMap
-import java.util.concurrent.locks.AbstractQueuedLongSynchronizer
-import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 import kotlin.math.max
 
@@ -258,7 +256,9 @@ object LogManager {
 
             return@Supplier if (needToRead == null) {
                 getAfter(GenerationAndOffset(needLoadGen + 1, offset))
-            } else needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Int.MAX_VALUE)
+            } else {
+                needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Int.MAX_VALUE) ?: getAfter(GenerationAndOffset(gen + 1, 0))
+            }
         })
     }
 
@@ -357,5 +357,9 @@ object LogManager {
             false
         }
     }
+}
+
+fun main() {
+
 }
 

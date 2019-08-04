@@ -70,6 +70,8 @@ public class Bootstrap {
              */
             LogManager logManager = LogManager.INSTANCE;
 
+
+
             /*
              * 启动协调服务器
              */
