@@ -146,7 +146,7 @@ public class Log extends ReentrantLocker {
      * 将多个操作添加到日志文件中
      */
     public void append(PreLogMeta preLogMeta, long startOffset, long endOffset) {
-        if (startOffset < currentOffset) {
+        if (endOffset < currentOffset) {
             throw new LogException(String.format("一定是哪里有问题，追加日志文件段 start：%s end：%s，但当前 current：%s", startOffset, endOffset, currentOffset));
         } else {
             logger.info(String.format("追加日志文件段 start：%s end：%s 准备，当前 current：%s", startOffset, endOffset, currentOffset));
@@ -157,10 +157,14 @@ public class Log extends ReentrantLocker {
         try {
             for (OperationAndOffset operationAndOffset : preLogMeta.getOao()) {
                 count++;
-                append(operationAndOffset.getOperation(), operationAndOffset.getOffset());
+                long offset = operationAndOffset.getOffset();
+                if (offset > currentOffset) {
+                    continue;
+                }
+                append(operationAndOffset.getOperation(), offset);
             }
         } catch (Throwable e) {
-            throw new LogException("写入日志文件失败：" + startOffset + " => " + endOffset);
+            throw new LogException("写入日志文件失败：" + startOffset + " => " + endOffset + " " + e.getMessage());
         }
         currentOffset = endOffset;
         logger.info(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s，共追加 %s 条操作日志", startOffset, endOffset, currentOffset, count));
