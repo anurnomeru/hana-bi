@@ -62,23 +62,30 @@ object LogManager {
         baseDir.mkdirs()
 
         var latestGeneration = 0L
+        var init: GenerationAndOffset
 
-        for (file in baseDir.listFiles()!!) {
-            if (!file.isFile) {
-                latestGeneration = max(latestGeneration, Integer.valueOf(file.name).toLong())
+        while (true) {
+            for (file in baseDir.listFiles()!!) {
+                if (!file.isFile) {
+                    latestGeneration = max(latestGeneration, Integer.valueOf(file.name).toLong())
+                }
             }
-        }
+            // 只要创建最新的那个 generation 即可
+            try {
+                val latest = Log(latestGeneration, createGenDirIfNEX(latestGeneration))
+                generationDirs[latestGeneration] = latest
 
-        val init: GenerationAndOffset
+                init = GenerationAndOffset(latestGeneration, latest.currentOffset)
 
-        // 只要创建最新的那个 generation 即可
-        try {
-            val latest = Log(latestGeneration, createGenDirIfNEX(latestGeneration))
-            generationDirs[latestGeneration] = latest
-
-            init = GenerationAndOffset(latestGeneration, latest.currentOffset)
-        } catch (e: IOException) {
-            throw LogException("操作日志初始化失败，项目无法启动")
+                if (init.generation != 0L && init.offset == 0L) {
+                    deleteLog(init.generation, latest)
+                    latestGeneration = 0L
+                } else {
+                    break
+                }
+            } catch (e: IOException) {
+                throw LogException("操作日志初始化失败，项目无法启动")
+            }
         }
 
         logger.info("初始化日志管理器，当前最大进度为 {}", init.toString())
@@ -126,24 +133,27 @@ object LogManager {
 
                 currentGAO = operationId
 
-                val log = maybeRoll(operationId.generation)
+                val log = maybeRoll(operationId.generation, true)
                 log.append(operation, operationId.offset)
             }
         }
     }
 
+
     /**
      * 追加操作日志到磁盘，如果集群不可用，不会阻塞，供内部集群恢复时调用
+     *
+     * 允许插入到以前的世代
      */
-    fun append(operation: Operation) {
+    fun appendInsertion(gen: Long, offset: Long, operation: Operation) {
         explicitLock.writeLocker {
-            val operationId = ElectOperator.getInstance()
-                .genOperationId()
+            val insertion = GenerationAndOffset(gen, offset)
+            if (insertion > currentGAO) {
+                currentGAO = insertion
+            }
 
-            currentGAO = operationId
-
-            val log = maybeRoll(operationId.generation)
-            log.append(operation, operationId.offset)
+            val log = maybeRoll(gen, false)
+            log.append(operation, offset)
         }
     }
 
@@ -152,7 +162,7 @@ object LogManager {
      */
     fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
         explicitLock.writeLocker {
-            val log = maybeRoll(generation)
+            val log = maybeRoll(generation, false)
 
             log.append(preLogMeta, startOffset, endOffset)
 
@@ -163,9 +173,9 @@ object LogManager {
     /**
      * 在 append 操作时，如果世代更新了，则创建新的 Log 管理
      */
-    private fun maybeRoll(generation: Long): Log {
-        val current = activeLog()
-        if (generation > current.generation) {
+    private fun maybeRoll(generation: Long, active: Boolean): Log {
+        val current = if (active) activeLog() else generationDirs[generation]
+        if (current == null || generation > current.generation) {
             val dir = createGenDirIfNEX(generation)
             val log: Log
             try {
@@ -347,19 +357,28 @@ object LogManager {
                 if (it.baseOffset <= offset && offset <= it.lastOffset(needDeleteGen)) {
                     it.truncateTo(offset)
                     logger.debug("删除日志分片 ${it.fileOperationSet.file} 中大于等于 $offset 的记录移除")
-                    needDeleteLog.currentOffset = offset
                 } else {
                     it.fileOperationSet.fileChannel.close()
                     val needToDelete = it.fileOperationSet.file
                     logger.debug("删除日志分片 ${needToDelete.absoluteFile}" + if (needToDelete.delete()) "成功" else "失败")
                 }
             }
+            needDeleteLog.currentOffset = offset
             false
         }
     }
+
+    private fun deleteLog(generation: Long, log: Log) {
+        if (log.currentOffset == 0L) {
+            val logSegments = log.getLogSegments(0, Long.MAX_VALUE)
+            for (logSegment in logSegments) {
+                logSegment.fileOperationSet.fileChannel.close()
+                logSegment.fileOperationSet.file.delete()
+
+                logSegment.offsetIndex.delete()
+            }
+            log.dir.delete()
+        }
+        logger.info("世代 $generation 没有任何日志，将其删除")
+    }
 }
-
-fun main() {
-
-}
-

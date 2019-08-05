@@ -23,18 +23,20 @@ import io.netty.channel.DefaultFileRegion;
  */
 public class FetchResponse extends AbstractTimedStruct {
 
-    public static final int GenerationOffset = TimestampOffset + TimestampLength;
+    private static final int GenerationOffset = TimestampOffset + TimestampLength;
 
-    public static final int GenerationLength = 8;
+    private static final int GenerationLength = 8;
 
-    public static final int FileOperationSetSizeOffset = GenerationOffset + GenerationLength;
+    private static final int FileOperationSetSizeOffset = GenerationOffset + GenerationLength;
 
-    public static final int FileOperationSetSizeLength = 4;
+    private static final int FileOperationSetSizeLength = 4;
 
     /**
      * 最基础的 FetchResponse 大小 ( 不包括byteBufferOperationSet )
      */
-    public static final int BaseMessageOverhead = FileOperationSetSizeOffset + FileOperationSetSizeLength;
+    private static final int BaseMessageOverhead = FileOperationSetSizeOffset + FileOperationSetSizeLength;
+
+    public static final long Invalid = -1L;
 
     private final int fileOperationSetSize;
 
@@ -48,8 +50,8 @@ public class FetchResponse extends AbstractTimedStruct {
         // 为空代表已无更多更新的消息
         if (fetchDataInfo == null) {
             fileOperationSetSize = 0;
-            byteBuffer.putLong(-1);
-            byteBuffer.putInt(0);
+            byteBuffer.putLong(Invalid);
+            byteBuffer.putInt((int) Invalid);
         } else {
             fileOperationSet = fetchDataInfo.getFos();
             fileOperationSetSize = fileOperationSet.sizeInBytes();
@@ -79,7 +81,7 @@ public class FetchResponse extends AbstractTimedStruct {
         return fileOperationSetSize;
     }
 
-    public FileOperationSet getFileOperationSet(){
+    public FileOperationSet getFileOperationSet() {
         return fileOperationSet;
     }
 

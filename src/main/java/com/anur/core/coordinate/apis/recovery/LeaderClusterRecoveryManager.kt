@@ -195,18 +195,28 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
         val gen = fetchResponse.generation
         val fetchToGen = fetchTo!!.generation
 
+        var start: Long? = null
+        var end: Long? = null
+
         iterator.forEach {
+
+            if (start == null) start = it.offset
+            end = it.offset
+
             LogManager
-                .append(it.operation)
+                .appendInsertion(gen, it.offset, it.operation)
+
             if (gen == fetchToGen) {
                 val offset = it.offset
                 val fetchToOffset = fetchTo!!.offset
                 if (offset == fetchToOffset) {// 如果已经同步完毕，则通知集群同步完成
                     cancelFetchTask()
-                    fetchTo = null
                     shuttingWhileRecoveryComplete()
                 }
             }
         }
+
+        ByteBufPreLogManager.cover(GenerationAndOffset(gen, end!!))
+        logger.debug("集群日志恢复：追加 gen = {$gen} offset-start {$start} end {$end} 的日志段完毕")
     }
 }

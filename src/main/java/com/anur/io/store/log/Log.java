@@ -158,7 +158,7 @@ public class Log extends ReentrantLocker {
             for (OperationAndOffset operationAndOffset : preLogMeta.getOao()) {
                 count++;
                 long offset = operationAndOffset.getOffset();
-                if (offset > currentOffset) {
+                if (offset <= currentOffset) {
                     continue;
                 }
                 append(operationAndOffset.getOperation(), offset);

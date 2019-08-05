@@ -107,7 +107,14 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
             fetchPreLogTask?.takeIf { !it.isCancel }?.run {
                 ApisManager.send(fetchFrom,
                     Fetcher(ByteBufPreLogManager.getPreLogGAO()),
-                    RequestProcessor(Consumer { readLocker { howToConsumeFetchResponse(fetchFrom, FetchResponse(it)) } },
+                    RequestProcessor(Consumer {
+                        readLocker {
+                            val fetchResponse = FetchResponse(it)
+                            if (fetchResponse.generation != FetchResponse.Invalid) {
+                                howToConsumeFetchResponse(fetchFrom, fetchResponse)
+                            }
+                        }
+                    },
                         Runnable { rebuildFetchTask(myVersion, fetchFrom) })
                 )
             }

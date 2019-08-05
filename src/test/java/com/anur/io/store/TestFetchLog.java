@@ -19,8 +19,7 @@ import com.anur.io.store.operationset.ByteBufferOperationSet;
 public class TestFetchLog {
 
     public static void main(String[] args) throws IOException {
-        //        1000000
-        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(6, 1000000));
+        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(3, 0));
 
         FetchResponse fetchResponse = new FetchResponse(after);
 
@@ -51,8 +50,6 @@ public class TestFetchLog {
         }
 
         System.out.println("off " + last.getOffset());
-
-        //        ByteBufPreLogManager.INSTANCE.append(generation, byteBufferOperationSet);
 
         System.out.println();
     }
