@@ -10,6 +10,8 @@ enum class ConfigurationEnum constructor(val key: String, val adv: String) {
 
     DEBUG_MODE("debug", "是否开启DEBUG模式，该模式下有些限制会比较宽松，便于调试"),
 
+    REELECT("reelect", "是否在有leader的情况下重新触发选举，该模式下便于打断点调试，免得老是触发选举，便于调试"),
+
     ////////////////////// InetSocketAddressConfigHelper
 
     SERVER_NAME("server.name", "server.name 是本机的服务名，集群内应唯一"),

@@ -113,10 +113,11 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
                             if (fetchResponse.generation != FetchResponse.Invalid) {
                                 howToConsumeFetchResponse(fetchFrom, fetchResponse)
                             }
+                            rebuildFetchTask(myVersion, fetchFrom)
                         }
                     },
-                        Runnable { rebuildFetchTask(myVersion, fetchFrom) })
-                )
+                        null
+                    ))
             }
         } finally {
             fetchLock.unlock()

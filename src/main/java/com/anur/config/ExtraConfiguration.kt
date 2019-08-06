@@ -13,5 +13,9 @@ class ExtraConfiguration {
         fun isDebug(): Boolean {
             return CoordinateConfiguration.getConfig(ConfigurationEnum.DEBUG_MODE) { "enable" == it } as Boolean
         }
+
+        fun neverReElectAfterHasLeader(): Boolean {
+            return CoordinateConfiguration.getConfig(ConfigurationEnum.REELECT) { "true" == it } as Boolean
+        }
     }
 }

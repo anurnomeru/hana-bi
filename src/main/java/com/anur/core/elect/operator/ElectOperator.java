@@ -21,6 +21,8 @@ import com.anur.core.elect.constant.TaskEnum;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.elect.model.Votes;
 import com.anur.core.elect.model.VotesResponse;
+import com.anur.core.listener.EventEnum;
+import com.anur.core.listener.HanabiListener;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -41,6 +43,9 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
  */
 public class ElectOperator extends ReentrantLocker implements Runnable {
 
+    // 测试用，是否在 leader 不可见时触发选举
+    private volatile boolean RE_ELECT = true;
+
     private static final long ELECTION_TIMEOUT_MS = ElectConfigHelper.getElectionTimeoutMs();
 
     private static final long VOTES_BACK_OFF_MS = ElectConfigHelper.getVotesBackOffMs();
@@ -50,6 +55,18 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     private volatile static ElectOperator INSTANCE;
 
     private static Random RANDOM = new Random();
+
+    public ElectOperator() {
+
+        if (!ExtraConfiguration.Companion.neverReElectAfterHasLeader()) {
+            HanabiListener.INSTANCE.register(EventEnum.CLUSTER_VALID,
+                () -> {
+                    RE_ELECT = false;
+                    return null;
+                }
+            );
+        }
+    }
 
     public static ElectOperator getInstance() {
         if (INSTANCE == null) {
@@ -439,18 +456,20 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
      * 没加锁，因为这个任务需要频繁被调用，只要收到leader来的消息就可以调用一下
      */
     private void becomeCandidateAndBeginElectTask(long generation) {
-        this.lockSupplier(() -> {
-            this.cancelCandidateAndBeginElectTask("正在重置发起下一轮选举的退避时间");
+        if (RE_ELECT) {
+            this.lockSupplier(() -> {
+                this.cancelCandidateAndBeginElectTask("正在重置发起下一轮选举的退避时间");
 
-            // The election timeout is randomized to be between 150ms and 300ms.
-            long electionTimeout = ELECTION_TIMEOUT_MS + (int) (ELECTION_TIMEOUT_MS * RANDOM.nextFloat());
-            TimedTask timedTask = new TimedTask(electionTimeout, () -> this.beginElect(generation));
-            Timer.getInstance()
-                 .addTask(timedTask);
+                // The election timeout is randomized to be between 150ms and 300ms.
+                long electionTimeout = ELECTION_TIMEOUT_MS + (int) (ELECTION_TIMEOUT_MS * RANDOM.nextFloat());
+                TimedTask timedTask = new TimedTask(electionTimeout, () -> this.beginElect(generation));
+                Timer.getInstance()
+                     .addTask(timedTask);
 
-            taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
-            return null;
-        });
+                taskMap.put(TaskEnum.BECOME_CANDIDATE, timedTask);
+                return null;
+            });
+        }
     }
 
     /**

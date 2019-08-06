@@ -43,6 +43,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
             LogManager.discardAfter(commitGAO!!)
             ByteBufPreLogManager.cover(commitGAO!!)
             cover(GenerationAndOffset.INVALID)
+            commitGAO?.let { logger.info("摒弃完毕，当前 节点 GAO -> $it") }
         }
     }
 
