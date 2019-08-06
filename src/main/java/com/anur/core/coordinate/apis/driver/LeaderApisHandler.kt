@@ -37,7 +37,7 @@ object LeaderApisHandler {
             .getChannelName(channel)
         val GAO = recoveryReporter.getCommited()
 
-        logger.trace("收到来自协调节点 {} 的 RecoveryReport 请求 {} ", serverName, GAO)
+        logger.debug("收到来自协调节点 {} 的 RecoveryReport 请求 {} ", serverName, GAO)
         LeaderClusterRecoveryManager.receive(serverName, GAO)
     }
 

@@ -128,7 +128,7 @@ public class Log extends ReentrantLocker {
      */
     public void append(Operation operation, long offset) {
         if (offset < currentOffset) {
-            throw new LogException("一定是哪里有问题");
+            throw new LogException(String.format("一定是哪里有问题，current %s, append %s", currentOffset, offset));
         }
 
         LogSegment logSegment = maybeRoll(operation.size());
@@ -149,7 +149,7 @@ public class Log extends ReentrantLocker {
         if (endOffset < currentOffset) {
             throw new LogException(String.format("一定是哪里有问题，追加日志文件段 start：%s end：%s，但当前 current：%s", startOffset, endOffset, currentOffset));
         } else {
-            logger.info(String.format("追加日志文件段 start：%s end：%s 准备，当前 current：%s", startOffset, endOffset, currentOffset));
+            logger.info(String.format("追加日志文件段 gen: %s start：%s end：%s 准备，当前 current：%s", generation, startOffset, endOffset, currentOffset));
         }
 
         int count = 0;

@@ -163,7 +163,7 @@ object LogManager {
     fun append(preLogMeta: PreLogMeta, generation: Long, startOffset: Long, endOffset: Long) {
         explicitLock.writeLocker {
             val log = maybeRoll(generation, false)
-
+            logger.debug("欲追加 世代 {}，实际世代 {}", generation, log.generation)
             log.append(preLogMeta, startOffset, endOffset)
 
             currentGAO = GenerationAndOffset(generation, endOffset)
@@ -320,7 +320,10 @@ object LogManager {
         val needDeleteGen = lastEntry.key
         val needDeleteLog = lastEntry.value
 
+        // 判断是否需要删除整个世代日志
         // 若存在比当前更大的世代的日志，将其全部删除
+        // 不会出现删除比当前世代还大的情况
+        // 例如当前最大世代 9，但是要删除世代 10 的日志
         val deleteAll = when {
             needDeleteGen == gen -> false
             needDeleteGen > gen -> true

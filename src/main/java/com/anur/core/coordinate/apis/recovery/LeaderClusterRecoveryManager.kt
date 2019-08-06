@@ -205,6 +205,7 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
 
             LogManager
                 .appendInsertion(gen, it.offset, it.operation)
+            ByteBufPreLogManager.cover(GenerationAndOffset(gen,end!!))// 实际上这是兼容用的 = =，因为父类模板方法从这里取的数据去 fetch
 
             if (gen == fetchToGen) {
                 val offset = it.offset
