@@ -19,6 +19,7 @@ import com.anur.exception.HanabiException;
  * Created by Anur IjuoKaruKas on 2019/3/11
  */
 public enum OperationTypeEnum {
+
     /**
      * 无类型
      */

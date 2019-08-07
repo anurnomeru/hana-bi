@@ -11,6 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
 import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.coordinate.apis.driver.RequestHandlePool;
+import com.anur.core.coordinate.model.CoordinateRequest;
 import com.anur.core.elect.ElectMeta;
 import com.anur.core.listener.EventEnum;
 import com.anur.core.listener.HanabiListener;
@@ -69,7 +71,7 @@ public class CoordinateClientOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        ApisManager.INSTANCE.receive(msg, typeEnum, ctx.channel());
+        RequestHandlePool.INSTANCE.receiveRequest(new CoordinateRequest(msg, typeEnum, ctx.channel()));
     };
 
     /**

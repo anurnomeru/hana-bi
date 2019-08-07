@@ -32,12 +32,16 @@ import java.util.function.Supplier
  */
 object ApisManager : ReentrantReadWriteLocker(), Resetable {
 
+    val requestHandlerPool = RequestHandlePool
+
     /**
      * 重启此类，用于在重新选举后，刷新所有任务，不再执着于上个世代的任务
      */
     override fun reset() {
         this.writeLockSupplier(Supplier {
             logger.debug("ApisManager RESET is triggered")
+
+            requestHandlerPool.clear()
             for ((_, value) in inFlight) {
                 for ((_, requestProcessor) in value) {
                     requestProcessor?.cancel()
