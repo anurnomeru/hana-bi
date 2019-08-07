@@ -26,7 +26,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
     private var commitGAO: GenerationAndOffset? = null
 
     init {
-        dir.mkdir()
+        dir.mkdirs()
         offsetFile.createNewFile()
         val raf = RandomAccessFile(offsetFile, "rw")
         raf.setLength((8 + 8).toLong())
