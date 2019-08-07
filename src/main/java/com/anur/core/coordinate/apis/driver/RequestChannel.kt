@@ -8,8 +8,7 @@ import java.util.concurrent.TimeUnit
  * Created by Anur IjuoKaruKas on 2019/8/7
  */
 object RequestChannel {
-
-    val requestQueue = ArrayBlockingQueue<CoordinateRequest>(Int.MAX_VALUE)
+    val requestQueue: ArrayBlockingQueue<CoordinateRequest> = ArrayBlockingQueue(Runtime.getRuntime().availableProcessors() * 2)
 
     fun receiveRequest(request: CoordinateRequest) {
         requestQueue.put(request)

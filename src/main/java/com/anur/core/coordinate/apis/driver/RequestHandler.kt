@@ -15,7 +15,8 @@ class RequestHandler(private val id: Int) : Runnable {
 
     override fun run() {
         while (true) {
-            val request = RequestChannel.consumeRequest(300, TimeUnit.MILLISECONDS).takeIf { it!!.channel != null } ?: continue
+            val request =
+                RequestChannel.consumeRequest(300, TimeUnit.MILLISECONDS)?.takeIf { it.channel != null } ?: continue
             if (request == CoordinateRequest.AllDone) {
                 logger.info("RequestHandler $id receive shutDown.")
             }
