@@ -98,7 +98,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
             if (lastOffset != -1L) {
                 val before = preLogOffset
                 preLogOffset = GenerationAndOffset(generation, lastOffset)
-                logger.debug("本地追加了预日志，由 {} 更新至 {}", before.toString(), preLogOffset.toString())
+                logger.info("本地追加了预日志，由 {} 更新至 {}", before.toString(), preLogOffset.toString())
             }
         }
     }
@@ -132,7 +132,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
                     // 强制刷盘
                     LogManager.activeLog().flush(preLogMeta.endOffset)
 
-                    logger.info("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString())
+                    logger.debug("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString())
                     commitOffset = canCommit
                     discardBefore(canCommit)
                 }

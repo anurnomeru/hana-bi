@@ -341,7 +341,7 @@ object LogManager {
                 logger.debug("删除日志分片 ${needToDelete.absoluteFile} "
                     + (if (needToDelete.delete()) "成功" else "失败")
                     + "。删除对应索引文件"
-                    + if (it.offsetIndex.delete()) "成功" else "失败")
+                    + if (it.index.delete()) "成功" else "失败")
             }
 
             val dir = needDeleteLog.dir
@@ -378,7 +378,7 @@ object LogManager {
                 logSegment.fileOperationSet.fileChannel.close()
                 logSegment.fileOperationSet.file.delete()
 
-                logSegment.offsetIndex.delete()
+                logSegment.index.delete()
             }
             log.dir.delete()
         }

@@ -87,7 +87,7 @@ public class Log extends ReentrantLocker {
                     if (indexFile.exists()) {
                         // 检查下这个索引文件有没有大的问题，比如大小不正确等
                         try {
-                            thisSegment.getOffsetIndex()
+                            thisSegment.getIndex()
                                        .sanityCheck();
                         } catch (Exception e) {
                             logger.info("世代 {} 日志 {} 的索引文件存在异常，正在重建索引文件。", generation, filename);
@@ -149,7 +149,7 @@ public class Log extends ReentrantLocker {
         if (endOffset < currentOffset) {
             throw new LogException(String.format("一定是哪里有问题，追加日志文件段 start：%s end：%s，但当前 current：%s", startOffset, endOffset, currentOffset));
         } else {
-            logger.info(String.format("追加日志文件段 gen: %s start：%s end：%s 准备，当前 current：%s", generation, startOffset, endOffset, currentOffset));
+            logger.debug(String.format("追加日志文件段 gen: %s start：%s end：%s 准备，当前 current：%s", generation, startOffset, endOffset, currentOffset));
         }
 
         int count = 0;
@@ -167,7 +167,7 @@ public class Log extends ReentrantLocker {
             throw new LogException("写入日志文件失败：" + startOffset + " => " + endOffset + " " + e.getMessage());
         }
         currentOffset = endOffset;
-        logger.info(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s，共追加 %s 条操作日志", startOffset, endOffset, currentOffset, count));
+        logger.debug(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s，共追加 %s 条操作日志", startOffset, endOffset, currentOffset, count));
     }
 
     /**
@@ -178,11 +178,11 @@ public class Log extends ReentrantLocker {
 
         if (
             logSegment.size() + size > LogConfigHelper.getMaxLogSegmentSize() // 即将 append 的消息将超过分片容纳最大大小
-                || logSegment.getOffsetIndex() // 可索引的 index 已经达到最大
+                || logSegment.getIndex() // 可索引的 index 已经达到最大
                              .isFull()) {
             logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfigHelper.getMaxLogSegmentSize(),
-                logSegment.getOffsetIndex()
-                          .getEntries(), logSegment.getOffsetIndex()
+                logSegment.getIndex()
+                          .getEntries(), logSegment.getIndex()
                                                    .getMaxEntries());
             return roll();
         } else {
@@ -219,7 +219,7 @@ public class Log extends ReentrantLocker {
             Optional.ofNullable(segments.lastEntry())
                     .ifPresent(e -> {
                         e.getValue()
-                         .getOffsetIndex()
+                         .getIndex()
                          .trimToValidSize();
                         e.getValue()
                          .getFileOperationSet()

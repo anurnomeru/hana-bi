@@ -65,6 +65,8 @@ object LeaderApisHandler {
 
         // 为什么要。next，因为 fetch 过来的是客户端最新的 GAO 进度，而获取的要从 GAO + 1开始
         val fetchDataInfo = LogManager.getAfter(fetcher.fetchGAO.next())
+        if (fetchDataInfo == null) logger.debug("对于 fetch 请求 ${fetcher.fetchGAO}， 返回为空")
+
 
         ApisManager.send(serverName, FetchResponse(fetchDataInfo), RequestProcessor.REQUIRE_NESS)
     }

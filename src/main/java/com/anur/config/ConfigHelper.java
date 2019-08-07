@@ -14,6 +14,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.anur.exception.ApplicationConfigException;
 import javafx.util.Pair;
+import jdk.nashorn.internal.ir.annotations.Ignore;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
@@ -75,7 +76,15 @@ public class ConfigHelper {
      * 根据key获取某个配置
      */
     protected static <T> T getConfig(ConfigEnum configEnum, Function<String, T> transfer) {
-        return lockSupplier(configEnum, () -> Optional.of(RESOURCE_BUNDLE.getString(configEnum.getKey()))
+        return lockSupplier(configEnum, () -> Optional.of(RESOURCE_BUNDLE)
+                                                      .map(resourceBundle -> {
+                                                          String config = null;
+                                                          try {
+                                                              config = resourceBundle.getString(configEnum.getKey());
+                                                          } catch (Exception ignore) {
+                                                          }
+                                                          return config;
+                                                      })
                                                       .map(transfer)
                                                       .orElseThrow(() -> new ApplicationConfigException(String.format(ERROR_FORMATTER, configEnum.getKey(), configEnum.getAdv()))));
     }
@@ -119,6 +128,8 @@ public class ConfigHelper {
         CLIENT_ADDR("client.addr", "client.addr 的配置格式应由如下组成：client.addr.{服务名}:{选举leader使用端口号}:{集群内机器通讯使用端口号}"),
 
         ////////////////////// LogConfigHelper
+
+        LOG_BASE_PATH("log.base.path", "log日志的基础目录，默认在项目下"),
 
         LOG_INDEX_INTERVAL("log.indexInterval", "log.IndexInterval 是操作日志索引生成时的字节间隔，有助于节省空间，不设定的太小都可"),
 

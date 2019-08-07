@@ -70,8 +70,6 @@ public class Bootstrap {
              */
             LogManager logManager = LogManager.INSTANCE;
 
-
-
             /*
              * 启动协调服务器
              */
@@ -97,7 +95,7 @@ public class Bootstrap {
             }
 
             try {
-                for (int i = 0; i < 1000000; i++) {
+                for (int i = 0; i < 100000000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas");
                     LogManager.INSTANCE.appendUntilClusterValid(operation);
                 }
