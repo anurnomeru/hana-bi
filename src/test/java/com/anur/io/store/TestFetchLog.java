@@ -19,7 +19,7 @@ import com.anur.io.store.operationset.ByteBufferOperationSet;
 public class TestFetchLog {
 
     public static void main(String[] args) throws IOException {
-        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(4, 1000000));
+        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(5, 100000));
 
         FetchResponse fetchResponse = new FetchResponse(after);
 
