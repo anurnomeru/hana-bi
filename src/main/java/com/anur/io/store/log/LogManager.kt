@@ -21,6 +21,8 @@ import kotlin.math.max
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/12
+ *
+ * 日志管理入口
  */
 object LogManager {
 

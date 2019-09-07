@@ -12,6 +12,8 @@ import java.nio.channels.FileChannel
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/15
+ *
+ * 提交进度管理（担任过 leader 的节点需要用到）
  */
 object CommitProcessManager : ReentrantReadWriteLocker() {
 
@@ -37,6 +39,11 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
         discardInvalidMsg()
     }
 
+    /**
+     * 对于 leader 来说，由于不会写入 PreLog，故会持有未 commit 的消息
+     *
+     * 需要讲这些消息摈弃
+     */
     fun discardInvalidMsg() {
         if (commitGAO != null && commitGAO != GenerationAndOffset.INVALID) {
             logger.info("检测到本节点曾是 leader 节点，需摒弃部分未 Commit 的消息")
@@ -48,6 +55,9 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
     }
 
 
+    /**
+     * 加载 commitOffset.temp，获取集群提交进度（仅 leader 有效）
+     */
     fun load(): GenerationAndOffset {
         writeLocker {
             if (commitGAO == null) {
@@ -60,6 +70,9 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
         return commitGAO!!
     }
 
+    /**
+     * 覆盖提交进度
+     */
     fun cover(GAO: GenerationAndOffset) {
         writeLocker {
             mmap.putLong(GAO.generation)

@@ -21,6 +21,8 @@ import com.google.common.collect.Lists;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/6
+ *
+ * 对应磁盘上一个 log 的世代目录
  */
 public class Log extends ReentrantLocker {
 
