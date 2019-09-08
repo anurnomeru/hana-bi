@@ -14,7 +14,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.anur.exception.ApplicationConfigException;
 import javafx.util.Pair;
-import jdk.nashorn.internal.ir.annotations.Ignore;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/1/19
