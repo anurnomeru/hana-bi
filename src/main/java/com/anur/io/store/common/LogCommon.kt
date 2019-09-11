@@ -41,7 +41,7 @@ class LogCommon {
         }
 
         fun dirName(baseDir: File, generation: Long): File {
-            return File(baseDir.toString() + "\\" + filenamePrefixFromOffset(generation))
+            return File(baseDir.toString() + "/" + filenamePrefixFromOffset(generation))
         }
 
         /**

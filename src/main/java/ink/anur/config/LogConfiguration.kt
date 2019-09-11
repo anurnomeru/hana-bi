@@ -14,7 +14,7 @@ class LogConfiguration {
         private var relativelyPath: String = System.getProperty("user.dir")
 
         fun getBaseDir(): String {
-            return relativelyPath + "\\" + InetSocketAddressConfiguration.getServerName()
+            return relativelyPath + "/" + InetSocketAddressConfiguration.getServerName()
         }
 
         fun getIndexInterval(): Int {
