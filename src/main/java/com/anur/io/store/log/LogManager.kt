@@ -38,7 +38,7 @@ object LogManager {
     private val generationDirs = ConcurrentSkipListMap<Long, Log>()
 
     /** 基础目录  */
-    private val baseDir = File(LogConfigHelper.getBaseDir() + "\\log\\aof\\")
+    private val baseDir = File(LogConfigHelper.getBaseDir() + "/log/aof/")
 
     /** 初始化时，最新的 Generation 和 Offset  */
     val initial: GenerationAndOffset = init()

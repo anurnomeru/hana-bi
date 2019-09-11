@@ -14,7 +14,7 @@ public class LogConfigHelper extends ConfigHelper {
         if (relativelyPath == null) {// 并发没关系，这个并不会变动
             relativelyPath = System.getProperty("user.dir");
         }
-        return relativelyPath + "\\" + InetSocketAddressConfigHelper.getServerName();
+        return relativelyPath + "/" + InetSocketAddressConfigHelper.getServerName();
     }
 
     public static String getLogBasePath() {
