@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.LogConfigHelper;
+import com.anur.config.LogConfiguration;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -33,7 +33,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
 
         logger.trace("maybeLength => " + maybeLength);
 
-        if (maybeLength > LogConfigHelper.Companion.getMaxLogMessageSize()) {
+        if (maybeLength > LogConfiguration.Companion.getMaxLogMessageSize()) {
             buffer.discardReadBytes();
             return null;
         }
@@ -47,14 +47,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
             buffer.resetReaderIndex();
             return null;
         } else {
-            buffer.markReaderIndex();
-            byte[] bytes = new byte[maybeLength];
-            buffer.readBytes(bytes);
-
-            ByteBuffer result = ByteBuffer.allocate(maybeLength);
-            result.put(bytes);
-            result.rewind();
-            return result;
+            return buffer.nioBuffer();
         }
     }
 }

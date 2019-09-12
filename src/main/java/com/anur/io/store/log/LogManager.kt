@@ -1,6 +1,6 @@
 package com.anur.io.store.log
 
-import com.anur.config.LogConfigHelper
+import com.anur.config.LogConfiguration
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.elect.operator.ElectOperator
@@ -38,7 +38,7 @@ object LogManager {
     private val generationDirs = ConcurrentSkipListMap<Long, Log>()
 
     /** 基础目录  */
-    private val baseDir = File(LogConfigHelper.getBaseDir() + "/log/aof/")
+    private val baseDir = File(LogConfiguration.getBaseDir() + "/log/aof/")
 
     /** 初始化时，最新的 Generation 和 Offset  */
     val initial: GenerationAndOffset = init()

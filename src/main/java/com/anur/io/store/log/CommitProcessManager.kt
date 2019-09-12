@@ -1,6 +1,6 @@
 package com.anur.io.store.log
 
-import com.anur.config.LogConfigHelper
+import com.anur.config.LogConfiguration
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.io.store.prelog.ByteBufPreLogManager
@@ -19,9 +19,9 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    private val dir = File(LogConfigHelper.getBaseDir()!!)
+    private val dir = File(LogConfiguration.getBaseDir()!!)
 
-    private val offsetFile = File(LogConfigHelper.getBaseDir(), "commitOffset.temp")
+    private val offsetFile = File(LogConfiguration.getBaseDir(), "commitOffset.temp")
 
     private val mmap: MappedByteBuffer
 

@@ -6,15 +6,13 @@ import com.anur.config.common.ConfigurationEnum
 /**
  * Created by Anur IjuoKaruKas on 2019/7/14
  */
-class ExtraConfiguration {
+object ExtraConfiguration : ConfigHelper() {
 
-    companion object : ConfigHelper() {
-        fun isDebug(): Boolean {
-            return CoordinateConfigHelper.getConfig(ConfigurationEnum.DEBUG_MODE) { "enable" == it } as Boolean
-        }
+    fun isDebug(): Boolean {
+        return CoordinateConfiguration.getConfig(ConfigurationEnum.DEBUG_MODE) { "enable" == it } as Boolean
+    }
 
-        fun neverReElectAfterHasLeader(): Boolean {
-            return CoordinateConfigHelper.getConfig(ConfigurationEnum.REELECT) { "true" == it } as Boolean
-        }
+    fun neverReElectAfterHasLeader(): Boolean {
+        return CoordinateConfiguration.getConfig(ConfigurationEnum.REELECT) { "true" == it } as Boolean
     }
 }

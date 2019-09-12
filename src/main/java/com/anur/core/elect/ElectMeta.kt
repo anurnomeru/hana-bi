@@ -1,6 +1,6 @@
 package com.anur.core.elect
 
-import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.config.InetSocketAddressConfiguration
 import com.anur.core.coordinate.model.HanabiNode
 import com.anur.core.elect.constant.NodeRole
 import com.anur.core.elect.model.HeartBeat
@@ -86,7 +86,7 @@ object ElectMeta {
     /**
      * 心跳内容
      */
-    val heartBeat: HeartBeat = HeartBeat(InetSocketAddressConfigHelper.getServerName() ?: throw ApplicationConfigException("未正确配置 server.name 或 client.addr"))
+    val heartBeat: HeartBeat = HeartBeat(InetSocketAddressConfiguration.getServerName() ?: throw ApplicationConfigException("未正确配置 server.name 或 client.addr"))
 
     /**
      * 仅用于统计选主用了多长时间
@@ -151,11 +151,11 @@ object ElectMeta {
         beginElectTime = 0L
 
         logger.info("本节点 {} 在世代 {} 角色由 {} 变更为 {} 选举耗时 {} ms，并开始向其他节点发送心跳包 ......",
-            InetSocketAddressConfigHelper.getServerName(), generation, nodeRole
+            InetSocketAddressConfiguration.getServerName(), generation, nodeRole
             .name, NodeRole.Leader.name, becomeLeaderCostTime)
 
         nodeRole = NodeRole.Leader
-        leader = InetSocketAddressConfigHelper.getServerName()
+        leader = InetSocketAddressConfiguration.getServerName()
         isLeader = true
         electionStateChanged(true)
     }

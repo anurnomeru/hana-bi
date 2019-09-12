@@ -9,7 +9,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfiguration;
 import com.anur.core.coordinate.apis.driver.ApisManager;
 import com.anur.core.coordinate.apis.driver.RequestHandlePool;
 import com.anur.core.coordinate.model.CoordinateRequest;
@@ -71,7 +71,11 @@ public class CoordinateClientOperator implements Runnable {
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
         OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        RequestHandlePool.INSTANCE.receiveRequest(new CoordinateRequest(msg, typeEnum, ctx.channel()));
+        try {
+            RequestHandlePool.INSTANCE.receiveRequest(new CoordinateRequest(msg, typeEnum, ctx.channel()));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     };
 
     /**
@@ -102,7 +106,7 @@ public class CoordinateClientOperator implements Runnable {
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(node.getServerName(), ctx.channel());
 
-            Register register = new Register(InetSocketAddressConfigHelper.Companion.getServerName());
+            Register register = new Register(InetSocketAddressConfiguration.Companion.getServerName());
             ApisManager.INSTANCE
                 .send(node.getServerName(), register, new RequestProcessor(byteBuffer -> {
                     RegisterResponse registerResponse = new RegisterResponse(byteBuffer);

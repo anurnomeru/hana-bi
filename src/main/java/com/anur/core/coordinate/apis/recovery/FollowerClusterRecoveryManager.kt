@@ -1,6 +1,6 @@
 package com.anur.core.coordinate.apis.recovery
 
-import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.config.InetSocketAddressConfiguration
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.operator.CoordinateClientOperator
@@ -60,7 +60,7 @@ object FollowerClusterRecoveryManager {
          */
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
             if (!ElectMeta.isLeader) {
-                CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(ElectMeta.leader)).shutDown()
+                CoordinateClientOperator.getInstance(InetSocketAddressConfiguration.getNode(ElectMeta.leader)).shutDown()
             }
         }
 
@@ -69,7 +69,7 @@ object FollowerClusterRecoveryManager {
          */
         HanabiListener.register(EventEnum.CLUSTER_VALID) {
             if (!ElectMeta.isLeader) {
-                CoordinateClientOperator.getInstance(InetSocketAddressConfigHelper.getNode(ElectMeta.leader)).tryStartWhileDisconnected()
+                CoordinateClientOperator.getInstance(InetSocketAddressConfiguration.getNode(ElectMeta.leader)).tryStartWhileDisconnected()
             }
         }
 

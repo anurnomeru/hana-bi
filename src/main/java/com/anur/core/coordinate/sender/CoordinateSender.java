@@ -5,8 +5,7 @@ import java.util.Map;
 import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.core.elect.ElectMeta;
+import com.anur.config.InetSocketAddressConfiguration;
 import com.anur.core.struct.base.AbstractStruct;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -42,8 +41,8 @@ public class CoordinateSender {
      * 向某个服务发送东西~
      */
     public static void doSend(String serverName, AbstractStruct body) {
-        if (InetSocketAddressConfigHelper.Companion.getServerName()
-                                         .equals(serverName)) {
+        if (InetSocketAddressConfiguration.Companion.getServerName()
+                                                    .equals(serverName)) {
             return;
         }
 
