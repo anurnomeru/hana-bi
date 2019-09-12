@@ -8,6 +8,7 @@ import com.anur.core.util.FileIOUtil;
 import com.anur.io.store.common.FetchDataInfo;
 import com.anur.io.store.operationset.ByteBufferOperationSet;
 import com.anur.io.store.operationset.FileOperationSet;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.DefaultFileRegion;
@@ -43,7 +44,6 @@ public class FetchResponse extends AbstractTimedStruct {
     private FileOperationSet fileOperationSet;
 
     public FetchResponse(FetchDataInfo fetchDataInfo) {
-
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead);
         init(byteBuffer, OperationTypeEnum.FETCH_RESPONSE);
 

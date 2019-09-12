@@ -36,9 +36,9 @@ public class Bootstrap {
                 "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
                 "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
                 "           Hanabi     (ver 0.0.1)\n\n" +
-                "节点 - " + InetSocketAddressConfiguration.Companion.getServerName() + "\n");
+                "节点 - " + InetSocketAddressConfiguration.INSTANCE.getServerName() + "\n");
 
-        HanabiExecutors.Companion.execute(() -> {
+        HanabiExecutors.INSTANCE.execute(() -> {
 
             try {
                 /*
@@ -100,7 +100,7 @@ public class Bootstrap {
             }
 
             try {
-                for (int i = 0; i < 10000000; i++) {
+                for (int i = 0; i < 1000000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX,
                         "ToIjuoKaruKassetAnurToIjuoKaruKas",
                         "ToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKas");

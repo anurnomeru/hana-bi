@@ -43,11 +43,11 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
     // 测试用，是否在 leader 不可见时触发选举
     private volatile boolean RE_ELECT = true;
 
-    private static final long ELECTION_TIMEOUT_MS = ElectConfiguration.Companion.getElectionTimeoutMs();
+    private static final long ELECTION_TIMEOUT_MS = ElectConfiguration.INSTANCE.getElectionTimeoutMs();
 
-    private static final long VOTES_BACK_OFF_MS = ElectConfiguration.Companion.getVotesBackOffMs();
+    private static final long VOTES_BACK_OFF_MS = ElectConfiguration.INSTANCE.getVotesBackOffMs();
 
-    private static final long HEART_BEAT_MS = ElectConfiguration.Companion.getHeartBeatMs();
+    private static final long HEART_BEAT_MS = ElectConfiguration.INSTANCE.getHeartBeatMs();
 
     private volatile static ElectOperator INSTANCE;
 
@@ -55,7 +55,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
 
     public ElectOperator() {
 
-        if (!ExtraConfiguration.Companion.neverReElectAfterHasLeader()) {
+        if (!ExtraConfiguration.INSTANCE.neverReElectAfterHasLeader()) {
             HanabiListener.INSTANCE.register(EventEnum.CLUSTER_VALID,
                 () -> {
                     RE_ELECT = false;
@@ -73,7 +73,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                     Thread thread = new Thread(INSTANCE);
                     thread.setPriority(10);
                     thread.setName("Controller");
-                    HanabiExecutors.Companion.execute(thread);
+                    HanabiExecutors.INSTANCE.execute(thread);
                 }
             }
         }
@@ -132,7 +132,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             // 成为候选者
             logger.info("本节点正式开始世代 {} 的选举", meta.getGeneration());
             if (this.becomeCandidate()) {
-                VotesResponse votes = new VotesResponse(meta.getGeneration(), InetSocketAddressConfiguration.Companion.getServerName(), true, false, meta.getGeneration());
+                VotesResponse votes = new VotesResponse(meta.getGeneration(), InetSocketAddressConfiguration.INSTANCE.getServerName(), true, false, meta.getGeneration());
 
                 // 给自己投票箱投票
                 this.receiveVotesResponse(votes);
@@ -141,7 +141,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 meta.setVoteRecord(votes);
 
                 // 让其他节点给自己投一票
-                this.askForVoteTask(new Votes(meta.getGeneration(), InetSocketAddressConfiguration.Companion.getServerName()), 0);
+                this.askForVoteTask(new Votes(meta.getGeneration(), InetSocketAddressConfiguration.INSTANCE.getServerName()), 0);
             }
             return null;
         });
@@ -178,7 +178,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 logger.debug("投票记录更新失败：原因：{}", cause);
             }
 
-            String serverName = InetSocketAddressConfiguration.Companion.getServerName();
+            String serverName = InetSocketAddressConfiguration.INSTANCE.getServerName();
             return new VotesResponse(meta.getGeneration(), serverName, result, serverName.equals(meta.getLeader()), votes.getGeneration());
         });
     }
@@ -196,7 +196,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             }
 
             boolean voteSelf = votesResponse.getServerName()
-                                            .equals(InetSocketAddressConfiguration.Companion.getServerName());
+                                            .equals(InetSocketAddressConfiguration.INSTANCE.getServerName());
             if (voteSelf) {
                 logger.info("本节点在世代 {} 转变为候选者，给自己先投一票", meta.getGeneration());
             } else {
@@ -342,7 +342,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
                 logger.debug("初始化投票箱，原因：{}", reason);
 
                 // 0、更新集群信息
-                meta.setClusters(InetSocketAddressConfiguration.Companion.getCluster());
+                meta.setClusters(InetSocketAddressConfiguration.INSTANCE.getCluster());
                 meta.setQuorum(meta.getClusters()
                                    .size() / 2 + 1);
                 logger.debug("更新集群节点信息     ===> " + JSON.toJSONString(meta.getClusters()));
@@ -545,7 +545,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
         this.lockSupplier(() -> {
             resetGenerationAndOffset(LogManager.INSTANCE.getInitial());
 
-            logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfiguration.Companion.getServerName());
+            logger.info("初始化选举控制器 ElectOperator，本节点为 {}", InetSocketAddressConfiguration.INSTANCE.getServerName());
             try {
                 startLatch.await();
             } catch (InterruptedException e) {
@@ -553,7 +553,7 @@ public class ElectOperator extends ReentrantLocker implements Runnable {
             }
             logger.debug("初始化选举控制器 启动中");
 
-            if (ExtraConfiguration.Companion.isDebug()) {
+            if (ExtraConfiguration.INSTANCE.isDebug()) {
                 logger.info("== <==>");
                 logger.info("<>-- -|   测试模式   |- --<>");
                 logger.info("== <==>");

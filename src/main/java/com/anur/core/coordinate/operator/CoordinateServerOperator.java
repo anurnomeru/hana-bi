@@ -50,8 +50,18 @@ public class CoordinateServerOperator implements Runnable {
      * 如何去消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> SERVER_MSG_CONSUMER = (ctx, msg) -> {
-        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        RequestHandlePool.INSTANCE.receiveRequest(new CoordinateRequest(msg, typeEnum, ctx.channel()));
+        int sign = 0;
+        try {
+            sign = msg.getInt(AbstractStruct.TypeOffset);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(sign);
+        if (typeEnum == null) {
+            logger.error("一定是哪里有bug，收到的消息 sign 为：" + sign);
+        } else {
+            RequestHandlePool.INSTANCE.receiveRequest(new CoordinateRequest(msg, typeEnum, ctx.channel()));
+        }
     };
 
     /**
@@ -85,7 +95,7 @@ public class CoordinateServerOperator implements Runnable {
                     Thread thread = new Thread(INSTANCE);
                     thread.setName("CoordinateServerOperator");
                     thread.setPriority(10);
-                    HanabiExecutors.Companion.execute(thread);
+                    HanabiExecutors.INSTANCE.execute(thread);
                 }
             }
         }
@@ -96,8 +106,8 @@ public class CoordinateServerOperator implements Runnable {
      * 初始化Elector
      */
     public void init() {
-        this.serverShutDownHooker = new ShutDownHooker(String.format("终止协调服务器的套接字接口 %s 的监听！", InetSocketAddressConfiguration.Companion.getServerCoordinatePort()));
-        this.coordinateServer = new CoordinateServer(InetSocketAddressConfiguration.Companion.getServerCoordinatePort(),
+        this.serverShutDownHooker = new ShutDownHooker(String.format("终止协调服务器的套接字接口 %s 的监听！", InetSocketAddressConfiguration.INSTANCE.getServerCoordinatePort()));
+        this.coordinateServer = new CoordinateServer(InetSocketAddressConfiguration.INSTANCE.getServerCoordinatePort(),
             serverShutDownHooker, SERVER_MSG_CONSUMER, PIPE_LINE_ADDER);
         initialLatch.countDown();
     }

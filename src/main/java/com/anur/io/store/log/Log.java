@@ -79,7 +79,7 @@ public class Log extends ReentrantLocker {
                     File indexFile = LogCommon.Companion.indexFilename(dir, start);
                     LogSegment thisSegment;
                     try {
-                        thisSegment = new LogSegment(dir, start, LogConfiguration.Companion.getIndexInterval(), LogConfiguration.Companion.getMaxIndexSize());
+                        thisSegment = new LogSegment(dir, start, LogConfiguration.INSTANCE.getIndexInterval(), LogConfiguration.INSTANCE.getMaxIndexSize());
                     } catch (IOException e) {
                         throw new LogException("创建或映射日志分片文件 " + filename + " 失败");
                     }
@@ -92,11 +92,11 @@ public class Log extends ReentrantLocker {
                         } catch (Exception e) {
                             logger.info("世代 {} 日志 {} 的索引文件存在异常，正在重建索引文件。", generation, filename);
                             indexFile.delete();
-                            thisSegment.recover(LogConfiguration.Companion.getMaxLogMessageSize());
+                            thisSegment.recover(LogConfiguration.INSTANCE.getMaxLogMessageSize());
                         }
                     } else {
                         logger.info("世代 {} 日志 {} 的索引文件不存在，正在重建索引文件。", generation, filename);
-                        thisSegment.recover(LogConfiguration.Companion.getMaxLogMessageSize());
+                        thisSegment.recover(LogConfiguration.INSTANCE.getMaxLogMessageSize());
                     }
 
                     segments.put(start, thisSegment);
@@ -106,7 +106,7 @@ public class Log extends ReentrantLocker {
 
         if (segments.size() == 0) {
             logger.info("当前世代 {} 目录 {} 还未创建任何日志分片，将创建开始下标为 1L 的日志分片", generation, dir.getAbsolutePath());
-            segments.put(0L, new LogSegment(dir, 0, LogConfiguration.Companion.getIndexInterval(), LogConfiguration.Companion.getMaxIndexSize()));
+            segments.put(0L, new LogSegment(dir, 0, LogConfiguration.INSTANCE.getIndexInterval(), LogConfiguration.INSTANCE.getMaxIndexSize()));
         }
 
         return activeSegment().lastOffset(generation);
@@ -177,10 +177,10 @@ public class Log extends ReentrantLocker {
         LogSegment logSegment = activeSegment();
 
         if (
-            logSegment.size() + size > LogConfiguration.Companion.getMaxLogSegmentSize() // 即将 append 的消息将超过分片容纳最大大小
+            logSegment.size() + size > LogConfiguration.INSTANCE.getMaxLogSegmentSize() // 即将 append 的消息将超过分片容纳最大大小
                 || logSegment.getIndex() // 可索引的 index 已经达到最大
                              .isFull()) {
-            logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfiguration.Companion.getMaxLogSegmentSize(),
+            logger.info("即将开启新的日志分片，上个分片大小为 {}/{}， 对应的索引文件共建立了 {}/{} 个索引。", logSegment.size(), LogConfiguration.INSTANCE.getMaxLogSegmentSize(),
                 logSegment.getIndex()
                           .getEntries(), logSegment.getIndex()
                                                    .getMaxEntries());
@@ -228,7 +228,7 @@ public class Log extends ReentrantLocker {
 
             LogSegment newLogSegment;
             try {
-                newLogSegment = new LogSegment(dir, newOffset, LogConfiguration.Companion.getIndexInterval(), LogConfiguration.Companion.getMaxIndexSize());
+                newLogSegment = new LogSegment(dir, newOffset, LogConfiguration.INSTANCE.getIndexInterval(), LogConfiguration.INSTANCE.getMaxIndexSize());
             } catch (IOException e) {
                 logger.error("滚动时创建新的日志分片失败，分片目录：{}, 创建的文件为：{}", dir.getAbsolutePath(), newFile.getName());
                 throw new LogException("滚动时创建新的日志分片失败");

@@ -58,7 +58,7 @@ public class Timer {
     public void addTask(TimedTask timedTask) {
         if (!timeWheel.addTask(timedTask)) {
             if (!timedTask.isCancel()) {
-                HanabiExecutors.Companion.execute(timedTask.getTask());
+                HanabiExecutors.INSTANCE.execute(timedTask.getTask());
             }
         }
     }

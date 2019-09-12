@@ -70,11 +70,13 @@ public class CoordinateClientOperator implements Runnable {
      * 如何消费消息
      */
     private static BiConsumer<ChannelHandlerContext, ByteBuffer> CLIENT_MSG_CONSUMER = (ctx, msg) -> {
-        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(msg.getInt(AbstractStruct.TypeOffset));
-        try {
+        int sign = msg.getInt(AbstractStruct.TypeOffset);
+        OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(sign);
+
+        if (typeEnum == null) {
+            logger.error("一定是哪里有bug，收到的消息 sign 为：" + sign);
+        } else {
             RequestHandlePool.INSTANCE.receiveRequest(new CoordinateRequest(msg, typeEnum, ctx.channel()));
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     };
 
@@ -106,18 +108,18 @@ public class CoordinateClientOperator implements Runnable {
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(node.getServerName(), ctx.channel());
 
-            Register register = new Register(InetSocketAddressConfiguration.Companion.getServerName());
+            Register register = new Register(InetSocketAddressConfiguration.INSTANCE.getServerName());
             ApisManager.INSTANCE
                 .send(node.getServerName(), register, new RequestProcessor(byteBuffer -> {
                     RegisterResponse registerResponse = new RegisterResponse(byteBuffer);
                     if (registerResponse.serverName.equals(node.getServerName())) {
-                        doWhenConnectToNode.forEach(HanabiExecutors.Companion::execute);
+                        doWhenConnectToNode.forEach(HanabiExecutors.INSTANCE::execute);
                     } else {
                         logger.error(String.format("出现了异常的情况，向节点 %s 发送了注册请求，却收到了 %s 的回复", node.getServerName(), registerResponse.serverName));
                     }
                 }, null
                 ));
-            logger.debug("成功连接协调器 节点 {} [{}:{}] 连接", node.getServerName(), node.getHost(), node.getCoordinatePort());
+            logger.debug("成功与协调器 节点 {} [{}:{}] 连接", node.getServerName(), node.getHost(), node.getCoordinatePort());
         }
 
         @Override
@@ -127,7 +129,7 @@ public class CoordinateClientOperator implements Runnable {
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .unRegister(node.getServerName());
 
-            doWhenDisconnectToNode.forEach(HanabiExecutors.Companion::execute);
+            doWhenDisconnectToNode.forEach(HanabiExecutors.INSTANCE::execute);
             logger.debug("与协调器 节点 {} [{}:{}] 的连接已断开", node.getServerName(), node.getHost(), node.getCoordinatePort());
         }
     }
@@ -147,7 +149,7 @@ public class CoordinateClientOperator implements Runnable {
 
                     INSTANCE = new CoordinateClientOperator(hanabiNode);
                     INSTANCE.init();
-                    HanabiExecutors.Companion.execute(INSTANCE);
+                    HanabiExecutors.INSTANCE.execute(INSTANCE);
                 }
             }
         }
@@ -184,7 +186,7 @@ public class CoordinateClientOperator implements Runnable {
         if (this.serverShutDownHooker.isShutDown()) {// 如果以前就创建过这个client，但是中途关掉了，直接重启即可
             logger.debug("正在重新建立与协调器节点 {} [{}:{}] 的连接", hanabiNode.getServerName(), hanabiNode.getHost(), hanabiNode.getCoordinatePort());
             this.serverShutDownHooker.reset();
-            HanabiExecutors.Companion.execute(this);
+            HanabiExecutors.INSTANCE.execute(this);
         } else {
             initialLatch.countDown();// 如果没创建过，则直接将其启动
         }

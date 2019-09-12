@@ -20,14 +20,14 @@ public class TestByteBufPreLog {
 
         LogManager instance = LogManager.INSTANCE;
         ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
-        HanabiExecutors.Companion.submit(() -> {
+        HanabiExecutors.INSTANCE.submit(() -> {
             while (true) {
                 Thread.sleep(100);
                 byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
             }
         });
 
-        HanabiExecutors.Companion.execute(() -> {
+        HanabiExecutors.INSTANCE.execute(() -> {
             for (int i = 1000; i < 2000; i++) {
                 byteBufPreLogManager
                     .append(0, new ByteBufferOperationSet(

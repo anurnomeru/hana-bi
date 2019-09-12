@@ -224,9 +224,7 @@ object LogManager {
             val offset = GAO.offset
 
             //  GAO 过大直接返回null
-            if (GAO > currentGAO) {
-                return@Supplier null
-            }
+            if (GAO > currentGAO) return@Supplier null
 
             /*
              * 如果不存在此世代，则加载此世代
@@ -260,10 +258,8 @@ object LogManager {
             var needToRead: LogSegment? = null
             while (logSegmentIterable.hasNext()) {
                 val tmp = logSegmentIterable.next()
-//                if (needLoadLog.currentOffset != tmp.baseOffset) {// 代表这个 LogSegment 一条数据都没 append
                 needToRead = tmp
                 break
-//                }
             }
 
             return@Supplier if (needToRead == null) {
