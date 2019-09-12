@@ -3,9 +3,8 @@ package com.anur.io.core.coder;
 import java.nio.charset.Charset;
 import java.util.Optional;
 import com.alibaba.fastjson.JSON;
-import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfiguration;
 import com.anur.core.elect.ElectMeta;
-import com.anur.core.elect.operator.ElectOperator;
 import com.anur.exception.HanabiException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -55,7 +54,7 @@ public class ElectCoder {
         return protocolEnum.name() + REGEX
             + ElectMeta.INSTANCE
             .getGeneration() + REGEX
-            + InetSocketAddressConfigHelper.Companion.getServerName() + REGEX
+            + InetSocketAddressConfiguration.Companion.getServerName() + REGEX
             + json + SUFFIX;
     }
 

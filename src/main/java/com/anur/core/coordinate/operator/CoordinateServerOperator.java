@@ -2,24 +2,20 @@ package com.anur.core.coordinate.operator;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfiguration;
 import com.anur.core.coordinate.apis.driver.RequestHandlePool;
 import com.anur.core.coordinate.model.CoordinateRequest;
 import com.anur.core.struct.base.AbstractStruct;
-import com.anur.core.coordinate.apis.driver.ApisManager;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
 import com.anur.io.coordinate.server.CoordinateServer;
 import com.anur.core.struct.OperationTypeEnum;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
@@ -100,8 +96,8 @@ public class CoordinateServerOperator implements Runnable {
      * 初始化Elector
      */
     public void init() {
-        this.serverShutDownHooker = new ShutDownHooker(String.format("终止协调服务器的套接字接口 %s 的监听！", InetSocketAddressConfigHelper.Companion.getServerCoordinatePort()));
-        this.coordinateServer = new CoordinateServer(InetSocketAddressConfigHelper.Companion.getServerCoordinatePort(),
+        this.serverShutDownHooker = new ShutDownHooker(String.format("终止协调服务器的套接字接口 %s 的监听！", InetSocketAddressConfiguration.Companion.getServerCoordinatePort()));
+        this.coordinateServer = new CoordinateServer(InetSocketAddressConfiguration.Companion.getServerCoordinatePort(),
             serverShutDownHooker, SERVER_MSG_CONSUMER, PIPE_LINE_ADDER);
         initialLatch.countDown();
     }

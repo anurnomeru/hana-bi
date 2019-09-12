@@ -1,11 +1,9 @@
 package com.anur.core.coordinate.apis.fetch
 
-import com.anur.config.CoordinateConfigHelper
+import com.anur.config.CoordinateConfiguration
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.elect.ElectMeta
-import com.anur.core.listener.EventEnum
-import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.Fetcher
@@ -90,7 +88,7 @@ abstract class CoordinateFetcher : ReentrantReadWriteLocker() {
             return
         }
 
-        fetchPreLogTask = TimedTask(CoordinateConfigHelper.getFetchBackOfMs().toLong()) { sendFetchPreLog(myVersion, fetchFrom) }
+        fetchPreLogTask = TimedTask(CoordinateConfiguration.getFetchBackOfMs().toLong()) { sendFetchPreLog(myVersion, fetchFrom) }
         Timer.getInstance()
             .addTask(fetchPreLogTask)
     }

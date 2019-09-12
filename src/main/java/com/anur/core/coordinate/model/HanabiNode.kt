@@ -1,6 +1,6 @@
 package com.anur.core.coordinate.model
 
-import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.config.InetSocketAddressConfiguration
 
 class HanabiNode(val serverName: String, val host: String, val electionPort: Int, val coordinatePort: Int) {
 
@@ -12,7 +12,7 @@ class HanabiNode(val serverName: String, val host: String, val electionPort: Int
      * 是否是本地节点
      */
     fun isLocalNode(): Boolean {
-        return this.serverName == InetSocketAddressConfigHelper.getServerName()
+        return this.serverName == InetSocketAddressConfiguration.getServerName()
     }
 
     override fun equals(other: Any?): Boolean {

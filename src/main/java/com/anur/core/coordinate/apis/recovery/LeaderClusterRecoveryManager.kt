@@ -1,10 +1,9 @@
 package com.anur.core.coordinate.apis.recovery
 
-import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.config.InetSocketAddressConfiguration
 import com.anur.core.common.Resetable
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.apis.fetch.CoordinateFetcher
-import com.anur.core.coordinate.apis.fetch.FollowerCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
@@ -126,7 +125,7 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
                 } else {
                     val serverName = latest!!.key
                     val GAO = latest!!.value
-                    val node = InetSocketAddressConfigHelper.getNode(serverName)
+                    val node = InetSocketAddressConfiguration.getNode(serverName)
                     fetchTo = GAO
 
                     logger.info("已有过半节点提交了最大进度，集群最大进度于节点 $serverName ，进度为 $GAO ，Leader 将从其同步最新数据")

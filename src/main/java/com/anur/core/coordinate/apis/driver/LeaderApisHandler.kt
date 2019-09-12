@@ -1,6 +1,6 @@
 package com.anur.core.coordinate.apis.driver
 
-import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.config.InetSocketAddressConfiguration
 import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager
 import com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager
 import com.anur.core.coordinate.model.RequestProcessor
@@ -79,6 +79,6 @@ object LeaderApisHandler {
         logger.info("协调节点 {} 已注册到本节点", register.getServerName())
         ChannelManager.getInstance(ChannelManager.ChannelType.COORDINATE)
             .register(register.getServerName(), channel)
-        ApisManager.send(register.getServerName(), RegisterResponse(InetSocketAddressConfigHelper.getServerName()), RequestProcessor.REQUIRE_NESS)
+        ApisManager.send(register.getServerName(), RegisterResponse(InetSocketAddressConfiguration.getServerName()), RequestProcessor.REQUIRE_NESS)
     }
 }

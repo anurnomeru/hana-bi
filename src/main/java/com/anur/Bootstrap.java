@@ -2,7 +2,7 @@ package com.anur;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper;
+import com.anur.config.InetSocketAddressConfiguration;
 import com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager;
 import com.anur.core.coordinate.apis.recovery.FollowerClusterRecoveryManager;
 import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager;
@@ -36,7 +36,7 @@ public class Bootstrap {
                 "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
                 "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
                 "           Hanabi     (ver 0.0.1)\n\n" +
-                "节点 - " + InetSocketAddressConfigHelper.Companion.getServerName() + "\n");
+                "节点 - " + InetSocketAddressConfiguration.Companion.getServerName() + "\n");
 
         HanabiExecutors.Companion.execute(() -> {
 
@@ -100,12 +100,14 @@ public class Bootstrap {
             }
 
             try {
-                for (int i = 0; i < 100000000; i++) {
+                for (int i = 0; i < 10000000; i++) {
                     Operation operation = new Operation(OperationTypeEnum.SETNX,
                         "ToIjuoKaruKassetAnurToIjuoKaruKas",
                         "ToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKasToIjuoKaruKas");
                     LogManager.INSTANCE.appendUntilClusterValid(operation);
                 }
+
+                System.out.println("zzzzz");
             } catch (Exception e) {
             }
         });

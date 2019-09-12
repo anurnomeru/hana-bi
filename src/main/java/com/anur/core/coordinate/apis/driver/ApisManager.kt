@@ -1,8 +1,7 @@
 package com.anur.core.coordinate.apis.driver
 
-import com.anur.config.CoordinateConfigHelper
+import com.anur.config.CoordinateConfiguration
 import com.anur.core.common.Resetable
-import com.anur.core.coordinate.apis.recovery.LeaderClusterRecoveryManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.sender.CoordinateSender
 import com.anur.core.listener.EventEnum
@@ -170,7 +169,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
         if (requestProcessor == null) { // 是不需要回复的类型
             removeFromInFlightRequest(serverName, operationTypeEnum)
         } else {
-            val task = TimedTask(CoordinateConfigHelper.getFetchBackOfMs().toLong()) { sendImpl(serverName, command, requestProcessor, operationTypeEnum) }
+            val task = TimedTask(CoordinateConfiguration.getFetchBackOfMs().toLong()) { sendImpl(serverName, command, requestProcessor, operationTypeEnum) }
             if (reAppendToInFlightRequest(serverName, operationTypeEnum, task)) {
 
                 logger.trace("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum)
