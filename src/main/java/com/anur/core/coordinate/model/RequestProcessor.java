@@ -67,9 +67,9 @@ public class RequestProcessor extends ReentrantReadWriteLocker {
                 Optional.ofNullable(timedTask)
                         .ifPresent(TimedTask::cancel);
                 Optional.ofNullable(callBack)
-                        .ifPresent(cb -> HanabiExecutors.Companion.execute(() -> cb.accept(byteBuffer)));
+                        .ifPresent(cb -> HanabiExecutors.INSTANCE.execute(() -> cb.accept(byteBuffer)));
                 Optional.ofNullable(afterCompleteReceive)
-                        .ifPresent(HanabiExecutors.Companion::execute);
+                        .ifPresent(HanabiExecutors.INSTANCE::execute);
             }
             return null;
         });

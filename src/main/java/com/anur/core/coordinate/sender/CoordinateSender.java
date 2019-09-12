@@ -41,15 +41,15 @@ public class CoordinateSender {
      * 向某个服务发送东西~
      */
     public static void doSend(String serverName, AbstractStruct body) {
-        if (InetSocketAddressConfiguration.Companion.getServerName()
-                                                    .equals(serverName)) {
+        if (InetSocketAddressConfiguration.INSTANCE.getServerName()
+                                                   .equals(serverName)) {
             return;
         }
 
         // 避免同个 channel 发生多线程问题
         synchronized (getLock(serverName)) {
-            logger.trace("正向节点发送 {} 关于 {} 的 request", serverName, body.getOperationTypeEnum()
-                                                                      .name());
+            logger.debug("正向节点发送 {} 关于 {} 的 request，大小为 " + body.totalSize() + " bytes。", serverName, body.getOperationTypeEnum()
+                                                                                                          .name());
             Channel channel = ChannelManager.getInstance(ChannelType.COORDINATE)
                                             .getChannel(serverName);
 

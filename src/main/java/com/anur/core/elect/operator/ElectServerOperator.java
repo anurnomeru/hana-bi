@@ -101,7 +101,7 @@ public class ElectServerOperator implements Runnable {
                     Thread thread = new Thread(INSTANCE);
                     thread.setName("ElectServerOperator");
                     thread.setPriority(10);
-                    HanabiExecutors.Companion.execute(thread);
+                    HanabiExecutors.INSTANCE.execute(thread);
                 }
             }
         }
@@ -112,8 +112,8 @@ public class ElectServerOperator implements Runnable {
      * 初始化Elector
      */
     public void init() {
-        this.serverShutDownHooker = new ShutDownHooker(String.format("  终止选举服务器的套接字接口 %s 的监听！  ", InetSocketAddressConfiguration.Companion.getServerElectionPort()));
-        this.electServer = new ElectServer(InetSocketAddressConfiguration.Companion.getServerElectionPort(), serverShutDownHooker, SERVER_MSG_CONSUMER);
+        this.serverShutDownHooker = new ShutDownHooker(String.format("  终止选举服务器的套接字接口 %s 的监听！  ", InetSocketAddressConfiguration.INSTANCE.getServerElectionPort()));
+        this.electServer = new ElectServer(InetSocketAddressConfiguration.INSTANCE.getServerElectionPort(), serverShutDownHooker, SERVER_MSG_CONSUMER);
         initialLatch.countDown();
     }
 
