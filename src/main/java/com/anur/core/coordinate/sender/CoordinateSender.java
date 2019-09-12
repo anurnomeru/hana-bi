@@ -42,7 +42,7 @@ public class CoordinateSender {
      * 向某个服务发送东西~
      */
     public static void doSend(String serverName, AbstractStruct body) {
-        if (InetSocketAddressConfigHelper.getServerName()
+        if (InetSocketAddressConfigHelper.Companion.getServerName()
                                          .equals(serverName)) {
             return;
         }

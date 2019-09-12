@@ -1,7 +1,6 @@
 package com.anur.core.coordinate.model;
 
 import java.util.List;
-import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/26

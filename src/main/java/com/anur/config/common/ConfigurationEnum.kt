@@ -1,4 +1,4 @@
-package ink.anur.config.common
+package com.anur.config.common
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5

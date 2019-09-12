@@ -1,12 +1,12 @@
-package ink.anur.config
+package com.anur.config
 
-import ink.anur.config.common.ConfigurationEnum
-import ink.anur.config.common.ConfigHelper
+import com.anur.config.common.ConfigurationEnum
+import com.anur.config.common.ConfigHelper
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5
  */
-class ElectConfiguration : ConfigHelper() {
+class ElectConfigHelper : ConfigHelper() {
 
     companion object : ConfigHelper() {
         fun getElectionTimeoutMs(): Int {

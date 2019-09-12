@@ -1,12 +1,12 @@
-package ink.anur.config
+package com.anur.config
 
-import ink.anur.config.common.ConfigHelper
-import ink.anur.config.common.ConfigurationEnum
+import com.anur.config.common.ConfigHelper
+import com.anur.config.common.ConfigurationEnum
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5
  */
-class CoordinateConfiguration {
+class CoordinateConfigHelper {
 
     companion object : ConfigHelper() {
         fun getFetchBackOfMs(): Int {

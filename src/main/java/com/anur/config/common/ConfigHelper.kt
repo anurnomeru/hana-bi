@@ -1,4 +1,4 @@
-package ink.anur.config.common
+package com.anur.config.common
 
 import com.anur.exception.ApplicationConfigException
 import javafx.util.Pair

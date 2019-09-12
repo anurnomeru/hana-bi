@@ -1,6 +1,6 @@
 package com.anur.core.coordinate;
 
-import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.coordinate.model.HanabiNode;
 import com.anur.core.coordinate.operator.CoordinateClientOperator;
 
 /**

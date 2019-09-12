@@ -54,8 +54,8 @@ public class ElectCoder {
 
         return protocolEnum.name() + REGEX
             + ElectMeta.INSTANCE
-                           .getGeneration() + REGEX
-            + InetSocketAddressConfigHelper.getServerName() + REGEX
+            .getGeneration() + REGEX
+            + InetSocketAddressConfigHelper.Companion.getServerName() + REGEX
             + json + SUFFIX;
     }
 

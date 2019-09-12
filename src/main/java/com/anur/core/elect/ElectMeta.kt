@@ -1,6 +1,7 @@
 package com.anur.core.elect
 
 import com.anur.config.InetSocketAddressConfigHelper
+import com.anur.core.coordinate.model.HanabiNode
 import com.anur.core.elect.constant.NodeRole
 import com.anur.core.elect.model.HeartBeat
 import com.anur.core.elect.model.Votes
@@ -61,7 +62,7 @@ object ElectMeta {
      * 缓存一份集群信息，因为集群信息是可能变化的，我们要保证在一次选举中，集群信息是不变的
      */
     @Volatile
-    var clusters: List<InetSocketAddressConfigHelper.HanabiNode>? = null
+    var clusters: List<HanabiNode>? = null
 
     /**
      * 法定人数

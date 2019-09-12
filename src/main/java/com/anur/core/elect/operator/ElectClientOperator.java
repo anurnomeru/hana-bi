@@ -6,13 +6,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
-import com.anur.io.core.coder.ElectCoder;
-import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
+import com.anur.core.coordinate.model.HanabiNode;
 import com.anur.core.elect.model.HeartBeat;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.util.HanabiExecutors;
 import com.anur.core.util.ShutDownHooker;
+import com.anur.io.core.coder.ElectCoder;
+import com.anur.io.core.coder.ElectCoder.ElectDecodeWrapper;
 import com.anur.io.elect.client.ElectClient;
 import io.netty.channel.ChannelHandlerContext;
 

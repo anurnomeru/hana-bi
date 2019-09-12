@@ -10,17 +10,17 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfigHelper;
-import com.anur.config.InetSocketAddressConfigHelper.HanabiNode;
+import com.anur.core.coordinate.apis.driver.ApisManager;
 import com.anur.core.coordinate.apis.driver.RequestHandlePool;
 import com.anur.core.coordinate.model.CoordinateRequest;
+import com.anur.core.coordinate.model.HanabiNode;
+import com.anur.core.coordinate.model.RequestProcessor;
 import com.anur.core.elect.ElectMeta;
 import com.anur.core.listener.EventEnum;
 import com.anur.core.listener.HanabiListener;
 import com.anur.core.struct.OperationTypeEnum;
-import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.base.AbstractStruct;
-import com.anur.core.coordinate.model.RequestProcessor;
-import com.anur.core.coordinate.apis.driver.ApisManager;
+import com.anur.core.struct.coordinate.Register;
 import com.anur.core.struct.coordinate.RegisterResponse;
 import com.anur.core.util.ChannelManager;
 import com.anur.core.util.ChannelManager.ChannelType;
@@ -102,7 +102,7 @@ public class CoordinateClientOperator implements Runnable {
             ChannelManager.getInstance(ChannelType.COORDINATE)
                           .register(node.getServerName(), ctx.channel());
 
-            Register register = new Register(InetSocketAddressConfigHelper.getServerName());
+            Register register = new Register(InetSocketAddressConfigHelper.Companion.getServerName());
             ApisManager.INSTANCE
                 .send(node.getServerName(), register, new RequestProcessor(byteBuffer -> {
                     RegisterResponse registerResponse = new RegisterResponse(byteBuffer);
@@ -156,7 +156,7 @@ public class CoordinateClientOperator implements Runnable {
                 .equals(ElectMeta.INSTANCE.getLeader())) {
             this.doWhenConnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_CONNECT_TO_LEADER));
             this.doWhenDisconnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_DISCONNECT_TO_LEADER));
-        }else {
+        } else {
             this.doWhenConnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_CONNECT_TO, node.getServerName()));
             this.doWhenDisconnectToNode.add(() -> HanabiListener.INSTANCE.onEvent(EventEnum.COORDINATE_DISCONNECT_TO, node.getServerName()));
         }

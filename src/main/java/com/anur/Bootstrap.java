@@ -36,7 +36,7 @@ public class Bootstrap {
                 "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
                 "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
                 "           Hanabi     (ver 0.0.1)\n\n" +
-                "节点 - " + InetSocketAddressConfigHelper.getServerName() + "\n");
+                "节点 - " + InetSocketAddressConfigHelper.Companion.getServerName() + "\n");
 
         HanabiExecutors.Companion.execute(() -> {
 

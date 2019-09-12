@@ -33,7 +33,7 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
 
         logger.trace("maybeLength => " + maybeLength);
 
-        if (maybeLength > LogConfigHelper.getMaxLogMessageSize()) {
+        if (maybeLength > LogConfigHelper.Companion.getMaxLogMessageSize()) {
             buffer.discardReadBytes();
             return null;
         }

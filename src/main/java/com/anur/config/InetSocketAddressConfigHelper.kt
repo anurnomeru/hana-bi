@@ -1,9 +1,9 @@
-package ink.anur.config
+package com.anur.config
 
 import com.anur.core.util.ChannelManager
-import ink.anur.config.common.ConfigHelper
-import ink.anur.config.common.ConfigurationEnum
-import ink.anur.core.common.HanabiLegal
+import com.anur.config.common.ConfigHelper
+import com.anur.config.common.ConfigurationEnum
+import com.anur.core.coordinate.model.HanabiNode
 import com.anur.exception.ApplicationConfigException
 
 /**
@@ -11,10 +11,10 @@ import com.anur.exception.ApplicationConfigException
  *
  * 网络相关配置，都可以从这里获取
  */
-class InetSocketAddressConfiguration {
+class InetSocketAddressConfigHelper {
 
     companion object : ConfigHelper() {
-        private val me: HanabiLegal
+        private val me: HanabiNode
 
         init {
             val name = getConfig(ConfigurationEnum.SERVER_NAME) { unChange -> unChange } as String
@@ -36,17 +36,17 @@ class InetSocketAddressConfiguration {
             return me.serverName
         }
 
-        fun getCluster(): List<HanabiLegal> {
+        fun getCluster(): List<HanabiNode> {
             return getConfigSimilar(ConfigurationEnum.CLIENT_ADDR) { pair ->
                 val serverName = pair.key
                 val split = pair.value
                     .split(":".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                HanabiLegal(serverName, split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]))
-            } as List<HanabiLegal>
+                HanabiNode(serverName, split[0], Integer.valueOf(split[1]), Integer.valueOf(split[2]))
+            } as List<HanabiNode>
         }
 
-        fun getNode(serverName: String): HanabiLegal {
-            return getCluster().associateBy { hanabiLegal: HanabiLegal -> hanabiLegal.serverName }[serverName] ?: HanabiLegal.NOT_EXIST
+        fun getNode(serverName: String?): HanabiNode {
+            return getCluster().associateBy { hanabiLegal: HanabiNode -> hanabiLegal.serverName }[serverName] ?: HanabiNode.NOT_EXIST
         }
     }
 }
