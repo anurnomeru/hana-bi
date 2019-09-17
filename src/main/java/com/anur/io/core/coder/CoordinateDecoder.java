@@ -4,8 +4,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.struct.OperationTypeEnum;
-import com.anur.core.struct.base.AbstractStruct;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
@@ -41,31 +39,43 @@ public class CoordinateDecoder extends ByteToMessageDecoder {
         int remain = buffer.readableBytes();
         logger.trace("remain => " + remain);
 
+        if (remain == 0) {
+            System.out.println("----");
+        }
+
         if (remain < maybeLength) {
             logger.trace("消息解析异常，remain {} 但是 maybeLength {}", remain, maybeLength);
             buffer.resetReaderIndex();
             logger.trace("after reset index:" + buffer.readerIndex());
             return null;
         } else {
+            // ver1.0 通过ByteBuffer直接去读
+            ByteBuffer resultOne = ByteBuffer.allocate(maybeLength);
+            buffer.readBytes(resultOne);
+            resultOne.rewind();
 
-            buffer.markReaderIndex();
-            byte[] bytes = new byte[maybeLength];
-            buffer.readBytes(bytes);
+            //            // ver2.0 通过ByteBuf原生提供的API
+            //            // 标识此index后的已经读过了
+            //            buffer.resetReaderIndex();
+            //            buffer.readerIndex(LengthInBytes + maybeLength);
+            //
+            //            //             第一个字节是长度，和业务无关
+            //            ByteBuffer resultTwo = buffer.nioBuffer(LengthInBytes, maybeLength);
+            //
+            //            byte[] bytesFromResultOne = new byte[maybeLength];
+            //            resultOne.get(bytesFromResultOne);
+            //
+            //            byte[] bytesFromResultTwo = new byte[maybeLength];
+            //            resultTwo.get(bytesFromResultTwo);
+            //
+            //            if (!Arrays.toString(bytesFromResultOne)
+            //                       .equals(Arrays.toString(bytesFromResultTwo))) {
+            //                System.out.println();
+            //            }
+            //            resultTwo.rewind();
+            //            resultTwo.rewind();
 
-            ByteBuffer result = ByteBuffer.allocate(maybeLength);
-            result.put(bytes);
-            result.rewind();
-            return result;
-
-            // todo 此处还有bug！！
-/*            int sign = buffer.getInt(AbstractStruct.TypeOffset + 4);
-            OperationTypeEnum typeEnum = OperationTypeEnum.parseByByteSign(sign);
-
-            // 标识此index后的已经读过了
-            buffer.readerIndex(LengthInBytes + maybeLength);
-
-            // 第一个字节是长度，和业务无关
-            return buffer.nioBuffer(LengthInBytes, maybeLength);*/
+            return resultOne;
         }
     }
 }
