@@ -1,4 +1,4 @@
-package com.anur.io.store.common
+package com.anur.io.hanalog.common
 
 import com.anur.core.struct.base.Operation
 

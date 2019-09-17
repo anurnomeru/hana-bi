@@ -15,20 +15,18 @@
  * limitations under the License.
  */
 
-package com.anur.io.store.operationset;
+package com.anur.io.hanalog.operationset;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import com.anur.core.util.IteratorTemplate;
 import com.anur.core.struct.base.Operation;
 import com.anur.exception.LogException;
-import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.hanalog.common.OperationAndOffset;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019

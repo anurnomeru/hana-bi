@@ -1,4 +1,4 @@
-package com.anur.io.store.common
+package com.anur.io.hanalog.common
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/12

@@ -13,7 +13,7 @@ import com.anur.core.struct.coordinate.RecoveryReporter
 import com.anur.core.struct.coordinate.Register
 import com.anur.core.struct.coordinate.RegisterResponse
 import com.anur.core.util.ChannelManager
-import com.anur.io.store.log.LogManager
+import com.anur.io.hanalog.log.LogManager
 import io.netty.channel.Channel
 import org.slf4j.LoggerFactory
 import java.nio.ByteBuffer

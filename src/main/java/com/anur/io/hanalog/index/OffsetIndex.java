@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.anur.io.store.index;
+package com.anur.io.hanalog.index;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.core.lock.ReentrantLocker;
 import com.anur.exception.LogException;
-import com.anur.io.store.common.OffsetAndPosition;
+import com.anur.io.hanalog.common.OffsetAndPosition;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/27

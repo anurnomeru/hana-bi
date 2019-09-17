@@ -7,7 +7,7 @@ import com.anur.core.elect.ElectMeta
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.Fetcher
-import com.anur.io.store.prelog.ByteBufPreLogManager
+import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import com.anur.timewheel.TimedTask
 import com.anur.timewheel.Timer
 import org.slf4j.LoggerFactory

@@ -1,7 +1,7 @@
-package com.anur.io.store;
+package com.anur.io.hanalog;
 
 import com.anur.core.elect.model.GenerationAndOffset;
-import com.anur.io.store.log.CommitProcessManager;
+import com.anur.io.hanalog.log.CommitProcessManager;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/26

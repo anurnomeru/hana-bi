@@ -2,6 +2,7 @@ package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.exception.LogException;
 import io.netty.buffer.Unpooled;
@@ -46,9 +47,9 @@ public class Operation extends AbstractStruct {
 
     private String key;
 
-    private String value;
+    private byte[] value;
 
-    public Operation(OperationTypeEnum operationTypeEnum, String key, String value) {
+    public Operation(OperationTypeEnum operationTypeEnum, String key, byte[] value) {
         this.key = key;
         this.value = value;
 
@@ -60,8 +61,7 @@ public class Operation extends AbstractStruct {
             throw new LogException("Operation Key的长度不合法，不能为0");
         }
 
-        byte[] vBytes = value.getBytes(Charset.defaultCharset());
-        int vSize = vBytes.length;
+        int vSize = value.length;
 
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead + kSize + vSize);
 
@@ -70,7 +70,7 @@ public class Operation extends AbstractStruct {
         byteBuffer.putInt(kSize);
         byteBuffer.put(kBytes);
         byteBuffer.putInt(vSize);
-        byteBuffer.put(vBytes);
+        byteBuffer.put(value);
 
         this.buffer = byteBuffer;
         long crc = computeChecksum();
@@ -95,7 +95,7 @@ public class Operation extends AbstractStruct {
         int vSize = buffer.getInt();
         byte[] vByte = new byte[vSize];
         buffer.get(vByte);
-        this.value = new String(vByte);
+        this.value = vByte;
 
         ensureValid();
         buffer.reset();
@@ -105,7 +105,7 @@ public class Operation extends AbstractStruct {
         return key;
     }
 
-    public String getValue() {
+    public byte[] getValue() {
         return value;
     }
 
@@ -114,7 +114,7 @@ public class Operation extends AbstractStruct {
         return "Operation{" +
             "operationTypeEnum=" + getOperationTypeEnum() +
             ", key='" + key + '\'' +
-            ", value='" + value + '\'' +
+            ", value='" + Arrays.toString(value) + '\'' +
             '}';
     }
 

@@ -13,8 +13,8 @@ import com.anur.core.listener.HanabiListener
 import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.RecoveryComplete
 import com.anur.core.util.TimeUtil
-import com.anur.io.store.log.LogManager
-import com.anur.io.store.prelog.ByteBufPreLogManager
+import com.anur.io.hanalog.log.LogManager
+import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.function.Consumer
@@ -203,7 +203,7 @@ object LeaderClusterRecoveryManager : Resetable, CoordinateFetcher() {
             end = it.offset
 
             LogManager
-                .appendInsertion(gen, it.offset, it.operation)
+                .append(gen, it.offset, it.operation)
             ByteBufPreLogManager.cover(GenerationAndOffset(gen,end!!))// 实际上这是兼容用的 = =，因为父类模板方法从这里取的数据去 fetch
 
             if (gen == fetchToGen) {

@@ -29,7 +29,7 @@ import com.anur.core.util.TimeUtil;
 import com.anur.exception.ElectException;
 import com.anur.io.core.coder.ElectCoder;
 import com.anur.io.core.coder.ElectProtocolEnum;
-import com.anur.io.store.log.LogManager;
+import com.anur.io.hanalog.log.LogManager;
 import com.anur.timewheel.TimedTask;
 import com.anur.timewheel.Timer;
 

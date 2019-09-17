@@ -1,9 +1,9 @@
-package com.anur.io.store.prelog
+package com.anur.io.hanalog.prelog
 
 import com.anur.core.lock.ReentrantLocker
 import com.anur.core.struct.base.Operation
-import com.anur.io.store.common.OperationAndOffset
-import com.anur.io.store.common.PreLogMeta
+import com.anur.io.hanalog.common.OperationAndOffset
+import com.anur.io.hanalog.common.PreLogMeta
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentNavigableMap
 import java.util.concurrent.ConcurrentSkipListMap
