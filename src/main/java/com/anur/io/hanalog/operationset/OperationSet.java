@@ -1,11 +1,11 @@
-package com.anur.io.store.operationset;
+package com.anur.io.hanalog.operationset;
 
 import java.io.IOException;
 import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
 import com.anur.core.struct.base.Operation;
-import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.hanalog.common.OperationAndOffset;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019

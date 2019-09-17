@@ -1,4 +1,4 @@
-package com.anur.io.store.log
+package com.anur.io.hanalog.log
 
 import com.anur.config.LogConfiguration
 import com.anur.core.elect.ElectMeta
@@ -9,9 +9,9 @@ import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.ReentrantReadWriteLocker
 import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
-import com.anur.io.store.common.FetchDataInfo
-import com.anur.io.store.common.LogCommon
-import com.anur.io.store.common.PreLogMeta
+import com.anur.io.hanalog.common.FetchDataInfo
+import com.anur.io.hanalog.common.LogCommon
+import com.anur.io.hanalog.common.PreLogMeta
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.io.IOException
@@ -124,10 +124,11 @@ object LogManager {
         return init
     }
 
+
     /**
-     * 追加操作日志到磁盘，如果集群不可用，追加将阻塞
+     * 追加操作日志到磁盘，只有当集群可用时，才可以进行追加
      */
-    fun appendUntilClusterValid(operation: Operation) {
+    fun appendWhileClusterValid(operation: Operation) {
         appendLock.writeLocker {
             explicitLock.writeLocker {
                 val operationId = ElectOperator.getInstance()
@@ -147,7 +148,7 @@ object LogManager {
      *
      * 允许插入到以前的世代
      */
-    fun appendInsertion(gen: Long, offset: Long, operation: Operation) {
+    fun append(gen: Long, offset: Long, operation: Operation) {
         explicitLock.writeLocker {
             val insertion = GenerationAndOffset(gen, offset)
             if (insertion > currentGAO) {
@@ -217,8 +218,10 @@ object LogManager {
      * ==>      循环 needLoad，直到拿到首个有数据的 LogSegment，称为 needToRead
      *
      * 如果拿不到 needToRead，则进行递归
+     *
+     * @param maxBytes 因为单个日志最大支持500m，一次传输太多，卒了会很蛋疼，所以限制一下大小
      */
-    fun getAfter(GAO: GenerationAndOffset): FetchDataInfo? {
+    fun getAfter(GAO: GenerationAndOffset, maxBytes: Int = 1024 * 1024 * 5): FetchDataInfo? {
         return explicitLock.readLockSupplier(Supplier {
             val gen = GAO.generation
             val offset = GAO.offset

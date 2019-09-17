@@ -1,4 +1,4 @@
-package com.anur.io.store;
+package com.anur.io.hanalog;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -6,10 +6,10 @@ import java.util.Iterator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.struct.coordinate.FetchResponse;
 import com.anur.core.util.FileIOUtil;
-import com.anur.io.store.common.FetchDataInfo;
-import com.anur.io.store.common.OperationAndOffset;
-import com.anur.io.store.log.LogManager;
-import com.anur.io.store.operationset.ByteBufferOperationSet;
+import com.anur.io.hanalog.common.FetchDataInfo;
+import com.anur.io.hanalog.common.OperationAndOffset;
+import com.anur.io.hanalog.log.LogManager;
+import com.anur.io.hanalog.operationset.ByteBufferOperationSet;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/29
@@ -19,7 +19,7 @@ import com.anur.io.store.operationset.ByteBufferOperationSet;
 public class TestFetchLog {
 
     public static void main(String[] args) throws IOException {
-        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(5, 100000));
+        FetchDataInfo after = LogManager.INSTANCE.getAfter(new GenerationAndOffset(5, 100000), 1024 * 1024 * 5);
 
         FetchResponse fetchResponse = new FetchResponse(after);
 

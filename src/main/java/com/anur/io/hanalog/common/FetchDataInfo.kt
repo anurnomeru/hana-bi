@@ -1,7 +1,7 @@
-package com.anur.io.store.common
+package com.anur.io.hanalog.common
 
-import com.anur.io.store.log.LogOffsetMetadata
-import com.anur.io.store.operationset.FileOperationSet
+import com.anur.io.hanalog.log.LogOffsetMetadata
+import com.anur.io.hanalog.operationset.FileOperationSet
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/12

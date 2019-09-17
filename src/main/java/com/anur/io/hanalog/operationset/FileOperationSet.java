@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package com.anur.io.store.operationset;
+package com.anur.io.hanalog.operationset;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,9 +25,9 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
 import com.anur.exception.LogException;
-import com.anur.io.store.common.OffsetAndPosition;
+import com.anur.io.hanalog.common.OffsetAndPosition;
 import com.anur.core.struct.base.Operation;
-import com.anur.io.store.common.OperationAndOffset;
+import com.anur.io.hanalog.common.OperationAndOffset;
 import com.anur.core.util.FileIOUtil;
 import com.anur.core.util.IteratorTemplate;
 

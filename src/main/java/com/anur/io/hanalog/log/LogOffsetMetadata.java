@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.anur.io.store.log;
+package com.anur.io.hanalog.log;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/2/28
