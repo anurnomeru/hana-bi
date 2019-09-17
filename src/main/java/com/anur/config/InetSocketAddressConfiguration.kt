@@ -13,10 +13,10 @@ import com.anur.exception.ApplicationConfigException
  */
 object InetSocketAddressConfiguration : ConfigHelper() {
 
-    private val me: HanabiNode
+    private var me: HanabiNode? = null
 
-    init {
-        val name = getConfig(ConfigurationEnum.SERVER_NAME) { unChange -> unChange } as String
+    fun init(serverName: String?) {
+        val name = serverName ?: getConfig(ConfigurationEnum.SERVER_NAME) { unChange -> unChange } as String
         if (name == ChannelManager.CoordinateLeaderSign) {
             throw ApplicationConfigException(" 'Leader' 为关键词，节点不能命名为这个")
         }
@@ -24,15 +24,15 @@ object InetSocketAddressConfiguration : ConfigHelper() {
     }
 
     fun getServerElectionPort(): Int {
-        return me.electionPort
+        return me!!.electionPort
     }
 
     fun getServerCoordinatePort(): Int {
-        return me.coordinatePort
+        return me!!.coordinatePort
     }
 
     fun getServerName(): String {
-        return me.serverName
+        return me!!.serverName
     }
 
     fun getCluster(): List<HanabiNode> {

@@ -27,6 +27,12 @@ public class Bootstrap {
 
     public static void main(String[] args) throws InterruptedException {
 
+        String serverName = null;
+        if (args.length > 0) {
+            serverName = args[0];
+        }
+        InetSocketAddressConfiguration.INSTANCE.init(serverName);
+
         logger.info(
             "\n\n" +
                 " _     _                   _     _ \n" +
