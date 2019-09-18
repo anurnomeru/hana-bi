@@ -11,17 +11,17 @@ class HanabiEntry(val content: ByteBuffer) {
         private const val TrxIdOffset = 0
         private const val TrxIdLength = 8
         private const val TypeOffset = TrxIdOffset + TrxIdLength
-        private const val TypeLength = 2
+        private const val TypeLength = 1
         private const val ApiOffset = TypeOffset + TypeLength
-        private const val ApiLength = 2
+        private const val ApiLength = 1
         private const val ValueOffset = ApiOffset + ApiLength
 
-        fun generator(trxId: Long, type: Short, api: Short, value: String): HanabiEntry {
+        fun generator(trxId: Long, type: Byte, api: Byte, value: String): HanabiEntry {
             val valueArray = value.toByteArray()
             val bb = ByteBuffer.allocate(ValueOffset + valueArray.size)
             bb.putLong(trxId)
-            bb.putShort(type)
-            bb.putShort(api)
+            bb.put(type)
+            bb.put(api)
             bb.put(valueArray)
             bb.flip()
             return HanabiEntry(bb)
@@ -34,12 +34,12 @@ class HanabiEntry(val content: ByteBuffer) {
         return content.getLong(TrxIdOffset)
     }
 
-    fun getType(): Short {
-        return content.getShort(TypeOffset)
+    fun getType(): Byte {
+        return content.get(TypeOffset)
     }
 
-    fun getApi(): Short {
-        return content.getShort(ApiOffset)
+    fun getApi(): Byte {
+        return content.get(ApiOffset)
     }
 
     @Synchronized
