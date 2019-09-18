@@ -16,28 +16,28 @@ import com.anur.io.hanalog.prelog.ByteBufPreLogManager;
  */
 public class TestByteBufPreLog {
 
-    public static void main(String[] args) throws InterruptedException {
-        new Operation(OperationTypeEnum.SETNX, "1", "".getBytes(Charset.defaultCharset()));
-
-        LogManager instance = LogManager.INSTANCE;
-        ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
-        HanabiExecutors.INSTANCE.submit(() -> {
-            while (true) {
-                Thread.sleep(100);
-                byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
-            }
-        });
-
-        HanabiExecutors.INSTANCE.execute(() -> {
-            for (int i = 1000; i < 2000; i++) {
-                byteBufPreLogManager
-                    .append(0, new ByteBufferOperationSet(
-                        new Operation(OperationTypeEnum.SETNX, "Asssssssss",
-                            "YYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSB".getBytes(Charset.defaultCharset())), i));
-            }
-        });
-
-        byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
-        Thread.sleep(100000);
-    }
+//    public static void main(String[] args) throws InterruptedException {
+//        new Operation(OperationTypeEnum.SETNX, "1", "".getBytes(Charset.defaultCharset()));
+//
+//        LogManager instance = LogManager.INSTANCE;
+//        ByteBufPreLogManager byteBufPreLogManager = ByteBufPreLogManager.INSTANCE;
+//        HanabiExecutors.INSTANCE.submit(() -> {
+//            while (true) {
+//                Thread.sleep(100);
+//                byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
+//            }
+//        });
+//
+//        HanabiExecutors.INSTANCE.execute(() -> {
+//            for (int i = 1000; i < 2000; i++) {
+//                byteBufPreLogManager
+//                    .append(0, new ByteBufferOperationSet(
+//                        new Operation(OperationTypeEnum.SETNX, "Asssssssss",
+//                            "YYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSBYYSSB".getBytes(Charset.defaultCharset())), i));
+//            }
+//        });
+//
+//        byteBufPreLogManager.commit(new GenerationAndOffset(0, 30000000));
+//        Thread.sleep(100000);
+//    }
 }
