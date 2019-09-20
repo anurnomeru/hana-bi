@@ -2,9 +2,11 @@ package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.sql.SQLOutput;
 import java.util.Arrays;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.exception.LogException;
+import com.anur.io.engine.storage.core.HanabiEntry;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
@@ -47,9 +49,9 @@ public class Operation extends AbstractStruct {
 
     private String key;
 
-    private byte[] value;
+    private HanabiEntry value;
 
-    public Operation(OperationTypeEnum operationTypeEnum, String key, byte[] value) {
+    public Operation(OperationTypeEnum operationTypeEnum, String key, HanabiEntry value) {
         this.key = key;
         this.value = value;
 
@@ -61,8 +63,7 @@ public class Operation extends AbstractStruct {
             throw new LogException("Operation Key的长度不合法，不能为0");
         }
 
-        int vSize = value.length;
-
+        int vSize = value.getContentLength();
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead + kSize + vSize);
 
         byteBuffer.position(TypeOffset);
@@ -70,7 +71,10 @@ public class Operation extends AbstractStruct {
         byteBuffer.putInt(kSize);
         byteBuffer.put(kBytes);
         byteBuffer.putInt(vSize);
-        byteBuffer.put(value);
+
+        ByteBuffer content = value.getContent();
+        byteBuffer.put(content);
+        content.flip();
 
         this.buffer = byteBuffer;
         long crc = computeChecksum();
@@ -92,10 +96,8 @@ public class Operation extends AbstractStruct {
         buffer.get(kByte);
         this.key = new String(kByte);
 
-        int vSize = buffer.getInt();
-        byte[] vByte = new byte[vSize];
-        buffer.get(vByte);
-        this.value = vByte;
+        int vSizeIgnore = buffer.getInt();
+        this.value = new HanabiEntry(buffer.slice());
 
         ensureValid();
         buffer.reset();
@@ -105,16 +107,16 @@ public class Operation extends AbstractStruct {
         return key;
     }
 
-    public byte[] getValue() {
+    public HanabiEntry getValue() {
         return value;
     }
 
     @Override
     public String toString() {
         return "Operation{" +
-            "operationTypeEnum=" + getOperationTypeEnum() +
+            "operationTypeEnum='" + getOperationTypeEnum() + '\'' +
             ", key='" + key + '\'' +
-            ", value='" + Arrays.toString(value) + '\'' +
+            ", value='" + value + '\'' +
             '}';
     }
 

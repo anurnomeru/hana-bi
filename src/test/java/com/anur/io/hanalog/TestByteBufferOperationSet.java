@@ -15,38 +15,36 @@ import com.anur.io.hanalog.operationset.ByteBufferOperationSet;
 public class TestByteBufferOperationSet {
 
     public static void main(String[] args) {
-        testIterator();
-        testIterator1();
     }
 
-    public static void testIterator() {
-        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(new Operation(OperationTypeEnum.REGISTER, "zzz", "sss".getBytes(Charset.defaultCharset())), 1);
-
-        Iterator<OperationAndOffset> iterator = byteBufferOperationSet.iterator();
-
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next()
-                                       .getOperation()
-                                       .toString());
-        }
-    }
-
-    public static void testIterator1() {
-        List<OperationAndOffset> operations = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
-            Operation operation = new Operation(OperationTypeEnum.SETNX, "123", "2342342352345".getBytes(Charset.defaultCharset()));
-
-            operations.add(new OperationAndOffset(operation, i));
-        }
-
-        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operations);
-
-        ByteBufferOperationSet byteBufferOperationSet1 = new ByteBufferOperationSet(byteBufferOperationSet.getByteBuffer());
-
-        Iterator<OperationAndOffset> iterator = byteBufferOperationSet1.iterator();
-        while (iterator.hasNext()) {
-            System.out.println(iterator.next()
-                                       .getOffset());
-        }
-    }
+//    public static void testIterator() {
+//        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(new Operation(OperationTypeEnum.REGISTER, "zzz", "sss".getBytes(Charset.defaultCharset())), 1);
+//
+//        Iterator<OperationAndOffset> iterator = byteBufferOperationSet.iterator();
+//
+//        while (iterator.hasNext()) {
+//            System.out.println(iterator.next()
+//                                       .getOperation()
+//                                       .toString());
+//        }
+//    }
+//
+//    public static void testIterator1() {
+//        List<OperationAndOffset> operations = new ArrayList<>();
+//        for (int i = 0; i < 100; i++) {
+//            Operation operation = new Operation(OperationTypeEnum.SETNX, "123", "2342342352345".getBytes(Charset.defaultCharset()));
+//
+//            operations.add(new OperationAndOffset(operation, i));
+//        }
+//
+//        ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operations);
+//
+//        ByteBufferOperationSet byteBufferOperationSet1 = new ByteBufferOperationSet(byteBufferOperationSet.getByteBuffer());
+//
+//        Iterator<OperationAndOffset> iterator = byteBufferOperationSet1.iterator();
+//        while (iterator.hasNext()) {
+//            System.out.println(iterator.next()
+//                                       .getOffset());
+//        }
+//    }
 }

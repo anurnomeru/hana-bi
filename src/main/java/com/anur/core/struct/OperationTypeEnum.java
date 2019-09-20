@@ -26,9 +26,9 @@ public enum OperationTypeEnum {
     NONE(-1, null),
 
     /**
-     * HASH_SET 的 set nx
+     * 业务命令
      */
-    SETNX(1, Operation.class),
+    COMMAND(1, Operation.class),
 
     // WARN： 10000 开始的命令都是集群协调命令，不需要记录日志
 

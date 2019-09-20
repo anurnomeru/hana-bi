@@ -14,18 +14,18 @@ class TestAppendThenDiscard
 fun main() {
 
     ElectOperator.getInstance().start()
-    try {
-        for (i in 0..99999) {
-            val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas".toByteArray())
-            LogManager.appendWhileClusterValid(operation)
-        }
-    } catch (e: Exception) {
-    }
-    LogManager.discardAfter(GenerationAndOffset(5, 5))
-
-    for (i in 0..99999) {
-        val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas".toByteArray())
-        LogManager.appendWhileClusterValid(operation)
-    }
+//    try {
+//        for (i in 0..99999) {
+//            val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas".toByteArray())
+//            LogManager.appendWhileClusterValid(operation)
+//        }
+//    } catch (e: Exception) {
+//    }
+//    LogManager.discardAfter(GenerationAndOffset(5, 5))
+//
+//    for (i in 0..99999) {
+//        val operation = Operation(OperationTypeEnum.SETNX, "setAnur", "ToIjuoKaruKas".toByteArray())
+//        LogManager.appendWhileClusterValid(operation)
+//    }
     println()
 }
