@@ -5,6 +5,7 @@ import com.anur.config.common.ConfigHelper
 import com.anur.config.common.ConfigurationEnum
 import com.anur.core.coordinate.model.HanabiNode
 import com.anur.exception.ApplicationConfigException
+import com.anur.exception.HanabiException
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/5
@@ -21,6 +22,10 @@ object InetSocketAddressConfiguration : ConfigHelper() {
             throw ApplicationConfigException(" 'Leader' 为关键词，节点不能命名为这个")
         }
         me = getNode(name)
+
+        if (me == HanabiNode.NOT_EXIST) {
+            throw HanabiException("服务名未正确配置，或者该服务不存在于服务配置列表中")
+        }
     }
 
     fun getServerElectionPort(): Int {
