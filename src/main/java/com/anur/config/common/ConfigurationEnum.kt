@@ -19,6 +19,8 @@ enum class ConfigurationEnum constructor(val key: String, val adv: String) {
 
     ////////////////////// LogConfiguration
 
+    LOG_BASE_PATH("log.base.path","日志基础目录"),
+
     LOG_INDEX_INTERVAL("log.indexInterval", "log.IndexInterval 是操作日志索引生成时的字节间隔，有助于节省空间，不设定的太小都可"),
 
     LOG_MAX_INDEX_SIZE("log.maxIndexSize", "log.maxIndexSize 日志文件最大只能为这么大，太大了影响索引效率，日志分片受其影响，如果索引文件满了，那么将会创建新的日志分片。"),
