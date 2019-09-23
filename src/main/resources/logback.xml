@@ -19,6 +19,12 @@
         </encoder>
     </appender>
 
+    <!--while tracing what is send, switch on-->
+    <logger name="com.anur.core.coordinate.sender" level="OFF"/>
+
+    <!--while tracing what is receive by leader, switch on-->
+    <logger name="com.anur.core.coordinate.apis.driver.LeaderApisHandler" level="OFF"/>
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </root>
