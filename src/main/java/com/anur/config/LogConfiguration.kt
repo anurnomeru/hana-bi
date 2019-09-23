@@ -10,7 +10,8 @@ import com.anur.config.common.ConfigurationEnum
  */
 object LogConfiguration : ConfigHelper() {
 
-    private var relativelyPath: String = System.getProperty("user.dir")
+    //    private var relativelyPath: String = System.getProperty("user.dir")
+    private var relativelyPath: String = getConfig(ConfigurationEnum.LOG_BASE_PATH) { it } as String
 
     fun getBaseDir(): String {
         return relativelyPath + "/" + InetSocketAddressConfiguration.getServerName()
