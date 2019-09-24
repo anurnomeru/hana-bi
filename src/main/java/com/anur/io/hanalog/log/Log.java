@@ -92,7 +92,9 @@ public class Log extends ReentrantLocker {
                         } catch (Exception e) {
                             logger.info("世代 {} 日志 {} 的索引文件存在异常，正在重建索引文件。", generation, filename);
                             indexFile.delete();
+                            long startTs = System.currentTimeMillis();
                             thisSegment.recover(LogConfiguration.INSTANCE.getMaxLogMessageSize());
+                            logger.info("索引重建完毕，耗时 {} ms。", System.currentTimeMillis() - startTs);
                         }
                     } else {
                         logger.info("世代 {} 日志 {} 的索引文件不存在，正在重建索引文件。", generation, filename);
