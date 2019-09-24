@@ -1,4 +1,4 @@
-package com.anur.core.util;
+package com.anur.util;
 
 import java.nio.ByteBuffer;
 import com.anur.core.struct.base.Operation;

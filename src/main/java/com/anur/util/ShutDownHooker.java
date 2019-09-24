@@ -1,4 +1,4 @@
-package com.anur.core.util;
+package com.anur.util;
 
 import java.util.function.Consumer;
 import org.slf4j.Logger;

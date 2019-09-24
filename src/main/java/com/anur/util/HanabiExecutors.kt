@@ -1,4 +1,4 @@
-package com.anur.core.util
+package com.anur.util
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import org.slf4j.LoggerFactory

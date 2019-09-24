@@ -5,7 +5,7 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.struct.coordinate.FetchResponse;
-import com.anur.core.util.FileIOUtil;
+import com.anur.util.FileIOUtil;
 import com.anur.io.hanalog.common.FetchDataInfo;
 import com.anur.io.hanalog.common.OperationAndOffset;
 import com.anur.io.hanalog.log.LogManager;

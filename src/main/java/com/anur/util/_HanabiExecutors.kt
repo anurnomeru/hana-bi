@@ -1,4 +1,4 @@
-package com.anur.core.util
+package com.anur.util
 
 import org.slf4j.Logger
 import java.util.concurrent.BlockingQueue

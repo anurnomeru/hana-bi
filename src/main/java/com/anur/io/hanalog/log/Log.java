@@ -15,6 +15,7 @@ import com.anur.io.hanalog.common.LogCommon;
 import com.anur.io.hanalog.common.OperationAndOffset;
 import com.anur.io.hanalog.common.PreLogMeta;
 import com.anur.io.hanalog.operationset.ByteBufferOperationSet;
+import com.anur.stat.flow.FlowSpeedStat;
 import com.google.common.collect.Lists;
 
 /**
@@ -142,12 +143,15 @@ public class Log extends ReentrantLocker {
             throw new LogException("写入日志文件失败：" + operation.toString());
         }
         currentOffset = offset;
+
+        FlowSpeedStat.INSTANCE.incr(FlowSpeedStat.INSTANCE.getLogAppend(), 1);
     }
 
     /**
      * 将多个操作添加到日志文件中
      */
     public void append(PreLogMeta preLogMeta, long startOffset, long endOffset) {
+
         if (endOffset < currentOffset) {
             throw new LogException(String.format("一定是哪里有问题，追加日志文件段 start：%s end：%s，但当前 current：%s", startOffset, endOffset, currentOffset));
         } else {
@@ -169,7 +173,9 @@ public class Log extends ReentrantLocker {
             throw new LogException("写入日志文件失败：" + startOffset + " => " + endOffset + " " + e.getMessage());
         }
         currentOffset = endOffset;
+
         logger.debug(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s，共追加 %s 条操作日志", startOffset, endOffset, currentOffset, count));
+        FlowSpeedStat.INSTANCE.incr(FlowSpeedStat.INSTANCE.getLogAppend(), count);
     }
 
     /**

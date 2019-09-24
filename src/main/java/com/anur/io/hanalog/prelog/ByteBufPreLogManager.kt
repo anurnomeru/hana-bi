@@ -7,6 +7,7 @@ import com.anur.io.hanalog.common.PreLogMeta
 import com.anur.io.hanalog.log.CommitProcessManager
 import com.anur.io.hanalog.log.LogManager
 import com.anur.io.hanalog.operationset.ByteBufferOperationSet
+import com.anur.stat.flow.FlowSpeedStat
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
@@ -93,6 +94,8 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
 
                 byteBufPreLogOperated!!.append(oao.operation, oaoOffset)
                 lastOffset = oaoOffset
+
+                FlowSpeedStat.incr(FlowSpeedStat.PreLogAppend, 1)
             }
 
             if (lastOffset != -1L) {

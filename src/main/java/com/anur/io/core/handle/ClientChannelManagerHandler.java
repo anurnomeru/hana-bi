@@ -1,7 +1,7 @@
 package com.anur.io.core.handle;
 
-import com.anur.core.util.ChannelManager;
-import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.util.ChannelManager;
+import com.anur.util.ChannelManager.ChannelType;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 

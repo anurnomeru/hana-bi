@@ -221,7 +221,7 @@ object LogManager {
      *
      * @param maxBytes 因为单个日志最大支持500m，一次传输太多，卒了会很蛋疼，所以限制一下大小
      */
-    fun getAfter(GAO: GenerationAndOffset, maxBytes: Int = 1024 * 1024 * 5): FetchDataInfo? {
+    fun getAfter(GAO: GenerationAndOffset, maxBytes: Int = 1024 * 1024 * 10): FetchDataInfo? {
         return explicitLock.readLockSupplier(Supplier {
             val gen = GAO.generation
             val offset = GAO.offset
@@ -268,7 +268,7 @@ object LogManager {
             return@Supplier if (needToRead == null) {
                 getAfter(GenerationAndOffset(needLoadGen + 1, offset))
             } else {
-                needToRead.read(needLoadGen, offset, Long.MAX_VALUE, Int.MAX_VALUE) ?: getAfter(GenerationAndOffset(gen + 1, 0))
+                needToRead.read(needLoadGen, offset, Long.MAX_VALUE, maxBytes) ?: getAfter(GenerationAndOffset(gen + 1, 0))
             }
         })
     }

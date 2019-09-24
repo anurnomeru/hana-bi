@@ -1,9 +1,8 @@
-package com.anur.core.util;
+package com.anur.util;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.annotation.Nullable;
 import com.anur.core.lock.ReentrantReadWriteLocker;
 import io.netty.channel.Channel;
 

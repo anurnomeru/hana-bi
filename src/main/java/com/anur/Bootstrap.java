@@ -13,8 +13,8 @@ import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.operator.ElectServerOperator;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
-import com.anur.core.util.HanabiExecutors;
-import com.anur.io.engine.storage.core.HanabiEntry;
+import com.anur.util.HanabiExecutors;
+import com.anur.engine.storage.core.HanabiEntry;
 import com.anur.io.hanalog.log.LogManager;
 import com.anur.io.hanalog.log.CommitProcessManager;
 

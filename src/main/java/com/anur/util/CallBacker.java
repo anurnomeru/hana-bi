@@ -1,4 +1,4 @@
-package com.anur.core.util;
+package com.anur.util;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/18

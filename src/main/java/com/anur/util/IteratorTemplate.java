@@ -15,9 +15,8 @@
  * limitations under the License.
  */
 
-package com.anur.core.util;
+package com.anur.util;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 

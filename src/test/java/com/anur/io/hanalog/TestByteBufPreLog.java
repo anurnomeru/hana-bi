@@ -4,7 +4,7 @@ import java.nio.charset.Charset;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
 import com.anur.core.elect.model.GenerationAndOffset;
-import com.anur.core.util.HanabiExecutors;
+import com.anur.util.HanabiExecutors;
 import com.anur.io.hanalog.log.LogManager;
 import com.anur.io.hanalog.operationset.ByteBufferOperationSet;
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager;

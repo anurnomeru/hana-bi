@@ -1,7 +1,7 @@
 package com.anur.core.coordinate.apis.driver
 
 import com.anur.core.coordinate.model.CoordinateRequest
-import com.anur.core.util.HanabiExecutors
+import com.anur.util.HanabiExecutors
 import org.slf4j.LoggerFactory
 
 /**

@@ -1,4 +1,4 @@
-package com.anur.core.util;
+package com.anur.util;
 
 import java.io.File;
 import java.io.FileInputStream;
