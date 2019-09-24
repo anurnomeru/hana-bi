@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfiguration;
-import com.anur.core.lock.ReentrantLocker;
+import com.anur.core.lock.rentrant.ReentrantLocker;
 import com.anur.core.struct.base.Operation;
 import com.anur.exception.LogException;
 import com.anur.io.hanalog.common.LogCommon;

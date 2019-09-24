@@ -2,7 +2,7 @@ package com.anur.io.hanalog.log
 
 import com.anur.config.LogConfiguration
 import com.anur.core.elect.model.GenerationAndOffset
-import com.anur.core.lock.ReentrantReadWriteLocker
+import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
 import java.io.File

@@ -1,4 +1,4 @@
-package com.anur.core.lock
+package com.anur.core.lock.rentrant
 
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier

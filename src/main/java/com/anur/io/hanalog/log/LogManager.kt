@@ -6,7 +6,7 @@ import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.elect.operator.ElectOperator
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
-import com.anur.core.lock.ReentrantReadWriteLocker
+import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.core.struct.base.Operation
 import com.anur.exception.LogException
 import com.anur.io.hanalog.common.FetchDataInfo

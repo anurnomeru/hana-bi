@@ -10,7 +10,8 @@ import java.util.concurrent.TimeUnit
 /**
  * Created by Anur IjuoKaruKas on 2019/9/24
  */
-class FlowSpeedStatContainer(private val sign: String, private val logger: Logger, private val interval: Int) {
+class FlowSpeedStatContainer(interval: Int, private val logger: Logger,
+                             private val logControl: (Long) -> String) {
 
     private val recordInterval = TimeUnit.SECONDS.toMillis(interval.toLong())
 
@@ -27,10 +28,10 @@ class FlowSpeedStatContainer(private val sign: String, private val logger: Logge
         holder[time] = (holder[time] ?: 0L) + value
     }
 
-    fun log() {
+    private fun log() {
         var time = TimeUtil.getTime() - recordInterval
         time -= (time % recordInterval)
-        logger.info("$sign 在 ${interval}s 中流动速率为 ${holder[time] ?: 0}")
+        holder[time]?.also { logger.info(logControl.invoke(it)) }
         Timer.getInstance().addTask(TimedTask(recordInterval, Runnable { log() }))
     }
 }

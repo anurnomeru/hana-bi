@@ -31,6 +31,9 @@
     <!--prelog situation-->
     <logger name="com.anur.io.hanalog.prelog" level="INFO"/>
 
+    <!--cluster log manager(leader only)-->
+    <logger name="com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager" level="INFO"/>
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </root>

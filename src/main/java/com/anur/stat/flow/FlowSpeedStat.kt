@@ -9,23 +9,17 @@ import org.slf4j.LoggerFactory
 object FlowSpeedStat {
 
     val LogAppend = "Log - Append"
-    val PreLogAppend = "PreLog - Append"
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
     private val Clac: MutableMap<String, FlowSpeedStatContainer> = mutableMapOf()
 
     init {
-        create(LogAppend)
-        create(PreLogAppend)
+        Clac[LogAppend] = FlowSpeedStatContainer(10, logger) { "【日志】近十秒，本节点日志刷盘的数据速率为 $it" }
     }
 
     fun incr(key: String, long: Long) {
-//        Clac[key]?.incr(long)
+        Clac[key]?.incr(long)
     }
 
-
-    private fun create(key: String) {
-//        Clac[key] = FlowSpeedStatContainer(key, logger, 5)
-    }
 }

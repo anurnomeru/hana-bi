@@ -2,7 +2,7 @@ package com.anur.core.coordinate.apis.fetch
 
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
-import com.anur.core.lock.ReentrantReadWriteLocker
+import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import com.anur.io.hanalog.log.CommitProcessManager
 import org.slf4j.LoggerFactory
@@ -66,9 +66,9 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
             writeLockSupplierCompel(Supplier {
                 // 移除之前的 fetch 记录
                 currentGAO?.also {
-                    logger.info("节点 {} fetch 进度由 {} 更新到了进度 {}", node, it.toString(), GAO.toString())
+                    logger.debug("节点 {} fetch 进度由 {} 更新到了进度 {}", node, it.toString(), GAO.toString())
                     fetchMap[it]!!.remove(node)
-                } ?: logger.info("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString())
+                } ?: logger.debug("节点 {} 已经 fetch 更新到了进度 {}", node, GAO.toString())
 
                 currentFetchMap[node] = GAO// 更新节点的 fetch 进度
                 fetchMap.compute(GAO) { // 更新节点最近一次 fetch 处于哪个 GAO
@@ -77,7 +77,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
                 }
 
                 // 找到最大的那个票数 >= quorum 的 fetch GAO
-                fetchMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }?.key?.also { logger.info("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", it.toString()) }
+                fetchMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }?.key?.also { logger.debug("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", it.toString()) }
                     ?: latestGAO
             })
         }
@@ -101,13 +101,14 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
         }
 
         writeLockSupplierCompel(Supplier {
+
             /*
              * 1、移除节点旧的 commit 进度
              */
             currentCommitGAO?.also {
-                logger.info("节点 {} 的 commit 进度由 {} 更新到了进度 {}", node, it.toString(), commitGAO.toString())
+                logger.debug("节点 {} 的 commit 进度由 {} 更新到了进度 {}", node, it.toString(), commitGAO.toString())
                 commitMap[it]!!.remove(node)
-            } ?: logger.info("节点 {} 的 commit 更新到了进度 {}", node, commitGAO.toString())
+            } ?: logger.debug("节点 {} 的 commit 更新到了进度 {}", node, commitGAO.toString())
 
             /*
              * 2、移除节点旧的 commit进度，并记录最新的一次 commit 进度
@@ -135,7 +136,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
                     ByteBufPreLogManager.cover(it)
                     // 写入本地文件
                     CommitProcessManager.cover(it)
-                    logger.info("进度 {} 已经完成 commit ~", it.toString())
+                    logger.debug("进度 {} 已经完成 commit ~", it.toString())
                 }
                 ?: latestCommitGAO
         })

@@ -3,7 +3,7 @@ package com.anur.core.coordinate.model;
 import java.nio.ByteBuffer;
 import java.util.Optional;
 import java.util.function.Consumer;
-import com.anur.core.lock.ReentrantReadWriteLocker;
+import com.anur.core.lock.rentrant.ReentrantReadWriteLocker;
 import com.anur.util.HanabiExecutors;
 import com.anur.timewheel.TimedTask;
 

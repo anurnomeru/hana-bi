@@ -21,7 +21,7 @@ import com.anur.core.elect.model.Votes;
 import com.anur.core.elect.model.VotesResponse;
 import com.anur.core.listener.EventEnum;
 import com.anur.core.listener.HanabiListener;
-import com.anur.core.lock.ReentrantLocker;
+import com.anur.core.lock.rentrant.ReentrantLocker;
 import com.anur.util.ChannelManager;
 import com.anur.util.ChannelManager.ChannelType;
 import com.anur.util.HanabiExecutors;
