@@ -89,7 +89,7 @@ object TrxFreeQueuedLocker {
                                 }
 
                                 val nextOneCommitOperate = nextOne.doWhileCommit
-                                // 提交如果阻塞，则触发提交
+                                // 提交如果阻塞，则递归触发提交
                                 if (nextOne.unProcessOperate == 0 && nextOneCommitOperate != null) commit(nextOne.trxId, nextOneCommitOperate)
                             }
                         }
