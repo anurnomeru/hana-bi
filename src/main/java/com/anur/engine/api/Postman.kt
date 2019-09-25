@@ -56,11 +56,12 @@ fun main() {
                 .invoke(EngineRequest(trxId, key, hanabiEntry.getValue()))
 
             // 模拟任务执行时间很长
-            Thread.sleep(500)
         }
     }
 
     for (l in s) {
         TrxFreeQueuedLocker.commit(l) {}
     }
+
+    Thread.sleep(100000)
 }

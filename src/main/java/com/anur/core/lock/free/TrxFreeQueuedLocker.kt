@@ -78,10 +78,6 @@ object TrxFreeQueuedLocker {
                 // 首先执行自己的提交任务
                 HanabiExecutors.execute(Runnable { doWhileCommit.invoke() })
 
-                if (trxId == 6L) {
-                    println()
-                }
-
                 // 首先移除自己
                 trxHolderMap.remove(trxId)
                 logger.debug("事务 $trxId 将释放所有锁，并逐个唤醒等待任务。")
@@ -131,7 +127,7 @@ object TrxFreeQueuedLocker {
                     }
                 }
 
-                notifyTasks?.forEach(Consumer { HanabiExecutors.execute(it) })
+                notifyTasks?.forEach { HanabiExecutors.execute(it) }
             } else {// 如果当前还有被“阻塞”的操作，则将提交后要做的事情记录下来
                 trxHolder.doWhileCommit = doWhileCommit
                 logger.debug("事务 $trxId 还未执行完毕，执行完毕后，将释放此事务。")
