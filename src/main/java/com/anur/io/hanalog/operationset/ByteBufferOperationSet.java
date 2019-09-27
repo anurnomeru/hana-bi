@@ -23,7 +23,7 @@ import java.nio.channels.GatheringByteChannel;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.stream.Stream;
-import com.anur.core.util.IteratorTemplate;
+import com.anur.util.IteratorTemplate;
 import com.anur.core.struct.base.Operation;
 import com.anur.exception.LogException;
 import com.anur.io.hanalog.common.OperationAndOffset;

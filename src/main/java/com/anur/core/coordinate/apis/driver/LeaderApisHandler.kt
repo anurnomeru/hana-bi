@@ -12,7 +12,7 @@ import com.anur.core.struct.coordinate.Fetcher
 import com.anur.core.struct.coordinate.RecoveryReporter
 import com.anur.core.struct.coordinate.Register
 import com.anur.core.struct.coordinate.RegisterResponse
-import com.anur.core.util.ChannelManager
+import com.anur.util.ChannelManager
 import com.anur.io.hanalog.log.LogManager
 import io.netty.channel.Channel
 import org.slf4j.LoggerFactory

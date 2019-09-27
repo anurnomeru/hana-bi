@@ -19,6 +19,21 @@
         </encoder>
     </appender>
 
+    <!--while tracing what is send, switch on-->
+    <logger name="com.anur.core.coordinate.sender" level="OFF"/>
+
+    <!--while tracing what is receive by leader, switch on-->
+    <logger name="com.anur.core.coordinate.apis.driver.LeaderApisHandler" level="OFF"/>
+
+    <!--cluster log manager(leader only)-->
+    <logger name="com.anur.core.coordinate.apis.fetch.LeaderCoordinateManager" level="OFF"/>
+
+    <!--log situation-->
+    <logger name="com.anur.io.hanalog.log" level="INFO"/>
+
+    <!--prelog situation-->
+    <logger name="com.anur.io.hanalog.prelog" level="INFO"/>
+
     <root level="DEBUG">
         <appender-ref ref="STDOUT"/>
     </root>

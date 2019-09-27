@@ -3,7 +3,7 @@ package com.anur.io.coordinate.client;
 import java.nio.ByteBuffer;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import com.anur.core.util.ShutDownHooker;
+import com.anur.util.ShutDownHooker;
 import com.anur.io.core.client.ReconnectableClient;
 import com.anur.io.core.coder.CoordinateDecoder;
 import com.anur.io.core.handle.ByteBufferMsgConsumerHandler;

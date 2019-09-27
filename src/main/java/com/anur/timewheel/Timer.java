@@ -4,7 +4,7 @@ import java.util.concurrent.DelayQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import com.anur.core.util.HanabiExecutors;
+import com.anur.util.HanabiExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**

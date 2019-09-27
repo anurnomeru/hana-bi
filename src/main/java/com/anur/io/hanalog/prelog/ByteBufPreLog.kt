@@ -1,6 +1,6 @@
 package com.anur.io.hanalog.prelog
 
-import com.anur.core.lock.ReentrantLocker
+import com.anur.core.lock.rentrant.ReentrantLocker
 import com.anur.core.struct.base.Operation
 import com.anur.io.hanalog.common.OperationAndOffset
 import com.anur.io.hanalog.common.PreLogMeta

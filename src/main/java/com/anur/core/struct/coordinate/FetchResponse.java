@@ -4,7 +4,7 @@ import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.AbstractTimedStruct;
-import com.anur.core.util.FileIOUtil;
+import com.anur.util.FileIOUtil;
 import com.anur.io.hanalog.common.FetchDataInfo;
 import com.anur.io.hanalog.operationset.ByteBufferOperationSet;
 import com.anur.io.hanalog.operationset.FileOperationSet;

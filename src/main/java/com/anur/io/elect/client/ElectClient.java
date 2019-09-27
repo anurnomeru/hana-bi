@@ -1,8 +1,8 @@
 package com.anur.io.elect.client;
 
 import java.util.function.BiConsumer;
-import com.anur.core.util.ChannelManager.ChannelType;
-import com.anur.core.util.ShutDownHooker;
+import com.anur.util.ChannelManager.ChannelType;
+import com.anur.util.ShutDownHooker;
 import com.anur.io.core.handle.ClientChannelManagerHandler;
 import com.anur.io.core.client.ReconnectableClient;
 import com.anur.io.core.handle.ErrorHandler;

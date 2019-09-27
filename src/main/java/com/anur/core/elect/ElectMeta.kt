@@ -7,7 +7,7 @@ import com.anur.core.elect.model.HeartBeat
 import com.anur.core.elect.model.Votes
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
-import com.anur.core.util.TimeUtil
+import com.anur.util.TimeUtil
 import com.anur.exception.ApplicationConfigException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory

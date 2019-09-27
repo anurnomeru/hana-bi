@@ -4,7 +4,7 @@ import com.anur.config.CoordinateConfiguration
 import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.elect.ElectMeta
-import com.anur.core.lock.ReentrantReadWriteLocker
+import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.core.struct.coordinate.FetchResponse
 import com.anur.core.struct.coordinate.Fetcher
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager

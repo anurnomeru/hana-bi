@@ -25,7 +25,8 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.anur.core.lock.ReentrantLocker;
+import com.anur.core.lock.rentrant.ReentrantLocker;
+import com.anur.util.Os;
 import com.anur.exception.LogException;
 import com.anur.io.hanalog.common.OffsetAndPosition;
 
@@ -144,7 +145,7 @@ public class OffsetIndex extends ReentrantLocker {
      * Find the slot in which the largest offset less than or equal to the given
      * target offset is stored.
      *
-     * @param idx The index buffer
+     * @param idx          The index buffer
      * @param targetOffset The offset to look for
      *
      * @return The slot found or -1 if the least entry in the index is larger than the target offset or the index is empty
@@ -338,7 +339,7 @@ public class OffsetIndex extends ReentrantLocker {
             int position = mmap.position();
 
             /* Windows won't let us modify the file length while the file is mmapped :-( */
-            if (mmap.limit() != 0) {// TODO 不知道为什么为 0 的时候会报错
+            if (Os.INSTANCE.isWindows()) {
                 forceUnmap(mmap);
             }
             try {

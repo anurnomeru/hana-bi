@@ -1,6 +1,6 @@
 package com.anur.config
 
-import com.anur.core.util.ChannelManager
+import com.anur.util.ChannelManager
 import com.anur.config.common.ConfigHelper
 import com.anur.config.common.ConfigurationEnum
 import com.anur.core.coordinate.model.HanabiNode

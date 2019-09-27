@@ -1,12 +1,13 @@
 package com.anur.io.hanalog.prelog
 
 import com.anur.core.elect.model.GenerationAndOffset
-import com.anur.core.lock.ReentrantReadWriteLocker
+import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.exception.LogException
 import com.anur.io.hanalog.common.PreLogMeta
 import com.anur.io.hanalog.log.CommitProcessManager
 import com.anur.io.hanalog.log.LogManager
 import com.anur.io.hanalog.operationset.ByteBufferOperationSet
+import com.anur.stat.flow.FlowSpeedStat
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
@@ -98,7 +99,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
             if (lastOffset != -1L) {
                 val before = preLogOffset
                 preLogOffset = GenerationAndOffset(generation, lastOffset)
-                logger.info("本地追加了预日志，由 {} 更新至 {}", before.toString(), preLogOffset.toString())
+                logger.debug("本地追加了预日志，由 {} 更新至 {}", before.toString(), preLogOffset.toString())
             }
         }
     }
@@ -122,7 +123,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
                 if (canCommit == commitOffset) {
                     logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {} ，但本地已经提交此进度。", preLogOffset.toString(), canCommit!!.toString())
                 } else {
-                    logger.info("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {}", preLogOffset.toString(), canCommit!!.toString())
+                    logger.debug("收到来自 Leader 节点的有效 Commit 请求，本地预日志最大为 {} ，故可提交到 {}", preLogOffset.toString(), canCommit!!.toString())
 
                     val preLogMeta = getBefore(canCommit) ?: throw LogException("有bug请注意排查！！，不应该出现这个情况")
 

@@ -13,8 +13,6 @@ import io.netty.handler.codec.ByteToMessageDecoder;
  */
 public class CoordinateDecoder extends ByteToMessageDecoder {
 
-    private static final int LengthInBytes = 4;
-
     private Logger logger = LoggerFactory.getLogger(CoordinateDecoder.class);
 
     @Override

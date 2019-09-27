@@ -7,8 +7,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfiguration;
 import com.anur.core.struct.base.AbstractStruct;
-import com.anur.core.util.ChannelManager;
-import com.anur.core.util.ChannelManager.ChannelType;
+import com.anur.util.ChannelManager;
+import com.anur.util.ChannelManager.ChannelType;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 

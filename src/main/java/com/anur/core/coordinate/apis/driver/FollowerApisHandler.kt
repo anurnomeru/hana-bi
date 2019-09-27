@@ -3,7 +3,7 @@ package com.anur.core.coordinate.apis.driver
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.struct.coordinate.CommitResponse
 import com.anur.core.struct.coordinate.Commiter
-import com.anur.core.util.ChannelManager
+import com.anur.util.ChannelManager
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import io.netty.channel.Channel
 import org.slf4j.LoggerFactory

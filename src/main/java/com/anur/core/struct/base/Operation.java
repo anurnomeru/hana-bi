@@ -2,11 +2,9 @@ package com.anur.core.struct.base;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.sql.SQLOutput;
-import java.util.Arrays;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.exception.LogException;
-import com.anur.io.engine.storage.core.HanabiEntry;
+import com.anur.engine.storage.core.HanabiEntry;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 
@@ -49,11 +47,11 @@ public class Operation extends AbstractStruct {
 
     private String key;
 
-    private HanabiEntry value;
+    private HanabiEntry hanabiEntry;
 
     public Operation(OperationTypeEnum operationTypeEnum, String key, HanabiEntry value) {
         this.key = key;
-        this.value = value;
+        this.hanabiEntry = value;
 
         int operationType = operationTypeEnum.byteSign;
         byte[] kBytes = key.getBytes(Charset.defaultCharset());
@@ -97,7 +95,7 @@ public class Operation extends AbstractStruct {
         this.key = new String(kByte);
 
         int vSizeIgnore = buffer.getInt();
-        this.value = new HanabiEntry(buffer.slice());
+        this.hanabiEntry = new HanabiEntry(buffer.slice());
 
         ensureValid();
         buffer.reset();
@@ -107,8 +105,8 @@ public class Operation extends AbstractStruct {
         return key;
     }
 
-    public HanabiEntry getValue() {
-        return value;
+    public HanabiEntry getHanabiEntry() {
+        return hanabiEntry;
     }
 
     @Override
@@ -116,7 +114,7 @@ public class Operation extends AbstractStruct {
         return "Operation{" +
             "operationTypeEnum='" + getOperationTypeEnum() + '\'' +
             ", key='" + key + '\'' +
-            ", value='" + value + '\'' +
+            ", hanabiEntry='" + hanabiEntry + '\'' +
             '}';
     }
 

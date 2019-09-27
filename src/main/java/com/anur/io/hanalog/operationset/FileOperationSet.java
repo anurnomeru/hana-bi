@@ -28,8 +28,8 @@ import com.anur.exception.LogException;
 import com.anur.io.hanalog.common.OffsetAndPosition;
 import com.anur.core.struct.base.Operation;
 import com.anur.io.hanalog.common.OperationAndOffset;
-import com.anur.core.util.FileIOUtil;
-import com.anur.core.util.IteratorTemplate;
+import com.anur.util.FileIOUtil;
+import com.anur.util.IteratorTemplate;
 
 /**
  * Created by Anur IjuoKaruKas on 2/25/2019
