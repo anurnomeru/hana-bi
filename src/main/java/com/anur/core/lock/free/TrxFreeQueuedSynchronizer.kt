@@ -10,7 +10,7 @@ import java.util.LinkedList
  */
 object TrxFreeQueuedSynchronizer {
 
-    private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedLocker::class.java)
+    private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
 
     /**
      * 标识 key 上的锁
@@ -36,13 +36,13 @@ object TrxFreeQueuedSynchronizer {
             // 代表此键无锁
             trxId -> {
                 whatEverDo.invoke()
-                logger.debug("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
+                logger.trace("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
             }
 
             // 代表有锁
             else -> {
                 trxHolder.undoEvent.compute(key) { _, undoList -> (undoList ?: mutableListOf()).also { it.add(whatEverDo) } }
-                logger.debug("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
+                logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
             }
         }
     }
@@ -80,6 +80,8 @@ object TrxFreeQueuedSynchronizer {
                 }
             }
 
+            logger.debug("事务 $trxId 已经成功释放锁")
+
             // 注销此事务
             trxHolderMap.remove(trxId)
 
@@ -91,7 +93,7 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 唤醒挂起的事务操作～～
      */
-    fun notify(key: String) {
+    private fun notify(key: String) {
         val mutableList = lockKeeper[key]!!
         if (mutableList.isEmpty()) {
             lockKeeper.remove(key)
@@ -99,11 +101,16 @@ object TrxFreeQueuedSynchronizer {
         } else {
             val first = mutableList.first()
             val trxHolder = trxHolderMap[first]!!
+
+            logger.trace("挂起的事务操作 trxId: $first, key = $key 被唤醒，并执行。")
             trxHolder.undoEvent[key]!!.forEach { it.invoke() }
             trxHolder.undoEvent.remove(key)
 
             // 如果当前被唤醒的事务已经执行完所有挂起的事务了，则直接将其释放
-            if (trxHolder.undoEvent.isEmpty()) trxHolder.doWhileCommit?.let { release(first, it) }
+            if (trxHolder.undoEvent.isEmpty()) trxHolder.doWhileCommit?.also {
+                logger.debug("挂起的事务操作 trxId: $first 的所有待执行任务已经执行完毕，且已经注册了释放事件，将触发此释放事件。")
+                release(first, it)
+            }
         }
     }
 }
