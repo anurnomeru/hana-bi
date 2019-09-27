@@ -12,11 +12,6 @@ class TrxHolder(val trxId: Long) {
     val holdKeys: MutableSet<String> = mutableSetOf()
 
     /**
-     * 还未执行的内容数
-     */
-    var unProcessOperate = 0
-
-    /**
      * 该事务所有未执行的子事务
      */
     val undoEvent: MutableMap<String, MutableList<() -> Unit>> = mutableMapOf()
