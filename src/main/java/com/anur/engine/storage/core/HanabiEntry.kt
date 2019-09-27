@@ -1,5 +1,6 @@
 package com.anur.engine.storage.core
 
+import com.anur.engine.api.common.trx.TransactionTypeConst
 import java.nio.ByteBuffer
 
 /**
@@ -12,16 +13,19 @@ class HanabiEntry(val content: ByteBuffer) {
     companion object {
         private const val TrxIdOffset = 0
         private const val TrxIdLength = 8
-        private const val TypeOffset = TrxIdOffset + TrxIdLength
+        private const val TransactionOffset = TrxIdOffset + TrxIdLength
+        private const val TransactionLength = 1
+        private const val TypeOffset = TransactionOffset + TransactionLength
         private const val TypeLength = 1
         private const val ApiOffset = TypeOffset + TypeLength
         private const val ApiLength = 1
         private const val ValueOffset = ApiOffset + ApiLength
 
-        fun generator(trxId: Long, type: Byte, api: Byte, value: String): HanabiEntry {
+        fun generator(trxId: Long, transaction: Byte, type: Byte, api: Byte, value: String): HanabiEntry {
             val valueArray = value.toByteArray()
             val bb = ByteBuffer.allocate(ValueOffset + valueArray.size)
             bb.putLong(trxId)
+            bb.put(transaction)
             bb.put(type)
             bb.put(api)
             bb.put(valueArray)
@@ -37,6 +41,13 @@ class HanabiEntry(val content: ByteBuffer) {
      */
     fun getTrxId(): Long {
         return content.getLong(TrxIdOffset)
+    }
+
+    /**
+     * 是否开启了（长）事务
+     */
+    fun enableLongTransaction(): Boolean {
+        return content.get(TransactionOffset) != TransactionTypeConst.none
     }
 
     /**
