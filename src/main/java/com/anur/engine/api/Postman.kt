@@ -32,17 +32,18 @@ fun main() {
     var currentTimeMillis1 = System.currentTimeMillis()
 
 
-    for (i in 0 until 300000) {
-        val trxId = i.toLong() / 100
+    for (i in 0 until 20) {
+        val trxId = i.toLong() / 3
         s.add(trxId)
-        val key = random.nextInt(100000).toString()
+        val key = random.nextInt(10).toString()
         TrxFreeQueuedSynchronizer.acquire(trxId, key) {}
     }
 
-
     var currentTimeMillis2 = System.currentTimeMillis()
 
-    for (l in s.reversed()) {
+    Thread.sleep(1000)
+
+    for (l in s) {
         TrxFreeQueuedSynchronizer.release(l) {}
     }
 

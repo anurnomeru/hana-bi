@@ -1,10 +1,12 @@
 package com.anur.engine.trx.lock
 
 import com.anur.engine.trx.lock.entry.Acquirer
+import com.anur.engine.trx.lock.entry.Releaser
 import com.anur.util.HanabiExecutors
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.LinkedBlockingDeque
 
 /**
@@ -17,41 +19,62 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 标识 key 上的锁
      */
-    private val lockKeeper: MutableMap<String, MutableList<Long>> = mutableMapOf()
+    private val lockKeeper: ConcurrentHashMap<String, MutableList<Long>> = ConcurrentHashMap()
 
     /**
      * 存储那些需要被唤醒的执行内容
      */
-    private val trxHolderMap: MutableMap<Long, TrxHolder> = mutableMapOf()
+    private val trxHolderMap: ConcurrentHashMap<Long, TrxHolder> = ConcurrentHashMap()
 
     private const val TransportNum = 4
 
-    private val Barrier = LinkedList<LinkedBlockingDeque<Acquirer>>()
+    private val AcBarrier = LinkedList<LinkedBlockingDeque<Acquirer>>()
+
+    private val RlBarrier = LinkedList<LinkedBlockingDeque<Releaser>>()
 
     init {
         for (i in 0 until TransportNum) {
             val transporter = LinkedBlockingDeque<Acquirer>()
-            Barrier.add(transporter)
-            HanabiExecutors.execute(transporterRunner(transporter))
+            AcBarrier.add(transporter)
+            HanabiExecutors.execute(acTransporterRunner(transporter))
         }
     }
 
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)
      */
-     fun acquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
-        Barrier[key.hashCode() % TransportNum].push(Acquirer(trxId, key, whatEverDo))
+    fun acquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
+        AcBarrier[key.hashCode() % TransportNum].push(Acquirer(trxId, key, whatEverDo))
     }
 
     /**
-     * 小小的事件驱动
+     * 仅广义上的互斥锁需要加锁 (此方法必须串行)
      */
-    private fun transporterRunner(queue: LinkedBlockingDeque<Acquirer>): Runnable {
+    fun release(trxId: Long, doWhileCommit: () -> Unit) {
+        RlBarrier[(trxId % TransportNum).toInt()].push(Releaser(trxId, doWhileCommit))
+    }
+
+    /**
+     * 小小的事件驱动(rl)
+     */
+    private fun rlTransporterRunner(queue: LinkedBlockingDeque<Releaser>): Runnable {
+        return Runnable {
+            while (true) {
+                val releaser = queue.take()
+                doRelease(releaser.trxId, releaser.doWhileCommit)
+            }
+        }
+    }
+
+    /**
+     * 小小的事件驱动(ac)
+     */
+    private fun acTransporterRunner(queue: LinkedBlockingDeque<Acquirer>): Runnable {
         return Runnable {
             while (true) {
                 val acquirer = queue.take()
                 if (acquirer != Acquirer.ShutDownSign) {
-                    acquireImpl(acquirer.trxId, acquirer.key, acquirer.whatEverDo)
+                    doAcquire(acquirer.trxId, acquirer.key, acquirer.whatEverDo)
                 }
             }
         }
@@ -60,7 +83,7 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)
      */
-    private fun acquireImpl(trxId: Long, key: String, whatEverDo: () -> Unit) {
+    fun doAcquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
         // 创建或者拿到之前注册的事务，并注册持有此key的锁
         val trxHolder = trxHolderMap.compute(trxId) { _, th -> th ?: TrxHolder(trxId) }!!.also { it.holdKeys.add(key) }
 
@@ -71,13 +94,13 @@ object TrxFreeQueuedSynchronizer {
             // 代表此键无锁
             trxId -> {
                 whatEverDo.invoke()
-                logger.trace("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
+                logger.debug("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
             }
 
             // 代表有锁
             else -> {
                 trxHolder.undoEvent.compute(key) { _, undoList -> (undoList ?: mutableListOf()).also { it.add(whatEverDo) } }
-                logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
+                logger.debug("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
             }
         }
     }
@@ -86,14 +109,14 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 释放 trxId 下的所有键锁
      */
-    fun release(trxId: Long, doWhileCommit: () -> Unit) {
+    fun doRelease(trxId: Long, doWhileCommit: () -> Unit) {
 
         if (!trxHolderMap.containsKey(trxId)) {
             logger.error("事务未创建或者已经提交，trxId: $trxId")
             return
         }
-
         val trxHolder = trxHolderMap[trxId]!!
+
         if (trxHolder.undoEvent.isNotEmpty()) {
             logger.debug("事物 $trxId 还在阻塞等待唤醒，暂无法释放！故释放操作将挂起，等待唤醒。")
             trxHolder.doWhileCommit = doWhileCommit
