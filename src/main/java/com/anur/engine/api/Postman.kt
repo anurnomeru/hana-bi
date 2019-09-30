@@ -28,7 +28,7 @@ object Postman {
 fun main() {
 
     val random = Random(10)
-    val s = mutableSetOf<Long>()
+    val s = LinkedHashSet<Long>()
     var currentTimeMillis1 = System.currentTimeMillis()
 
 
@@ -41,7 +41,8 @@ fun main() {
 
 
     var currentTimeMillis2 = System.currentTimeMillis()
-    for (l in s) {
+
+    for (l in s.reversed()) {
         TrxFreeQueuedSynchronizer.release(l) {}
     }
 

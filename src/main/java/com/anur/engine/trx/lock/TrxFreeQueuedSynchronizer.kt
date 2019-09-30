@@ -86,6 +86,10 @@ object TrxFreeQueuedSynchronizer {
 
             // 通知其他事务
             holdKeys.forEach { notify(it) }
+
+            if (lockKeeper.isEmpty()) {
+                logger.info("全部释放")
+            }
         }
     }
 
