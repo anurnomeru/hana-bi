@@ -1,8 +1,11 @@
 package com.anur.engine.trx.lock
 
+import com.anur.engine.trx.lock.entry.Acquirer
+import com.anur.util.HanabiExecutors
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
+import java.util.concurrent.LinkedBlockingDeque
 
 /**
  * Created by Anur IjuoKaruKas on 2019/9/26
@@ -21,10 +24,43 @@ object TrxFreeQueuedSynchronizer {
      */
     private val trxHolderMap: MutableMap<Long, TrxHolder> = mutableMapOf()
 
+    private const val TransportNum = 4
+
+    private val Barrier = LinkedList<LinkedBlockingDeque<Acquirer>>()
+
+    init {
+        for (i in 0 until TransportNum) {
+            val transporter = LinkedBlockingDeque<Acquirer>()
+            Barrier.add(transporter)
+            HanabiExecutors.execute(transporterRunner(transporter))
+        }
+    }
+
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)
      */
-    fun acquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
+     fun acquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
+        Barrier[key.hashCode() % TransportNum].push(Acquirer(trxId, key, whatEverDo))
+    }
+
+    /**
+     * 小小的事件驱动
+     */
+    private fun transporterRunner(queue: LinkedBlockingDeque<Acquirer>): Runnable {
+        return Runnable {
+            while (true) {
+                val acquirer = queue.take()
+                if (acquirer != Acquirer.ShutDownSign) {
+                    acquireImpl(acquirer.trxId, acquirer.key, acquirer.whatEverDo)
+                }
+            }
+        }
+    }
+
+    /**
+     * 仅广义上的互斥锁需要加锁 (此方法必须串行)
+     */
+    private fun acquireImpl(trxId: Long, key: String, whatEverDo: () -> Unit) {
         // 创建或者拿到之前注册的事务，并注册持有此key的锁
         val trxHolder = trxHolderMap.compute(trxId) { _, th -> th ?: TrxHolder(trxId) }!!.also { it.holdKeys.add(key) }
 
