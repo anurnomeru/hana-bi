@@ -34,14 +34,16 @@ fun main() {
     var currentTimeMillis1 = System.currentTimeMillis()
 
     val times = 5000000
+    val cdl = CountDownLatch(times)
 
     for (i in 0 until times) {
         val trxId = i.toLong() / 5
         s.add(trxId.toString())
-        val key = random.nextInt(1000000).toString()
+        val key = random.nextInt(5000000).toString()
         TrxFreeQueuedSynchronizer.acquire(trxId, key) {}
     }
 
+    cdl.await()
     var currentTimeMillis2 = System.currentTimeMillis()
 
     for (l in s) {

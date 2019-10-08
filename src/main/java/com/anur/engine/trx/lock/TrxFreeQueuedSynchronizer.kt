@@ -7,7 +7,10 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingDeque
+import java.util.concurrent.LinkedBlockingQueue
+import kotlin.math.absoluteValue
 
 /**
  * Created by Anur IjuoKaruKas on 2019/9/26
@@ -50,7 +53,6 @@ object TrxFreeQueuedSynchronizer {
             }
         }
     }
-
 
     /**
      * 释放 trxId 下的所有键锁
