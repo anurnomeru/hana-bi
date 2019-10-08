@@ -26,64 +26,10 @@ object TrxFreeQueuedSynchronizer {
      */
     private val trxHolderMap: ConcurrentHashMap<Long, TrxHolder> = ConcurrentHashMap()
 
-    private const val TransportNum = 4
-
-    private val AcBarrier = LinkedList<LinkedBlockingDeque<Acquirer>>()
-
-    private val RlBarrier = LinkedList<LinkedBlockingDeque<Releaser>>()
-
-    init {
-        for (i in 0 until TransportNum) {
-            val transporter = LinkedBlockingDeque<Acquirer>()
-            AcBarrier.add(transporter)
-            HanabiExecutors.execute(acTransporterRunner(transporter))
-        }
-    }
-
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)
      */
     fun acquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
-        AcBarrier[key.hashCode() % TransportNum].push(Acquirer(trxId, key, whatEverDo))
-    }
-
-    /**
-     * 仅广义上的互斥锁需要加锁 (此方法必须串行)
-     */
-    fun release(trxId: Long, doWhileCommit: () -> Unit) {
-        RlBarrier[(trxId % TransportNum).toInt()].push(Releaser(trxId, doWhileCommit))
-    }
-
-    /**
-     * 小小的事件驱动(rl)
-     */
-    private fun rlTransporterRunner(queue: LinkedBlockingDeque<Releaser>): Runnable {
-        return Runnable {
-            while (true) {
-                val releaser = queue.take()
-                doRelease(releaser.trxId, releaser.doWhileCommit)
-            }
-        }
-    }
-
-    /**
-     * 小小的事件驱动(ac)
-     */
-    private fun acTransporterRunner(queue: LinkedBlockingDeque<Acquirer>): Runnable {
-        return Runnable {
-            while (true) {
-                val acquirer = queue.take()
-                if (acquirer != Acquirer.ShutDownSign) {
-                    doAcquire(acquirer.trxId, acquirer.key, acquirer.whatEverDo)
-                }
-            }
-        }
-    }
-
-    /**
-     * 仅广义上的互斥锁需要加锁 (此方法必须串行)
-     */
-    fun doAcquire(trxId: Long, key: String, whatEverDo: () -> Unit) {
         // 创建或者拿到之前注册的事务，并注册持有此key的锁
         val trxHolder = trxHolderMap.compute(trxId) { _, th -> th ?: TrxHolder(trxId) }!!.also { it.holdKeys.add(key) }
 
@@ -94,13 +40,13 @@ object TrxFreeQueuedSynchronizer {
             // 代表此键无锁
             trxId -> {
                 whatEverDo.invoke()
-                logger.debug("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
+                logger.trace("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
             }
 
             // 代表有锁
             else -> {
                 trxHolder.undoEvent.compute(key) { _, undoList -> (undoList ?: mutableListOf()).also { it.add(whatEverDo) } }
-                logger.debug("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
+                logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
             }
         }
     }
@@ -109,7 +55,7 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 释放 trxId 下的所有键锁
      */
-    fun doRelease(trxId: Long, doWhileCommit: () -> Unit) {
+    fun release(trxId: Long, doWhileCommit: () -> Unit) {
 
         if (!trxHolderMap.containsKey(trxId)) {
             logger.error("事务未创建或者已经提交，trxId: $trxId")
@@ -118,7 +64,7 @@ object TrxFreeQueuedSynchronizer {
         val trxHolder = trxHolderMap[trxId]!!
 
         if (trxHolder.undoEvent.isNotEmpty()) {
-            logger.debug("事物 $trxId 还在阻塞等待唤醒，暂无法释放！故释放操作将挂起，等待唤醒。")
+            logger.trace("事物 $trxId 还在阻塞等待唤醒，暂无法释放！故释放操作将挂起，等待唤醒。")
             trxHolder.doWhileCommit = doWhileCommit
         } else {
             doWhileCommit.invoke()
@@ -138,7 +84,7 @@ object TrxFreeQueuedSynchronizer {
                 }
             }
 
-            logger.debug("事务 $trxId 已经成功释放锁")
+            logger.trace("事务 $trxId 已经成功释放锁")
 
             // 注销此事务
             trxHolderMap.remove(trxId)
@@ -170,7 +116,7 @@ object TrxFreeQueuedSynchronizer {
 
             // 如果当前被唤醒的事务已经执行完所有挂起的事务了，则直接将其释放
             if (trxHolder.undoEvent.isEmpty()) trxHolder.doWhileCommit?.also {
-                logger.debug("挂起的事务操作 trxId: $first 的所有待执行任务已经执行完毕，且已经注册了释放事件，将触发此释放事件。")
+                logger.trace("挂起的事务操作 trxId: $first 的所有待执行任务已经执行完毕，且已经注册了释放事件，将触发此释放事件。")
                 release(first, it)
             }
         }
