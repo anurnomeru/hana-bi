@@ -7,7 +7,7 @@ import java.util.Optional;
  */
 public class GenerationAndOffset implements Comparable<GenerationAndOffset> {
 
-    public static final GenerationAndOffset INVALID = new GenerationAndOffset(0, 0);
+    public static final GenerationAndOffset INVALID = new GenerationAndOffset(-1, -1);
 
     private long generation;
 

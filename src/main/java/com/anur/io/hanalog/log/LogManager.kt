@@ -93,6 +93,8 @@ object LogManager {
         logger.info("初始化日志管理器，当前最大进度为 {}", init.toString())
 
         /**
+         * TODO 这里可能不太对
+         *
          * 当集群不可用
          *
          *  - 关闭追加入口
