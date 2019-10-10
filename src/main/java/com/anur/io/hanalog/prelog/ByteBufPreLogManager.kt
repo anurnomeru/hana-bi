@@ -60,7 +60,6 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
      * 获取当前副本同步到的最新的 commit GAO
      */
     fun getCommitGAO(): GenerationAndOffset {
-        CommitProcessManager.discardInvalidMsg()
         return readLockSupplierCompel(Supplier { commitOffset!! })
     }
 

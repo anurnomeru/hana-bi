@@ -103,10 +103,10 @@ object LogManager {
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
             appendLock.switchOff()
             logger.info("追加入口关闭~")
-
-            if (isLeaderCurrent) {
-                CommitProcessManager.discardInvalidMsg()
-            }
+//
+//            if (isLeaderCurrent) {
+//                CommitProcessManager.discardInvalidMsg()
+//            }
         }
 
         /**
