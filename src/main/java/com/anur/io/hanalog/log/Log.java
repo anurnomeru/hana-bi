@@ -138,7 +138,9 @@ public class Log extends ReentrantLocker {
 
         ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, offset);
         try {
+            // 追加到磁盘
             logSegment.append(offset, byteBufferOperationSet);
+
         } catch (IOException e) {
             throw new LogException("写入日志文件失败：" + operation.toString());
         }
@@ -148,7 +150,7 @@ public class Log extends ReentrantLocker {
     }
 
     /**
-     * 将多个操作添加到日志文件中
+     * 将多个操作添加到日志文件中（来自预日志）
      */
     public void append(PreLogMeta preLogMeta, long startOffset, long endOffset) {
 

@@ -8,9 +8,11 @@ import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.core.struct.base.Operation
+import com.anur.engine.EngineFacade
 import com.anur.exception.LogException
 import com.anur.io.hanalog.common.FetchDataInfo
 import com.anur.io.hanalog.common.LogCommon
+import com.anur.io.hanalog.common.OperationAndGAO
 import com.anur.io.hanalog.common.PreLogMeta
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -158,7 +160,11 @@ object LogManager {
             }
 
             val log = maybeRoll(gen, false)
+
+            // 追加到磁盘后
             log.append(operation, offset)
+            // ×××× 追加到引擎
+            EngineFacade.append(OperationAndGAO(operation, GenerationAndOffset(log.generation, offset)))
         }
     }
 

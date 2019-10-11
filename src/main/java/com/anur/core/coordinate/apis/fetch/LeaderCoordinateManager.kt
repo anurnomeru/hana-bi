@@ -3,6 +3,7 @@ package com.anur.core.coordinate.apis.fetch
 import com.anur.core.elect.ElectMeta
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
+import com.anur.engine.EngineFacade
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import com.anur.io.hanalog.log.CommitProcessManager
 import org.slf4j.LoggerFactory
@@ -132,10 +133,10 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
             commitMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }
                 ?.key
                 ?.also {
-                    // 写入 ByteBufPreLogManager
+                    // 写入 ByteBufPreLogManager(避免成为follower没有这个进度)
                     ByteBufPreLogManager.cover(it)
-                    // 写入本地文件
-                    CommitProcessManager.cover(it)
+                    // 写入本地文件，并通知存储引擎继续工作
+                    EngineFacade.play(it)
                     logger.debug("进度 {} 已经完成 commit ~", it.toString())
                 }
                 ?: latestCommitGAO

@@ -1,10 +1,12 @@
 package com.anur.engine
 
+import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.rentrant.ReentrantLocker
-import com.anur.core.struct.base.Operation
 import com.anur.engine.api.Postman
 import com.anur.engine.api.common.base.EngineRequest
 import com.anur.io.core.coder.CoordinateDecoder
+import com.anur.io.hanalog.common.OperationAndGAO
+import com.anur.io.hanalog.log.CommitProcessManager
 import com.anur.util.HanabiExecutors
 import org.slf4j.LoggerFactory
 import java.util.concurrent.LinkedBlockingQueue
@@ -17,37 +19,48 @@ import java.util.concurrent.LinkedBlockingQueue
  */
 object EngineFacade {
     private val logger = LoggerFactory.getLogger(CoordinateDecoder::class.java)
-    private val queue = LinkedBlockingQueue<Operation>()
-    private val pauseLatch = ReentrantLocker()
+    private val queue = LinkedBlockingQueue<OperationAndGAO>()
+    private val pauseLatch = ReentrantLocker().newCondition()
 
     init {
-        HanabiExecutors.execute(Runnable {
-            logger.info("存储引擎已经启动")
-            while (true) {
-                val take = queue.poll()
-
-                val hanabiEntry = take.hanabiEntry
-                val api = Postman.disPatchType(hanabiEntry.getType()).api(hanabiEntry.getApi())
-                api.invoke(EngineRequest(hanabiEntry.getTrxId(), take.key, hanabiEntry.getValue()))
-            }
-        })
+//        HanabiExecutors.execute(Runnable {
+//            logger.info("存储引擎已经启动")
+//            while (true) {
+//                val take = queue.poll()
+//
+//                blockCheckIter(take.GAO)
+//
+//                val hanabiEntry = take.hanabiEntry
+//                val api = Postman.disPatchType(hanabiEntry.getType()).api(hanabiEntry.getApi())
+//                api.invoke(EngineRequest(hanabiEntry.getTrxId(), take.key, hanabiEntry.getValue()))
+//            }
+//        })
     }
 
-//    fun latestCommit(): GenerationAndOffset {
-//
-//    }
+    /**
+     * 检查是否需要阻塞
+     */
+    private fun blockCheckIter(Gao: GenerationAndOffset) {
+        val latestCommitted = CommitProcessManager.load()
+        if (latestCommitted != GenerationAndOffset.INVALID && Gao > latestCommitted) {
+            pauseLatch.await()
+            blockCheckIter(Gao)
+        }
+    }
 
     /**
      * 继续消费
      */
-    fun play() {
-
+    fun play(Gao: GenerationAndOffset) {
+        pauseLatch.signalAll()
+        CommitProcessManager.cover(Gao)
+        pauseLatch.signalAll()
     }
 
     /**
      * 追加消息
      */
-    fun append(operation: Operation) {
-        queue.put(operation)
+    fun append(oaGao: OperationAndGAO) {
+        queue.put(oaGao)
     }
 }
