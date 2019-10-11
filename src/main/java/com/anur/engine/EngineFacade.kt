@@ -10,6 +10,7 @@ import com.anur.io.hanalog.log.CommitProcessManager
 import com.anur.util.HanabiExecutors
 import org.slf4j.LoggerFactory
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.locks.ReentrantLock
 
 
 /**
@@ -20,21 +21,31 @@ import java.util.concurrent.LinkedBlockingQueue
 object EngineFacade {
     private val logger = LoggerFactory.getLogger(CoordinateDecoder::class.java)
     private val queue = LinkedBlockingQueue<OperationAndGAO>()
-    private val pauseLatch = ReentrantLocker().newCondition()
+    private val lock = ReentrantLock()
+    private val pauseLatch = lock.newCondition()
 
     init {
-//        HanabiExecutors.execute(Runnable {
-//            logger.info("存储引擎已经启动")
-//            while (true) {
-//                val take = queue.poll()
-//
-//                blockCheckIter(take.GAO)
-//
-//                val hanabiEntry = take.hanabiEntry
-//                val api = Postman.disPatchType(hanabiEntry.getType()).api(hanabiEntry.getApi())
-//                api.invoke(EngineRequest(hanabiEntry.getTrxId(), take.key, hanabiEntry.getValue()))
-//            }
-//        })
+        HanabiExecutors.execute(Runnable {
+            // 启动锁
+            lock.lock()
+            pauseLatch.await()
+            lock.unlock()
+
+            logger.error("存储引擎已经启动!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            while (true) {
+                val take = queue.take()
+
+                try {
+                    blockCheckIter(take.GAO)
+                } catch (e: Exception) {
+                    println()
+                }
+
+                val hanabiEntry = take.operation.hanabiEntry
+                val api = Postman.disPatchType(hanabiEntry.getType()).api(hanabiEntry.getApi())
+                api.invoke(EngineRequest(hanabiEntry.getTrxId(), take.operation.key, hanabiEntry.getValue()))
+            }
+        })
     }
 
     /**
@@ -43,7 +54,10 @@ object EngineFacade {
     private fun blockCheckIter(Gao: GenerationAndOffset) {
         val latestCommitted = CommitProcessManager.load()
         if (latestCommitted != GenerationAndOffset.INVALID && Gao > latestCommitted) {
+            lock.lock()
             pauseLatch.await()
+            logger.error("存储引擎已经暂停!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            lock.unlock()
             blockCheckIter(Gao)
         }
     }
@@ -52,9 +66,11 @@ object EngineFacade {
      * 继续消费
      */
     fun play(Gao: GenerationAndOffset) {
+        lock.lock()
         pauseLatch.signalAll()
         CommitProcessManager.cover(Gao)
         pauseLatch.signalAll()
+        lock.unlock()
     }
 
     /**
@@ -63,4 +79,8 @@ object EngineFacade {
     fun append(oaGao: OperationAndGAO) {
         queue.put(oaGao)
     }
+}
+
+fun main() {
+    EngineFacade.play(GenerationAndOffset.INVALID)
 }
