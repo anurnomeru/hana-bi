@@ -10,7 +10,9 @@ import com.anur.io.hanalog.log.CommitProcessManager
 import com.anur.util.HanabiExecutors
 import org.slf4j.LoggerFactory
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
+import kotlin.math.log
 
 
 /**
@@ -48,6 +50,8 @@ object EngineFacade {
         })
     }
 
+    private val counter = AtomicInteger()
+
     /**
      * 检查是否需要阻塞
      */
@@ -55,10 +59,13 @@ object EngineFacade {
         val latestCommitted = CommitProcessManager.load()
         if (latestCommitted != GenerationAndOffset.INVALID && Gao > latestCommitted) {
             lock.lock()
+            logger.error("存储引擎已经消费到最新的commit进度，故暂停!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             pauseLatch.await()
-            logger.error("存储引擎已经暂停!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logger.error("存储引擎被唤醒!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             lock.unlock()
             blockCheckIter(Gao)
+        } else {
+            if (counter.incrementAndGet() % 100000 == 0) logger.info("当前最新提交： ${latestCommitted}，消费进度：${Gao} ")
         }
     }
 
@@ -79,8 +86,4 @@ object EngineFacade {
     fun append(oaGao: OperationAndGAO) {
         queue.put(oaGao)
     }
-}
-
-fun main() {
-    EngineFacade.play(GenerationAndOffset.INVALID)
 }

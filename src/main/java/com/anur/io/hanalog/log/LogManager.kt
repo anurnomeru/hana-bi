@@ -161,10 +161,8 @@ object LogManager {
 
             val log = maybeRoll(gen, false)
 
-            // 追加到磁盘后
+            // 追加到磁盘
             log.append(operation, offset)
-            // ×××× 追加到引擎
-            EngineFacade.append(OperationAndGAO(operation, GenerationAndOffset(log.generation, offset)))
         }
     }
 
