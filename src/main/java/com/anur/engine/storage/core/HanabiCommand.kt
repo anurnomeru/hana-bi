@@ -1,6 +1,5 @@
 package com.anur.engine.storage.core
 
-import com.anur.engine.api.common.constant.TransactionTypeConst
 import java.nio.ByteBuffer
 
 /**
@@ -46,8 +45,8 @@ class HanabiCommand(val content: ByteBuffer) {
     /**
      * 是否开启了（长）事务
      */
-    fun enableLongTransaction(): Boolean {
-        return TransactionTypeConst.map(content.get(TransactionOffset)) != TransactionTypeConst.LONG
+    fun getTransactionType(): Byte {
+        return content.get(TransactionOffset)
     }
 
     /**

@@ -12,8 +12,8 @@ import com.anur.exception.UnSupportedApiException
 object StrApiDispatcher : ApiDispatcher {
 
     override fun api(byte: Byte): (EngineRequest) -> EngineResponse {
-        return when (byte) {
-            StrApiConst.insert -> {
+        return when (StrApiConst.map(byte)) {
+            StrApiConst.INSERT -> {
                 return { req ->
                     EngineResponse(1, "啦啦啦啦")
                 }
