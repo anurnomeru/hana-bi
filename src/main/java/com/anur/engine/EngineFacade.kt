@@ -1,7 +1,6 @@
 package com.anur.engine
 
 import com.anur.core.elect.model.GenerationAndOffset
-import com.anur.core.lock.rentrant.ReentrantLocker
 import com.anur.engine.api.Postman
 import com.anur.engine.api.common.base.EngineRequest
 import com.anur.io.core.coder.CoordinateDecoder
@@ -12,7 +11,6 @@ import org.slf4j.LoggerFactory
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.math.log
 
 
 /**
@@ -43,7 +41,7 @@ object EngineFacade {
                     println()
                 }
 
-                val hanabiEntry = take.operation.hanabiEntry
+                val hanabiEntry = take.operation.hanabiCommand
                 val api = Postman.disPatchType(hanabiEntry.getType()).api(hanabiEntry.getApi())
                 api.invoke(EngineRequest(hanabiEntry.getTrxId(), take.operation.key, hanabiEntry.getValue()))
             }
@@ -59,7 +57,7 @@ object EngineFacade {
         val latestCommitted = CommitProcessManager.load()
         if (latestCommitted != GenerationAndOffset.INVALID && Gao > latestCommitted) {
             lock.lock()
-            logger.error("存储引擎已经消费到最新的commit进度，故暂停!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+            logger.error("存储引擎已经消费到最新的commit进度${latestCommitted}，故暂停!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             pauseLatch.await()
             logger.error("存储引擎被唤醒!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
             lock.unlock()

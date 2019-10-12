@@ -1,4 +1,4 @@
-package com.anur.engine.api.common.api
+package com.anur.engine.api.common.constant.common
 
 
 /**
