@@ -1,6 +1,5 @@
 package com.anur;
 
-import java.nio.ByteBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfiguration;
@@ -13,8 +12,9 @@ import com.anur.core.elect.operator.ElectOperator;
 import com.anur.core.elect.operator.ElectServerOperator;
 import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
+import com.anur.engine.EngineFacade;
 import com.anur.util.HanabiExecutors;
-import com.anur.engine.storage.core.HanabiEntry;
+import com.anur.engine.storage.core.HanabiCommand;
 import com.anur.io.hanalog.log.LogManager;
 import com.anur.io.hanalog.log.CommitProcessManager;
 
@@ -96,6 +96,11 @@ public class Bootstrap {
                  */
                 ElectOperator.getInstance()
                              .start();
+
+                /*
+                 * 启动存储引擎
+                 */
+                EngineFacade forInitial06 = EngineFacade.INSTANCE;
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(0);
@@ -111,9 +116,8 @@ public class Bootstrap {
 
                 for (int i = 0; i < 10000000; i++) {
 
-
                     Operation operation = new Operation(OperationTypeEnum.COMMAND, "AnurKey",
-                        HanabiEntry.Companion.generator(99, (byte) 1, (byte) 2, "HanabiValue-中文-"));
+                        HanabiCommand.Companion.generator(99, (byte) 0, (byte) -127, (byte) -127, "HanabiValue-中文-"));
                     LogManager.INSTANCE.appendWhileClusterValid(operation);
                 }
 

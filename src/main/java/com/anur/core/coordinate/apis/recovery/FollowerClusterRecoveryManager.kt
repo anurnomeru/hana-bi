@@ -5,10 +5,13 @@ import com.anur.core.coordinate.apis.driver.ApisManager
 import com.anur.core.coordinate.model.RequestProcessor
 import com.anur.core.coordinate.operator.CoordinateClientOperator
 import com.anur.core.elect.ElectMeta
+import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
 import com.anur.core.struct.coordinate.RecoveryComplete
 import com.anur.core.struct.coordinate.RecoveryReporter
+import com.anur.engine.EngineFacade
+import com.anur.io.hanalog.log.CommitProcessManager
 import com.anur.io.hanalog.log.LogManager
 import com.anur.io.hanalog.prelog.ByteBufPreLogManager
 import org.slf4j.LoggerFactory
@@ -75,8 +78,15 @@ object FollowerClusterRecoveryManager {
 
         /*
          * 当连接主节点成功后，发送当前最大 GAO
+         *
+         * 1，如果之前是leader，要抛弃一些消息
+         *
+         * 2，发送最大 GAO
          */
+        CommitProcessManager.discardInvalidMsg()
+
         HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO_LEADER) {
+            EngineFacade.play(GenerationAndOffset.INVALID)
             ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getCommitGAO()),
                 RequestProcessor(Consumer {
                     val recoveryComplete = RecoveryComplete(it)

@@ -1,5 +1,6 @@
 package com.anur.core.lock.rentrant
 
+import java.util.concurrent.locks.Condition
 import java.util.concurrent.locks.ReentrantLock
 import java.util.function.Supplier
 
@@ -9,10 +10,16 @@ import java.util.function.Supplier
 open class ReentrantLocker {
     private val reentrantLock: ReentrantLock = ReentrantLock()
 
+    fun newCondition(): Condition {
+        return reentrantLock.newCondition()
+    }
+
     /**
      * 提供一个统一的锁入口
      */
     protected fun <T> lockSupplier(supplier: Supplier<T>): T? {
+        reentrantLock.newCondition()
+
         val t: T
         try {
             reentrantLock.lock()

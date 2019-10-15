@@ -8,9 +8,11 @@ import com.anur.core.listener.EventEnum
 import com.anur.core.listener.HanabiListener
 import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.core.struct.base.Operation
+import com.anur.engine.EngineFacade
 import com.anur.exception.LogException
 import com.anur.io.hanalog.common.FetchDataInfo
 import com.anur.io.hanalog.common.LogCommon
+import com.anur.io.hanalog.common.OperationAndGAO
 import com.anur.io.hanalog.common.PreLogMeta
 import org.slf4j.LoggerFactory
 import java.io.File
@@ -93,6 +95,8 @@ object LogManager {
         logger.info("初始化日志管理器，当前最大进度为 {}", init.toString())
 
         /**
+         * TODO 这里可能不太对
+         *
          * 当集群不可用
          *
          *  - 关闭追加入口
@@ -101,10 +105,10 @@ object LogManager {
         HanabiListener.register(EventEnum.CLUSTER_INVALID) {
             appendLock.switchOff()
             logger.info("追加入口关闭~")
-
-            if (isLeaderCurrent) {
-                CommitProcessManager.discardInvalidMsg()
-            }
+//
+//            if (isLeaderCurrent) {
+//                CommitProcessManager.discardInvalidMsg()
+//            }
         }
 
         /**
@@ -156,6 +160,8 @@ object LogManager {
             }
 
             val log = maybeRoll(gen, false)
+
+            // 追加到磁盘
             log.append(operation, offset)
         }
     }

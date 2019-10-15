@@ -29,7 +29,7 @@ public abstract class OperationSet {
     public static int messageSetSize(Collection<Operation> operationCollection) {
         return operationCollection.stream()
                                   .map(OperationSet::entrySize)
-                                  .reduce((i1, i2) -> i1 + i2)
+                                  .reduce(Integer::sum)
                                   .orElse(0);
     }
 

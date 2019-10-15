@@ -9,6 +9,7 @@ import java.io.File
 import java.io.RandomAccessFile
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
+import kotlin.math.log
 
 /**
  * Created by Anur IjuoKaruKas on 2019/7/15
@@ -19,7 +20,7 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
     private val logger = LoggerFactory.getLogger(this::class.java)
 
-    private val dir = File(LogConfiguration.getBaseDir()!!)
+    private val dir = File(LogConfiguration.getBaseDir())
 
     private val offsetFile = File(LogConfiguration.getBaseDir(), "commitOffset.temp")
 
@@ -29,11 +30,16 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
     init {
         dir.mkdirs()
-        offsetFile.createNewFile()
+        val createNewFile = offsetFile.createNewFile()
         val raf = RandomAccessFile(offsetFile, "rw")
         raf.setLength((8 + 8).toLong())
 
         mmap = raf.channel.map(FileChannel.MapMode.READ_WRITE, 0, (8 + 8).toLong())
+
+        if (createNewFile) {
+            logger.info("节点还未建立提交进度管理文件将创建，将创建默认进度管理文件")
+            cover(GenerationAndOffset.INVALID)
+        }
 
         load()
         discardInvalidMsg()
@@ -56,6 +62,8 @@ object CommitProcessManager : ReentrantReadWriteLocker() {
 
 
     /**
+     * TODO 初始值为 0 0 可能会有问题
+     *
      * 加载 commitOffset.temp，获取集群提交进度（仅 leader 有效）
      */
     fun load(): GenerationAndOffset {

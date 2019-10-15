@@ -8,10 +8,13 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.LogConfiguration;
+import com.anur.core.elect.model.GenerationAndOffset;
 import com.anur.core.lock.rentrant.ReentrantLocker;
 import com.anur.core.struct.base.Operation;
+import com.anur.engine.EngineFacade;
 import com.anur.exception.LogException;
 import com.anur.io.hanalog.common.LogCommon;
+import com.anur.io.hanalog.common.OperationAndGAO;
 import com.anur.io.hanalog.common.OperationAndOffset;
 import com.anur.io.hanalog.common.PreLogMeta;
 import com.anur.io.hanalog.operationset.ByteBufferOperationSet;
@@ -138,6 +141,7 @@ public class Log extends ReentrantLocker {
 
         ByteBufferOperationSet byteBufferOperationSet = new ByteBufferOperationSet(operation, offset);
         try {
+            // 追加到磁盘
             logSegment.append(offset, byteBufferOperationSet);
         } catch (IOException e) {
             throw new LogException("写入日志文件失败：" + operation.toString());
@@ -145,10 +149,13 @@ public class Log extends ReentrantLocker {
         currentOffset = offset;
 
         FlowSpeedStat.INSTANCE.incr(FlowSpeedStat.INSTANCE.getLogAppend(), 1);
+
+        // ×××× 追加到引擎
+        EngineFacade.INSTANCE.append(new OperationAndGAO(operation, new GenerationAndOffset(generation, offset)));
     }
 
     /**
-     * 将多个操作添加到日志文件中
+     * 将多个操作添加到日志文件中（来自预日志）
      */
     public void append(PreLogMeta preLogMeta, long startOffset, long endOffset) {
 
@@ -175,7 +182,6 @@ public class Log extends ReentrantLocker {
         currentOffset = endOffset;
 
         logger.debug(String.format("追加日志文件段 start：%s end：%s 完毕，当前 current：%s，共追加 %s 条操作日志", startOffset, endOffset, currentOffset, count));
-        FlowSpeedStat.INSTANCE.incr(FlowSpeedStat.INSTANCE.getLogAppend(), count);
     }
 
     /**

@@ -3,6 +3,7 @@ package com.anur.engine.trx.lock
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Created by Anur IjuoKaruKas on 2019/9/26
@@ -14,12 +15,12 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 标识 key 上的锁
      */
-    private val lockKeeper: MutableMap<String, MutableList<Long>> = mutableMapOf()
+    private val lockKeeper: ConcurrentHashMap<String, MutableList<Long>> = ConcurrentHashMap()
 
     /**
      * 存储那些需要被唤醒的执行内容
      */
-    private val trxHolderMap: MutableMap<Long, TrxHolder> = mutableMapOf()
+    private val trxHolderMap: ConcurrentHashMap<Long, TrxHolder> = ConcurrentHashMap()
 
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)
@@ -46,7 +47,6 @@ object TrxFreeQueuedSynchronizer {
         }
     }
 
-
     /**
      * 释放 trxId 下的所有键锁
      */
@@ -56,10 +56,10 @@ object TrxFreeQueuedSynchronizer {
             logger.error("事务未创建或者已经提交，trxId: $trxId")
             return
         }
-
         val trxHolder = trxHolderMap[trxId]!!
+
         if (trxHolder.undoEvent.isNotEmpty()) {
-            logger.debug("事物 $trxId 还在阻塞等待唤醒，暂无法释放！故释放操作将挂起，等待唤醒。")
+            logger.trace("事物 $trxId 还在阻塞等待唤醒，暂无法释放！故释放操作将挂起，等待唤醒。")
             trxHolder.doWhileCommit = doWhileCommit
         } else {
             doWhileCommit.invoke()
@@ -79,13 +79,17 @@ object TrxFreeQueuedSynchronizer {
                 }
             }
 
-            logger.debug("事务 $trxId 已经成功释放锁")
+            logger.trace("事务 $trxId 已经成功释放锁")
 
             // 注销此事务
             trxHolderMap.remove(trxId)
 
             // 通知其他事务
             holdKeys.forEach { notify(it) }
+
+            if (lockKeeper.isEmpty()) {
+                logger.info("全部释放")
+            }
         }
     }
 
@@ -107,7 +111,7 @@ object TrxFreeQueuedSynchronizer {
 
             // 如果当前被唤醒的事务已经执行完所有挂起的事务了，则直接将其释放
             if (trxHolder.undoEvent.isEmpty()) trxHolder.doWhileCommit?.also {
-                logger.debug("挂起的事务操作 trxId: $first 的所有待执行任务已经执行完毕，且已经注册了释放事件，将触发此释放事件。")
+                logger.trace("挂起的事务操作 trxId: $first 的所有待执行任务已经执行完毕，且已经注册了释放事件，将触发此释放事件。")
                 release(first, it)
             }
         }
