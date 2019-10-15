@@ -15,7 +15,7 @@ import java.util.TreeMap
  */
 object MemoryMVCCStorageUnCommittedPart {
 
-    val treeMap = TreeMap<String, VerAndHanabiEntry>()
+    private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
     fun commonOperate(trxId: Long, key: String, value: String, operateType: HanabiEntry.Companion.OperateType) {
         if (treeMap.containsKey(key)) {
