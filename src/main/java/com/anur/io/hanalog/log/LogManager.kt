@@ -33,7 +33,7 @@ object LogManager {
     /** 显式锁 */
     private val appendLock = ReentrantReadWriteLocker()
 
-    /** 显式锁 */
+    /** 隐式锁 */
     private val explicitLock = ReentrantReadWriteLocker()
 
     /** 管理所有 Log  */

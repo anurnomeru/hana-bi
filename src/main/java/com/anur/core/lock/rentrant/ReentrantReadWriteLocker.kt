@@ -42,7 +42,6 @@ open class ReentrantReadWriteLocker : ReentrantReadWriteLock() {
 
             if (switcher > 0) {
                 switch.await()
-                error("喵喵喵！！！！！！！！！！！！")
             }
 
             doSomething.invoke()
@@ -97,6 +96,11 @@ open class ReentrantReadWriteLocker : ReentrantReadWriteLock() {
         val t: T
         try {
             readLock.lock()
+
+            if (switcher > 0) {
+                switch.await()
+            }
+
             t = supplier.get()
         } finally {
             readLock.unlock()
@@ -111,6 +115,11 @@ open class ReentrantReadWriteLocker : ReentrantReadWriteLock() {
         val t: T
         try {
             readLock.lock()
+
+            if (switcher > 0) {
+                switch.await()
+            }
+
             t = supplier.get()
         } finally {
             readLock.unlock()
@@ -125,6 +134,11 @@ open class ReentrantReadWriteLocker : ReentrantReadWriteLock() {
     fun readLocker(doSomething: () -> Unit) {
         try {
             readLock.lock()
+
+            if (switcher > 0) {
+                switch.await()
+            }
+
             doSomething.invoke()
         } finally {
             readLock.unlock()
