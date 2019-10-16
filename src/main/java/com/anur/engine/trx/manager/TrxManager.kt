@@ -60,20 +60,27 @@ object TrxManager {
      */
     class TrxSegment(anyElse: Long) {
 
-        private val trxBitMap = 0L
+        private var trxBitMap = 0
+
+        private var minTrxId = anyElse
 
         val start: Long = anyElse / interval
 
         fun add(trxId: Long) {
-            val index = (trxId - 1) and interval
+            val index = ((trxId - 1) and interval).toInt()
+            val mask = 1.shl(index)
+            trxBitMap = trxBitMap and mask
 
-
-
-            trxBitMap[index.toInt()] = TrxSegmentEnum.COMMITTED.sign
+            if (trxId < minTrxId) {
+                minTrxId = trxId
+            }
         }
 
         fun release(trxId: Long) {
-            val index = trxId % interval
+            val index = ((trxId - 1) and interval).toInt()
+            val mask = 1.shl(index)
+
+
             trxBitMap[index.toInt()] = TrxSegmentEnum.UN_COMMIT.sign
         }
 
