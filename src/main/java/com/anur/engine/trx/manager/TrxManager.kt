@@ -50,7 +50,7 @@ object TrxManager {
         locker.writeLocker {
             val index = anyElse / interval
             if (!waterHolder.contains(index)) waterHolder[index] = TrxSegment(anyElse)
-            waterHolder[index]!!.add(anyElse)
+            waterHolder[index]!!.acquire(anyElse)
         }
     }
 
@@ -66,7 +66,7 @@ object TrxManager {
 
         val start: Long = anyElse / interval
 
-        fun add(trxId: Long) {
+        fun acquire(trxId: Long) {
             val index = ((trxId - 1) and interval).toInt()
             val mask = 1.shl(index)
             trxBitMap = trxBitMap and mask
@@ -79,9 +79,7 @@ object TrxManager {
         fun release(trxId: Long) {
             val index = ((trxId - 1) and interval).toInt()
             val mask = 1.shl(index)
-
-
-            trxBitMap[index.toInt()] = TrxSegmentEnum.UN_COMMIT.sign
+            trxBitMap = mask.inv() and trxBitMap
         }
 
         override fun equals(other: Any?): Boolean {
@@ -102,5 +100,10 @@ object TrxManager {
 }
 
 fun main() {
+    val seg = TrxManager.TrxSegment(11)
+    seg.acquire(12)
+    seg.acquire(13)
+    seg.release(12)
 
+    println()
 }
