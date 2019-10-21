@@ -6,7 +6,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.*
 import java.util.function.Supplier
-
+import kotlin.math.absoluteValue
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/15
@@ -15,32 +15,39 @@ import java.util.function.Supplier
  */
 object TrxManager {
 
-    private const val interval = 64L
-    private const val intervalMinusOne = 63
+    const val Interval = 64L
+    const val IntervalMinusOne = 63
+    const val StartTrx: Long = -500
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
 
     private val locker = ReentrantReadWriteLocker()
 
-    private var nowTrx: Long = -1L
-//            Long.MIN_VALUE
+    private var nowTrx: Long = StartTrx
 
     private val waterHolder = TreeMap<Long, TrxSegment>(kotlin.Comparator { o1, o2 -> o1.compareTo(o2) })
+
+    fun genSegmentHead(trxId: Long): Long {
+        val result = trxId / Interval
+
+        return when {
+            trxId < 0 -> result - 1
+            else -> result
+        }
+    }
 
     /**
      * 申请一个递增的事务id
      */
     fun allocate(): Long {
         return locker.writeLockSupplierCompel(Supplier {
-            val trx = nowTrx + 1
-            nowTrx = trx
-
-            val index = trx / interval
+            val trx = nowTrx
+            nowTrx++
+            val head = genSegmentHead(trx)
 
             // 将事务扔进水位
-            if (!waterHolder.contains(index)) waterHolder[index] = TrxSegment(trx)
-            waterHolder[index]!!.acquire(trx)
-
+            if (!waterHolder.contains(head)) waterHolder[head] = TrxSegment(trx)
+            waterHolder[head]!!.acquire(trx)
             return@Supplier trx
         })
     }
@@ -50,14 +57,14 @@ object TrxManager {
      */
     fun releaseTrx(anyElse: Long) {
         locker.writeLocker() {
-            val index = anyElse / interval
+            val head = genSegmentHead(anyElse)
 
-            when (val trxSegment = waterHolder.get(index)) {
+            when (val trxSegment = waterHolder.get(head)) {
                 null -> logger.error("重复释放事务？？？？？？？？？？？？？？？？？？？？？")
                 else -> {
                     trxSegment.release(anyElse)
-                    if (trxSegment.trxBitMap == 0L && waterHolder.higherEntry(index) != null) {
-                        waterHolder.remove(index)
+                    if (trxSegment.trxBitMap == 0L && waterHolder.higherEntry(head) != null) {
+                        waterHolder.remove(head)
                     }
                 }
             }
@@ -85,7 +92,7 @@ object TrxManager {
 
         var minIndex = -1
 
-        val start: Long = anyElse - anyElse % interval
+        val start: Long = genSegmentHead(anyElse) * Interval
 
         init {
             acquire(anyElse)
@@ -96,18 +103,18 @@ object TrxManager {
         }
 
         fun acquire(trxId: Long) {
-            val index = ((interval - 1) and trxId).toInt()
+            val index = ((Interval - 1) and trxId).toInt()
             val mask = 1L.shl(index)
             trxBitMap = trxBitMap or mask
         }
 
         fun release(trxId: Long) {
-            val index = ((interval - 1) and trxId).toInt()
+            val index = ((Interval - 1) and trxId).toInt()
             val mask = 1L.shl(index)
             trxBitMap = mask.inv() and trxBitMap
 
             // 计算当前最小的 index
-            if (trxBitMap == 0L && index == intervalMinusOne) {
+            if (trxBitMap == 0L && index == IntervalMinusOne) {
                 minIndex = index
             } else {
                 for (i in 0 until 64) {
@@ -135,13 +142,16 @@ fun main() {
 //    }
 //    println(TrxManager.minTrx())
 
-    for (i in 0 until 100036) {
+    for (i in 0 until 123456) {
         TrxManager.allocate()
     }
     println(TrxManager.minTrx())
 
-    for (i in 0 until 100000) {
-        TrxManager.releaseTrx(i.toLong())
+    for (i in 0 until 200) {
+        TrxManager.releaseTrx(TrxManager.StartTrx + i.toLong())
     }
     println(TrxManager.minTrx())
+    println(TrxManager.minTrx() - (TrxManager.StartTrx))
+
+
 }
