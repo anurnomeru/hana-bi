@@ -8,6 +8,7 @@ import java.lang.StringBuilder
 import java.util.*
 import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
+import kotlin.math.min
 
 
 /**
@@ -72,7 +73,8 @@ object TrxManager {
      */
     fun minTrx(): Long {
         return locker.readLockSupplierCompel(Supplier {
-            return@Supplier waterHolder.firstEntry()?.value?.minTrxId ?: nowTrx
+            val trxSegment = waterHolder.firstEntry()?.value
+            return@Supplier trxSegment?.minTrx() ?: nowTrx
         })
     }
 
@@ -85,19 +87,25 @@ object TrxManager {
         @Volatile
         var trxBitMap: Long = 0
 
-        var minTrxId = anyElse
+        var minIndex = 0
 
         val start: Long = anyElse / interval
+
+        init {
+            acquire(anyElse)
+        }
+
+        fun minTrx(): Long {
+            return start + minIndex
+        }
 
         fun acquire(trxId: Long) {
             val index = ((interval - 1) and trxId).toInt()
             val mask = 1L.shl(index)
             trxBitMap = trxBitMap or mask
 
-            longToByteStr(trxBitMap)
-
-            if (trxId < minTrxId) {
-                minTrxId = trxId
+            if (minIndex < index) {
+                minIndex = index
             }
         }
 
@@ -106,7 +114,12 @@ object TrxManager {
             val mask = 1L.shl(index)
             trxBitMap = mask.inv() and trxBitMap
 
-            longToByteStr(trxBitMap)
+            for (i in 0 until 64) {
+                val mask = 1L.shl(i)
+                if (mask and trxBitMap == mask) {
+                    minIndex = i
+                }
+            }
         }
 
         override fun equals(other: Any?): Boolean {
@@ -126,31 +139,14 @@ object TrxManager {
     }
 }
 
-fun longToByteStr(l: Long) {
-    val allZero = "000000000000000000000000000000000000000000000000000000000000000000000000"
-    val toString = device2Then(l, StringBuilder()).toString()
-    println(allZero.substring(toString.length) + toString)
-}
-
-fun device2Then(l: Long, sb: StringBuilder): StringBuilder {
-    val result = l / 2
-    val nogoru = l - result * 2
-
-    if (result != 0L) {
-        device2Then(result, sb)
-    }
-
-    sb.append(nogoru)
-    return sb
-}
 
 fun main() {
-    for (i in 0 until 65) {
+    for (i in 0 until 100) {
         TrxManager.allocate()
     }
     println(TrxManager.minTrx())
 
-    for (i in 0 until 65) {
+    for (i in 0 until 100) {
         TrxManager.releaseTrx(i.toLong())
     }
     println(TrxManager.minTrx())
