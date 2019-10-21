@@ -4,6 +4,7 @@ import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
 
 
@@ -20,25 +21,39 @@ object TrxManager {
 
     private val locker = ReentrantReadWriteLocker()
 
-    private val waterHolder = mutableMapOf<Long, TrxSegment>()
-
     private var nowTrx: Long = Long.MIN_VALUE
 
+    private val waterHolder = ConcurrentSkipListMap<Long, TrxSegment>()
+
+    /**
+     * 申请一个递增的事务id
+     */
     fun allocate(): Long {
-        return locker.writeLockSupplierCompel(Supplier {
-            nowTrx += 1
-            intoWaterHolder(nowTrx)
-            return@Supplier nowTrx
+        val trx = locker.writeLockSupplierCompel(Supplier {
+            val trx = nowTrx + 1
+            nowTrx = trx
+
+            val index = trx / interval
+
+            // 将事务扔进水位
+            if (!waterHolder.contains(index)) waterHolder[index] = TrxSegment(trx)
+            waterHolder[index]!!.acquire(trx)
+
+            return@Supplier trx
         })
+
+        return trx
     }
 
-    fun commitFromWaterHolder(anyElse: Long) {
+    /**
+     * 释放一个事务
+     */
+    fun releaseTrx(anyElse: Long) {
         locker.writeLocker() {
             val index = anyElse / interval
-            val trxSegment = waterHolder[index]
 
-            when (trxSegment) {
-                null -> logger.error("重复提交？？？？？？？？？？？？？？？？？？？？？")
+            when (val trxSegment = waterHolder[index]) {
+                null -> logger.error("重复释放事务？？？？？？？？？？？？？？？？？？？？？")
                 else -> {
                     trxSegment.release(anyElse)
                 }
@@ -46,14 +61,9 @@ object TrxManager {
         }
     }
 
-    fun intoWaterHolder(anyElse: Long) {
-        locker.writeLocker {
-            val index = anyElse / interval
-            if (!waterHolder.contains(index)) waterHolder[index] = TrxSegment(anyElse)
-            waterHolder[index]!!.acquire(anyElse)
-        }
-    }
+    fun removeWaterHolderIfNeed() {
 
+    }
 
     /**
      * 为了避免事务太多，列表太大，故采用分段
@@ -67,9 +77,9 @@ object TrxManager {
         val start: Long = anyElse / interval
 
         fun acquire(trxId: Long) {
-            val index = ((trxId - 1) and interval).toInt()
+            val index = ((interval - 1) and trxId).toInt()
             val mask = 1.shl(index)
-            trxBitMap = trxBitMap and mask
+            trxBitMap = trxBitMap or mask
 
             if (trxId < minTrxId) {
                 minTrxId = trxId
@@ -77,7 +87,7 @@ object TrxManager {
         }
 
         fun release(trxId: Long) {
-            val index = ((trxId - 1) and interval).toInt()
+            val index = ((interval - 1) and trxId).toInt()
             val mask = 1.shl(index)
             trxBitMap = mask.inv() and trxBitMap
         }
@@ -97,13 +107,4 @@ object TrxManager {
             return start.hashCode()
         }
     }
-}
-
-fun main() {
-    val seg = TrxManager.TrxSegment(11)
-    seg.acquire(12)
-    seg.acquire(13)
-    seg.release(12)
-
-    println()
 }
