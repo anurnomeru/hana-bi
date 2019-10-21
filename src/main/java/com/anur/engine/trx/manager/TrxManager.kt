@@ -4,11 +4,8 @@ import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.StringBuilder
 import java.util.*
-import java.util.concurrent.ConcurrentSkipListMap
 import java.util.function.Supplier
-import kotlin.math.min
 
 
 /**
@@ -19,6 +16,7 @@ import kotlin.math.min
 object TrxManager {
 
     private const val interval = 64L
+    private const val intervalMinusOne = 63
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
 
@@ -33,7 +31,7 @@ object TrxManager {
      * 申请一个递增的事务id
      */
     fun allocate(): Long {
-        val trx = locker.writeLockSupplierCompel(Supplier {
+        return locker.writeLockSupplierCompel(Supplier {
             val trx = nowTrx + 1
             nowTrx = trx
 
@@ -45,8 +43,6 @@ object TrxManager {
 
             return@Supplier trx
         })
-
-        return trx
     }
 
     /**
@@ -87,26 +83,22 @@ object TrxManager {
         @Volatile
         var trxBitMap: Long = 0
 
-        var minIndex = 0
+        var minIndex = -1
 
-        val start: Long = anyElse / interval
+        val start: Long = anyElse - anyElse % interval
 
         init {
             acquire(anyElse)
         }
 
         fun minTrx(): Long {
-            return start + minIndex
+            return start + minIndex + 1
         }
 
         fun acquire(trxId: Long) {
             val index = ((interval - 1) and trxId).toInt()
             val mask = 1L.shl(index)
             trxBitMap = trxBitMap or mask
-
-            if (minIndex < index) {
-                minIndex = index
-            }
         }
 
         fun release(trxId: Long) {
@@ -114,39 +106,41 @@ object TrxManager {
             val mask = 1L.shl(index)
             trxBitMap = mask.inv() and trxBitMap
 
-            for (i in 0 until 64) {
-                val mask = 1L.shl(i)
-                if (mask and trxBitMap == mask) {
-                    minIndex = i
+            // 计算当前最小的 index
+            if (trxBitMap == 0L && index == intervalMinusOne) {
+                minIndex = index
+            } else {
+                for (i in 0 until 64) {
+                    val minIndexNeo = 1L.shl(i)
+
+                    if (minIndexNeo and trxBitMap == minIndexNeo) {
+                        minIndex = i - 1
+                        break
+                    }
                 }
             }
-        }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as TrxSegment
-
-            if (start != other.start) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            return start.hashCode()
         }
     }
 }
 
 
 fun main() {
-    for (i in 0 until 100) {
+//    for (i in 0 until 100036) {
+//        TrxManager.allocate()
+//    }
+//    println(TrxManager.minTrx())
+//
+//    for (i in 0 until 100000) {
+//        TrxManager.releaseTrx(i.toLong())
+//    }
+//    println(TrxManager.minTrx())
+
+    for (i in 0 until 100036) {
         TrxManager.allocate()
     }
     println(TrxManager.minTrx())
 
-    for (i in 0 until 100) {
+    for (i in 0 until 100000) {
         TrxManager.releaseTrx(i.toLong())
     }
     println(TrxManager.minTrx())
