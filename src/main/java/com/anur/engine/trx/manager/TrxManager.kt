@@ -2,8 +2,10 @@ package com.anur.engine.trx.manager
 
 import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
+import com.anur.engine.trx.manager.TrxManager.StartTrx
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
+import java.lang.StringBuilder
 import java.util.*
 import java.util.function.Supplier
 import kotlin.math.absoluteValue
@@ -17,7 +19,7 @@ object TrxManager {
 
     const val Interval = 64L
     const val IntervalMinusOne = 63
-    const val StartTrx: Long = -500
+    const val StartTrx: Long = -190
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
 
@@ -28,11 +30,10 @@ object TrxManager {
     private val waterHolder = TreeMap<Long, TrxSegment>(kotlin.Comparator { o1, o2 -> o1.compareTo(o2) })
 
     fun genSegmentHead(trxId: Long): Long {
-        val result = trxId / Interval
-
-        return when {
-            trxId < 0 -> result - 1
-            else -> result
+        return if (trxId < 0) {
+            (trxId.absoluteValue - 1) / Interval
+        } else {
+            trxId / Interval
         }
     }
 
@@ -58,8 +59,7 @@ object TrxManager {
     fun releaseTrx(anyElse: Long) {
         locker.writeLocker() {
             val head = genSegmentHead(anyElse)
-
-            when (val trxSegment = waterHolder.get(head)) {
+            when (val trxSegment = waterHolder[head]) {
                 null -> logger.error("重复释放事务？？？？？？？？？？？？？？？？？？？？？")
                 else -> {
                     trxSegment.release(anyElse)
@@ -92,6 +92,8 @@ object TrxManager {
 
         var minIndex = -1
 
+        var minIndexAc = -1
+
         val start: Long = genSegmentHead(anyElse) * Interval
 
         init {
@@ -103,19 +105,34 @@ object TrxManager {
         }
 
         fun acquire(trxId: Long) {
-            val index = ((Interval - 1) and trxId).toInt()
+            val index = calcIndex(trxId)
             val mask = 1L.shl(index)
             trxBitMap = trxBitMap or mask
+
+            if (index < minIndexAc || minIndexAc == -1) {
+                minIndexAc = index
+            }
+
+            toBinaryStr(trxBitMap)
         }
 
         fun release(trxId: Long) {
-            val index = ((Interval - 1) and trxId).toInt()
+            if (trxId == -301L) {
+                println()
+            }
+
+            val index = calcIndex(trxId)
             val mask = 1L.shl(index)
             trxBitMap = mask.inv() and trxBitMap
 
             // 计算当前最小的 index
             if (trxBitMap == 0L && index == IntervalMinusOne) {
                 minIndex = index
+            } else if (minIndex != -1 && trxBitMap == 0L) {
+                if (minIndex != minIndexAc) {
+                    logger.error("触发了！！ ${minIndex} - ${minIndexAc}")
+                }
+                minIndex = minIndexAc
             } else {
                 for (i in 0 until 64) {
                     val minIndexNeo = 1L.shl(i)
@@ -126,22 +143,36 @@ object TrxManager {
                     }
                 }
             }
+
+            toBinaryStr(trxBitMap)
         }
+
+        private fun calcIndex(trxId: Long): Int {
+            return ((Interval - 1) and trxId).toInt()
+        }
+    }
+}
+
+fun toBinaryStr(long: Long) {
+    println(toBinaryStrIter(long, 63, StringBuilder()).toString())
+}
+
+fun toBinaryStrIter(long: Long, index: Int, appender: StringBuilder): StringBuilder {
+    if (index == -1) {
+        return appender
+    } else {
+        var mask = 1L shl index
+        if (mask and long == mask) {
+            appender.append("1")
+        } else {
+            appender.append("0")
+        }
+        return toBinaryStrIter(long, index - 1, appender)
     }
 }
 
 
 fun main() {
-//    for (i in 0 until 100036) {
-//        TrxManager.allocate()
-//    }
-//    println(TrxManager.minTrx())
-//
-//    for (i in 0 until 100000) {
-//        TrxManager.releaseTrx(i.toLong())
-//    }
-//    println(TrxManager.minTrx())
-
     for (i in 0 until 123456) {
         TrxManager.allocate()
     }
