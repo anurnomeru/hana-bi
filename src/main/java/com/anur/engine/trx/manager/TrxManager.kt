@@ -2,10 +2,8 @@ package com.anur.engine.trx.manager
 
 import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
-import com.anur.engine.trx.manager.TrxManager.StartTrx
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.lang.StringBuilder
 import java.util.*
 import java.util.function.Supplier
 import kotlin.math.absoluteValue
@@ -13,25 +11,22 @@ import kotlin.math.absoluteValue
 /**
  * Created by Anur IjuoKaruKas on 2019/10/15
  *
- * 事务管理器
+ * 事务管理器，包括获取自增的事务id，释放事务id，获取当前活跃的最小事务等
  */
 object TrxManager {
 
     const val Interval = 64L
     const val IntervalMinusOne = 63
-    const val StartTrx: Long = -333
+    const val StartTrx: Long = Long.MIN_VALUE
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
-
     private val locker = ReentrantReadWriteLocker()
-
     private var nowTrx: Long = StartTrx
-
     private val waterHolder = TreeMap<Long, TrxSegment>(kotlin.Comparator { o1, o2 -> o1.compareTo(o2) })
 
     fun genSegmentHead(trxId: Long): Long {
         return if (trxId < 0) {
-            -((trxId.absoluteValue - 1) / Interval + 1)
+            -((trxId + 1).absoluteValue / Interval + 1)
         } else {
             trxId / Interval
         }
@@ -43,7 +38,12 @@ object TrxManager {
     fun allocate(): Long {
         return locker.writeLockSupplierCompel(Supplier {
             val trx = nowTrx
-            nowTrx++
+            if (trx == Long.MAX_VALUE) {
+                nowTrx = Long.MIN_VALUE
+            } else {
+                nowTrx++
+            }
+
             val head = genSegmentHead(trx)
 
             // 将事务扔进水位
@@ -112,8 +112,6 @@ object TrxManager {
             if (index < minIndexAc || minIndexAc == -1) {
                 minIndexAc = index
             }
-
-            toBinaryStr(trxBitMap)
         }
 
         fun release(trxId: Long) {
@@ -143,30 +141,10 @@ object TrxManager {
                     }
                 }
             }
-
-            toBinaryStr(trxBitMap)
         }
 
         private fun calcIndex(trxId: Long): Int {
             return ((Interval - 1) and trxId).toInt()
         }
-    }
-}
-
-fun toBinaryStr(long: Long) {
-//    println(toBinaryStrIter(long, 63, StringBuilder()).toString())
-}
-
-fun toBinaryStrIter(long: Long, index: Int, appender: StringBuilder): StringBuilder {
-    if (index == -1) {
-        return appender
-    } else {
-        var mask = 1L shl index
-        if (mask and long == mask) {
-            appender.append("1")
-        } else {
-            appender.append("0")
-        }
-        return toBinaryStrIter(long, index - 1, appender)
     }
 }
