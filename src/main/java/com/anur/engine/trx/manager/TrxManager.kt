@@ -19,7 +19,7 @@ object TrxManager {
 
     const val Interval = 64L
     const val IntervalMinusOne = 63
-    const val StartTrx: Long = -190
+    const val StartTrx: Long = -333
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
 
@@ -31,7 +31,7 @@ object TrxManager {
 
     fun genSegmentHead(trxId: Long): Long {
         return if (trxId < 0) {
-            (trxId.absoluteValue - 1) / Interval
+            -((trxId.absoluteValue - 1) / Interval + 1)
         } else {
             trxId / Interval
         }
@@ -154,7 +154,7 @@ object TrxManager {
 }
 
 fun toBinaryStr(long: Long) {
-    println(toBinaryStrIter(long, 63, StringBuilder()).toString())
+//    println(toBinaryStrIter(long, 63, StringBuilder()).toString())
 }
 
 fun toBinaryStrIter(long: Long, index: Int, appender: StringBuilder): StringBuilder {
@@ -169,20 +169,4 @@ fun toBinaryStrIter(long: Long, index: Int, appender: StringBuilder): StringBuil
         }
         return toBinaryStrIter(long, index - 1, appender)
     }
-}
-
-
-fun main() {
-    for (i in 0 until 123456) {
-        TrxManager.allocate()
-    }
-    println(TrxManager.minTrx())
-
-    for (i in 0 until 200) {
-        TrxManager.releaseTrx(TrxManager.StartTrx + i.toLong())
-    }
-    println(TrxManager.minTrx())
-    println(TrxManager.minTrx() - (TrxManager.StartTrx))
-
-
 }
