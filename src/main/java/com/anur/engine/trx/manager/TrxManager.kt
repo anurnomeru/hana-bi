@@ -19,15 +19,36 @@ object TrxManager {
     const val IntervalMinusOne = 63
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
-    private val locker = ReentrantReadWriteLocker()
 
     private val waterHolder = TreeMap<Long, TrxSegment>(kotlin.Comparator { o1, o2 -> o1.compareTo(o2) })
+    private val lockHolder = mutableMapOf<Long, ReentrantReadWriteLocker>()
+    private val recycler = mutableListOf<ReentrantReadWriteLocker>()
 
-    fun genSegmentHead(trxId: Long): Long {
-        return if (trxId < 0) {
-            -((trxId + 1).absoluteValue / Interval + 1)
-        } else {
-            trxId / Interval
+    /**
+     * 分段锁获取
+     */
+    private fun acquireLocker(head: Long): ReentrantReadWriteLocker {
+        return synchronized(this) {
+            lockHolder.compute(head) { _, lock ->
+                lock ?: let {
+                    return@let if (recycler.size > 0) {
+                        val first = recycler.first()
+                        recycler.remove(first)
+                        first
+                    } else {
+                        ReentrantReadWriteLocker()
+                    }
+                }
+            }
+        }!!
+    }
+
+    /**
+     * 分段锁释放
+     */
+    private fun releaseLocker(head: Long) {
+        synchronized(this) {
+            lockHolder.remove(head)?.let { recycler.add(it) }
         }
     }
 
@@ -35,9 +56,8 @@ object TrxManager {
      * 申请一个递增的事务id
      */
     fun acquireTrx(anyElse: Long): Long {
-        return locker.writeLockSupplierCompel(Supplier {
-            val head = genSegmentHead(anyElse)
-
+        val head = genSegmentHead(anyElse)
+        return acquireLocker(head).writeLockSupplierCompel(Supplier {
             // 将事务扔进水位
             if (!waterHolder.contains(head)) waterHolder[head] = TrxSegment(anyElse)
             waterHolder[head]!!.acquire(anyElse)
@@ -49,8 +69,9 @@ object TrxManager {
      * 释放一个事务
      */
     fun releaseTrx(anyElse: Long) {
-        locker.writeLocker() {
-            val head = genSegmentHead(anyElse)
+        val head = genSegmentHead(anyElse)
+
+        acquireLocker(head).writeLocker() {
             when (val trxSegment = waterHolder[head]) {
                 null -> logger.error("重复释放事务？？？？？？？？？？？？？？？？？？？？？")
                 else -> {
@@ -60,6 +81,7 @@ object TrxManager {
                     }
                 }
             }
+            releaseLocker(head)
         }
     }
 
@@ -67,12 +89,19 @@ object TrxManager {
      * 获取的最小的有效的事务
      */
     fun minTrx(): Long {
-        return locker.readLockSupplierCompel(Supplier {
-            val trxSegment = waterHolder.firstEntry()?.value
-            return@Supplier trxSegment?.minTrx() ?: TrxAllocator.StartTrx
-        })
+        return waterHolder.firstEntry()?.value?.minTrx() ?: TrxAllocator.StartTrx
     }
 
+    /**
+     * 算出每一个段的“段头”
+     */
+    fun genSegmentHead(trxId: Long): Long {
+        return if (trxId < 0) {
+            -((trxId + 1).absoluteValue / Interval + 1)
+        } else {
+            trxId / Interval
+        }
+    }
 
     /**
      * 为了避免事务太多，列表太大，故采用分段
