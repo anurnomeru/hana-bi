@@ -7,6 +7,4 @@ package com.anur.engine.trx.manager
 enum class TrxSegmentEnum(val sign: Byte) {
     UN_COMMIT(0),
     COMMITTED(1);
-
-
 }
