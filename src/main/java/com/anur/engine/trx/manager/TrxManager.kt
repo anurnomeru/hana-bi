@@ -17,11 +17,10 @@ object TrxManager {
 
     const val Interval = 64L
     const val IntervalMinusOne = 63
-    const val StartTrx: Long = Long.MIN_VALUE
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
     private val locker = ReentrantReadWriteLocker()
-    private var nowTrx: Long = StartTrx
+
     private val waterHolder = TreeMap<Long, TrxSegment>(kotlin.Comparator { o1, o2 -> o1.compareTo(o2) })
 
     fun genSegmentHead(trxId: Long): Long {
@@ -35,21 +34,14 @@ object TrxManager {
     /**
      * 申请一个递增的事务id
      */
-    fun allocate(): Long {
+    fun acquireTrx(anyElse: Long): Long {
         return locker.writeLockSupplierCompel(Supplier {
-            val trx = nowTrx
-            if (trx == Long.MAX_VALUE) {
-                nowTrx = Long.MIN_VALUE
-            } else {
-                nowTrx++
-            }
-
-            val head = genSegmentHead(trx)
+            val head = genSegmentHead(anyElse)
 
             // 将事务扔进水位
-            if (!waterHolder.contains(head)) waterHolder[head] = TrxSegment(trx)
-            waterHolder[head]!!.acquire(trx)
-            return@Supplier trx
+            if (!waterHolder.contains(head)) waterHolder[head] = TrxSegment(anyElse)
+            waterHolder[head]!!.acquire(anyElse)
+            return@Supplier anyElse
         })
     }
 
@@ -77,7 +69,7 @@ object TrxManager {
     fun minTrx(): Long {
         return locker.readLockSupplierCompel(Supplier {
             val trxSegment = waterHolder.firstEntry()?.value
-            return@Supplier trxSegment?.minTrx() ?: nowTrx
+            return@Supplier trxSegment?.minTrx() ?: TrxAllocator.StartTrx
         })
     }
 

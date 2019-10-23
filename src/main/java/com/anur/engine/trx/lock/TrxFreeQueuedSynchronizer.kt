@@ -15,7 +15,7 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 标识 key 上的锁
      */
-    private val lockKeeper: ConcurrentHashMap<String, MutableList<Long>> = ConcurrentHashMap()
+    private val lockKeeper: ConcurrentHashMap<String, LinkedList<Long>> = ConcurrentHashMap()
 
     /**
      * 存储那些需要被唤醒的执行内容
