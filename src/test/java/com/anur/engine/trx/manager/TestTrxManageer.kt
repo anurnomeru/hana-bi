@@ -7,16 +7,16 @@ import java.lang.StringBuilder
  * Created by Anur IjuoKaruKas on 2019/10/22
  */
 fun main() {
-    for (i in 0 until 123456) {
-        TrxManager.allocate()
+    for (i in 0 until 123456L) {
+        TrxManager.acquireTrx(i)
     }
     println(TrxManager.minTrx())
 
-    for (i in 0 until 666) {
-        TrxManager.releaseTrx(TrxManager.StartTrx + i.toLong())
+    for (i in 0 until 666L) {
+        TrxManager.releaseTrx(i)
     }
     println(TrxManager.minTrx())
-    println(TrxManager.minTrx() - (TrxManager.StartTrx))
+    println(TrxManager.minTrx() - (0))
 }
 
 
