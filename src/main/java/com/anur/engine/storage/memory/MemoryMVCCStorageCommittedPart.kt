@@ -24,8 +24,4 @@ object MemoryMVCCStorageCommittedPart {
         }
         holdKeysMapping[trxId] = pairs
     }
-
-    fun flushToCommittedPart(trxId: Long, holdKeys: MutableSet<String>) {
-
-    }
 }

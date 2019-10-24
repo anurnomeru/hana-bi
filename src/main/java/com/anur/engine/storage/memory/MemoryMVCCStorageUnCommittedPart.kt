@@ -26,10 +26,11 @@ object MemoryMVCCStorageUnCommittedPart {
     }
 
     fun flushToCommittedPart(trxId: Long, holdKeys: MutableSet<String>) {
-        val pairList = holdKeys.map {
+        val vAHEKVPairs = holdKeys.map {
             VAHEKVPair(it,
-                treeMap[it] ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
+                    treeMap[it]
+                            ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
         }
+        MemoryMVCCStorageCommittedPart.commonOperate(trxId, vAHEKVPairs)
     }
-
 }
