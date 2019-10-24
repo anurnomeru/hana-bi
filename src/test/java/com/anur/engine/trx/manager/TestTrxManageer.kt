@@ -7,16 +7,20 @@ import java.lang.StringBuilder
  * Created by Anur IjuoKaruKas on 2019/10/22
  */
 fun main() {
-    for (i in 0 until 123456L) {
+    val currentTimeMillis = System.currentTimeMillis()
+
+    for (i in 0 until 10000L) {
         TrxManager.acquireTrx(i)
     }
     println(TrxManager.minTrx())
 
-    for (i in 0 until 666L) {
+    for (i in 0 until 9998L) {
         TrxManager.releaseTrx(i)
     }
     println(TrxManager.minTrx())
     println(TrxManager.minTrx() - (0))
+
+    println(System.currentTimeMillis() - currentTimeMillis)
 }
 
 

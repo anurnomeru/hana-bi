@@ -1,5 +1,6 @@
 package com.anur.engine.trx.lock
 
+import com.anur.engine.trx.manager.TrxManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.util.LinkedList
@@ -35,6 +36,7 @@ object TrxFreeQueuedSynchronizer {
         when (waitQueue.first()) {
             // 代表此键无锁
             trxId -> {
+                TrxManager.acquireTrx(trxId)
                 whatEverDo.invoke()
                 logger.trace("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
             }
