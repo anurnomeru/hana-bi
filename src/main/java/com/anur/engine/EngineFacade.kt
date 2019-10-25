@@ -2,7 +2,9 @@ package com.anur.engine
 
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.engine.api.Postman
-import com.anur.engine.api.common.base.EngineRequest
+import com.anur.engine.api.base.EngineRequest
+import com.anur.engine.storage.core.HanabiCommand
+import com.anur.engine.storage.core.HanabiEntry
 import com.anur.io.core.coder.CoordinateDecoder
 import com.anur.io.hanalog.common.OperationAndGAO
 import com.anur.io.hanalog.log.CommitProcessManager
@@ -41,9 +43,8 @@ object EngineFacade {
                     println()
                 }
 
-                val hanabiEntry = take.operation.hanabiCommand
-                val api = Postman.disPatchType(hanabiEntry.getType()).api(hanabiEntry.getApi())
-                api.invoke(EngineRequest(hanabiEntry.getTrxId(), take.operation.key, hanabiEntry.getValue()))
+
+
             }
         })
     }

@@ -1,4 +1,4 @@
-package com.anur.engine.api.common.constant
+package com.anur.engine.api.constant
 
 import com.anur.exception.UnSupportTransException
 

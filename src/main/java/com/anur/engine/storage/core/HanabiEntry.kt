@@ -1,6 +1,6 @@
 package com.anur.engine.storage.core
 
-import com.anur.engine.api.common.constant.StorageTypeConst
+import com.anur.engine.api.constant.StorageTypeConst
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/11

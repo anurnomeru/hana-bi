@@ -31,7 +31,9 @@ object TrxFreeQueuedSynchronizer {
         val trxHolder = trxHolderMap.compute(trxId) { _, th -> th ?: TrxHolder(trxId) }!!.also { it.holdKeys.add(key) }
 
         // 先去排队
-        val waitQueue = lockKeeper.compute(key) { _, ll -> (ll ?: LinkedList()).also { if (!it.contains(trxId)) it.add(trxId) } }!!
+        val waitQueue = lockKeeper.compute(key) { _, ll ->
+            (ll ?: LinkedList()).also { if (!it.contains(trxId)) it.add(trxId) }
+        }!!
 
         when (waitQueue.first()) {
             // 代表此键无锁
@@ -43,7 +45,9 @@ object TrxFreeQueuedSynchronizer {
 
             // 代表有锁
             else -> {
-                trxHolder.undoEvent.compute(key) { _, undoList -> (undoList ?: mutableListOf()).also { it.add(whatEverDo) } }
+                trxHolder.undoEvent.compute(key) { _, undoList ->
+                    (undoList ?: mutableListOf()).also { it.add(whatEverDo) }
+                }
                 logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
             }
         }
@@ -52,10 +56,10 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 释放 trxId 下的所有键锁
      */
-    fun release(trxId: Long, doWhileCommit: () -> Unit) {
+    fun release(trxId: Long, doWhileCommit: (MutableSet<String>?) -> Unit) {
 
         if (!trxHolderMap.containsKey(trxId)) {
-            logger.error("事务未创建或者已经提交，trxId: $trxId")
+            doWhileCommit.invoke(null)
             return
         }
         val trxHolder = trxHolderMap[trxId]!!
@@ -64,7 +68,6 @@ object TrxFreeQueuedSynchronizer {
             logger.trace("事物 $trxId 还在阻塞等待唤醒，暂无法释放！故释放操作将挂起，等待唤醒。")
             trxHolder.doWhileCommit = doWhileCommit
         } else {
-            doWhileCommit.invoke()
             val holdKeys = trxHolder.holdKeys
 
             // 移除所有锁
@@ -88,6 +91,9 @@ object TrxFreeQueuedSynchronizer {
 
             // 通知其他事务
             holdKeys.forEach { notify(it) }
+
+            // 执行需要执行的东西，其实就是把数据提交到uc去
+            doWhileCommit.invoke(holdKeys)
 
             if (lockKeeper.isEmpty()) {
                 logger.info("全部释放")
