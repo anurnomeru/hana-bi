@@ -56,7 +56,7 @@ object TrxFreeQueuedSynchronizer {
     /**
      * 释放 trxId 下的所有键锁
      */
-    fun release(trxId: Long, doWhileCommit: (MutableSet<String>?) -> Unit) {
+    fun release(trxId: Long, doWhileCommit: ((MutableSet<String>?) -> Unit)) {
 
         if (!trxHolderMap.containsKey(trxId)) {
             doWhileCommit.invoke(null)

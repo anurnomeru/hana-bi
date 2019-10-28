@@ -9,18 +9,16 @@ import java.lang.StringBuilder
 fun main() {
     val currentTimeMillis = System.currentTimeMillis()
 
-    for (i in 0 until 10000L) {
+    for (i in -1000 until 10000L) {
         TrxManager.acquireTrx(i)
     }
     println(TrxManager.minTrx())
 
-    for (i in 0 until 9998L) {
+    for (i in -1000 until 9998L) {
         TrxManager.releaseTrx(i)
     }
     println(TrxManager.minTrx())
-    println(TrxManager.minTrx() - (0))
-
-    println(System.currentTimeMillis() - currentTimeMillis)
+    println(TrxManager.minTrx() - (-1000))
 }
 
 

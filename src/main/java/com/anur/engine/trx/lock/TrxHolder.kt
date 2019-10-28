@@ -19,5 +19,5 @@ class TrxHolder(val trxId: Long) {
     /**
      * 如果不为空，则代表事务已经准备提交了
      */
-    var doWhileCommit: ((MutableSet<String>)  -> Unit)? = null
+    var doWhileCommit: ((MutableSet<String>?)  -> Unit)? = null
 }
