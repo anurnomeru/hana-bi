@@ -44,9 +44,6 @@ object EngineDataFlowControl {
             }
         }
 
-
-
-
         when (StorageTypeConst.map(cmd.getType())) {
             StorageTypeConst.STR -> {
                 when (cmd.getApi()) {
@@ -55,13 +52,13 @@ object EngineDataFlowControl {
                         logger.info("还没实现23333")
                     }
                     StrApiConst.INSERT -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.INSERT)
+                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
                     }
                     StrApiConst.UPDATE -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.UPDATE)
+                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
                     }
                     StrApiConst.DELETE -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DELETE)
+                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
                     }
                 }
             }
@@ -82,8 +79,7 @@ object EngineDataFlowControl {
         TrxManager.acquireTrx(trxId)
         TrxFreeQueuedSynchronizer.acquire(trxId, key) {
             MemoryMVCCStorageUnCommittedPart.commonOperate(trxId, key,
-                    HanabiEntry(storageType, value, operateType
-                    )
+                    HanabiEntry(storageType, value, operateType)
             )
         }
     }

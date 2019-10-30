@@ -18,7 +18,7 @@ TrxFreeQueuedSynchronizer 是lsm数的逻辑入口，包含并发控制，仅写
  
  TrxManager 与上面两者不同，它需要流过所有的操作，主要的作用是拉取当前最低的水位（WaterMark），最低水位便于将数据提交到 lsm 树。
  
-### !!!
+### !!! 数据流转
 
 所以数据的流向应该是 经由 
 TrxManager ->
@@ -30,3 +30,4 @@ TrxManager ->
 (Filter : 写部分) -> TrxFreeQueuedSynchronizer
 -> MemoryMVCCStorageUnCommittedPart 将数据冲刷到 -> MemoryMVCCStorageCommittedPart
 -> TrxManager 刷新水位
+-> 通知水位变更到 MemoryMVCCStorageCommittedPart，将数据刷入 MemoryLSM

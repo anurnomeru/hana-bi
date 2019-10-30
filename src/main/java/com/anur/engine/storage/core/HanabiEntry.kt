@@ -10,9 +10,8 @@ import com.anur.engine.api.constant.StorageTypeConst
 class HanabiEntry(var StorageType: StorageTypeConst, var value: Any, var operateType: OperateType) {
     companion object {
         enum class OperateType(val b: Byte) {
-            INSERT(1),
-            UPDATE(2),
-            DELETE(3),
+            ENABLE(0),
+            DISABLE(1),
         }
     }
 }

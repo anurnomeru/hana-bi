@@ -27,6 +27,7 @@ object TrxManager {
     private val recycler = mutableListOf<ReentrantReadWriteLocker>()
     private val notifyQueue = LinkedBlockingDeque<Long>()
 
+
     /**
      * 分段锁获取
      */
@@ -115,6 +116,13 @@ object TrxManager {
         } else {
             trxId / Interval
         }
+    }
+
+    /**
+     * 一旦有更大的事务被提交，它就会开始工作
+     */
+    fun takeNotify(): Long {
+        return notifyQueue.take()
     }
 
     /**

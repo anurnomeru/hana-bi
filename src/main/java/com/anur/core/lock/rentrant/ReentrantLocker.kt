@@ -17,7 +17,7 @@ open class ReentrantLocker {
     /**
      * 提供一个统一的锁入口
      */
-    protected fun <T> lockSupplier(supplier: Supplier<T>): T? {
+    fun <T> lockSupplier(supplier: Supplier<T>): T? {
         reentrantLock.newCondition()
 
         val t: T
@@ -33,7 +33,7 @@ open class ReentrantLocker {
     /**
      * 提供一个统一的锁入口
      */
-    protected fun <T> lockSupplierCompel(supplier: Supplier<T>): T {
+    fun <T> lockSupplierCompel(supplier: Supplier<T>): T {
         val t: T
         try {
             reentrantLock.lock()
@@ -47,7 +47,7 @@ open class ReentrantLocker {
     /**
      * 提供一个统一的锁入口
      */
-    protected fun lockSupplier(doSomething: () -> Unit) {
+    fun lockSupplier(doSomething: () -> Unit) {
         try {
             reentrantLock.lock()
             doSomething.invoke()
