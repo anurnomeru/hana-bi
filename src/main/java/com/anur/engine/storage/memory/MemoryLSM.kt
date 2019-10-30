@@ -3,6 +3,7 @@ package com.anur.engine.storage.memory
 import com.alibaba.fastjson.JSON
 import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.storage.core.HanabiEntry
+import com.anur.util.HanabiExecutors
 import org.slf4j.LoggerFactory
 import kotlin.collections.HashMap
 
@@ -18,14 +19,16 @@ object MemoryLSM {
         dataKeeper[key] = entry
     }
 
-    fun print() {
+    private fun print() {
         logger.debug(JSON.toJSONString(dataKeeper))
     }
-}
 
-fun main() {
-    MemoryLSM.put("zzz", HanabiEntry(StorageTypeConst.STR, "zzzz", HanabiEntry.Companion.OperateType.ENABLE))
-    MemoryLSM.put("zzz1", HanabiEntry(StorageTypeConst.STR, "zzzz", HanabiEntry.Companion.OperateType.ENABLE))
-    MemoryLSM.put("zzz", HanabiEntry(StorageTypeConst.STR, "zzzz", HanabiEntry.Companion.OperateType.ENABLE))
-    MemoryLSM.print()
+    init {
+        HanabiExecutors.execute(Runnable {
+            while (true) {
+                Thread.sleep(10000)
+                print()
+            }
+        })
+    }
 }
