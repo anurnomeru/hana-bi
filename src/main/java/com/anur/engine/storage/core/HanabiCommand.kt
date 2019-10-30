@@ -1,5 +1,7 @@
 package com.anur.engine.storage.core
 
+import com.anur.engine.api.constant.StorageTypeConst
+import com.anur.engine.api.constant.TransactionTypeConst
 import java.nio.ByteBuffer
 
 /**
@@ -20,12 +22,12 @@ class HanabiCommand(val content: ByteBuffer) {
         private const val ApiLength = 1
         private const val ValueOffset = ApiOffset + ApiLength
 
-        fun generator(trxId: Long, transaction: Byte, type: Byte, api: Byte, value: String): HanabiCommand {
+        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, value: String): HanabiCommand {
             val valueArray = value.toByteArray()
             val bb = ByteBuffer.allocate(ValueOffset + valueArray.size)
             bb.putLong(trxId)
-            bb.put(transaction)
-            bb.put(type)
+            bb.put(transaction.byte)
+            bb.put(type.byte)
             bb.put(api)
             bb.put(valueArray)
             bb.flip()
@@ -75,10 +77,10 @@ class HanabiCommand(val content: ByteBuffer) {
 
     override fun toString(): String {
         return "HanabiEntry{" +
-            "trxId='" + getTrxId() + '\'' +
-            ", type='" + getType() + '\'' +
-            ", api='" + getApi() + '\'' +
-            ", value='" + getValue() + '\'' +
-            "}"
+                "trxId='" + getTrxId() + '\'' +
+                ", type='" + getType() + '\'' +
+                ", api='" + getApi() + '\'' +
+                ", value='" + getValue() + '\'' +
+                "}"
     }
 }

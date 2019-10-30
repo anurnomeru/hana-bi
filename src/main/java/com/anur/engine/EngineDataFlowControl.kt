@@ -1,13 +1,16 @@
 package com.anur.engine
 
+import com.anur.core.struct.OperationTypeEnum
 import com.anur.core.struct.base.Operation
 import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
 import com.anur.engine.api.constant.str.StrApiConst
+import com.anur.engine.storage.core.HanabiCommand
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
+import com.anur.engine.trx.manager.TrxAllocator
 import com.anur.engine.trx.manager.TrxManager
 import org.slf4j.LoggerFactory
 
@@ -93,4 +96,13 @@ object EngineDataFlowControl {
             TrxManager.releaseTrx(trxId)
         }
     }
+}
+
+fun main() {
+    val oper = Operation(OperationTypeEnum.COMMAND, "Anur",
+            HanabiCommand.generator(TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.INSERT, "keykeykey"))
+
+    EngineDataFlowControl.commandInvoke(oper)
+
+    Thread.sleep(100000)
 }

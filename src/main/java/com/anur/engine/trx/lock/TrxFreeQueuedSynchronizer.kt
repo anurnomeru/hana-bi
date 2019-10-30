@@ -94,10 +94,6 @@ object TrxFreeQueuedSynchronizer {
 
             // 执行需要执行的东西，其实就是把数据提交到uc去
             doWhileCommit.invoke(holdKeys)
-
-            if (lockKeeper.isEmpty()) {
-                logger.info("全部释放")
-            }
         }
     }
 
