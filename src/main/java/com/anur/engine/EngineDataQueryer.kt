@@ -18,7 +18,9 @@ object EngineDataQueryer {
         // 如果自己这个事务进行了操作但是没提交，优先取没提交的数据// TODO 存在 UC -> C 过程中数据丢失问题
         if (TrxFreeQueuedSynchronizer.isKeyInUnCommitTrx(trxId, key)) result = MemoryMVCCStorageUnCommittedPart.queryKeyInTrx(trxId, key)
 
-        result = result ?: MemoryMVCCStorageCommittedPart.queryKeyInTrx(trxId, key) ?: MemoryLSM.get(key)
+        result = result
+                ?: MemoryMVCCStorageCommittedPart.queryKeyInTrx(trxId, key)
+                        ?: MemoryLSM.get(key)
 
         return if (result?.operateType == HanabiEntry.Companion.OperateType.DISABLE) {
             null
