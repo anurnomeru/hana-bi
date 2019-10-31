@@ -18,17 +18,28 @@ fun main() {
     insert("123", "zxcv")
     select("zzzz")
     select("Anur")
+    delete("Anur")
+    select("Anur")
     Thread.sleep(100000)
 }
 
-fun select(key: String) {
+fun select(key: String, trx: Long? = null) {
     val oper = Operation(OperationTypeEnum.COMMAND, key,
-            HanabiCommand.generator(TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.SELECT))
+            HanabiCommand.generator(trx
+                    ?: TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.SELECT))
     EngineDataFlowControl.commandInvoke(oper)
 }
 
-fun insert(key: String, value: String) {
+fun insert(key: String, value: String, trx: Long? = null) {
     val oper = Operation(OperationTypeEnum.COMMAND, key,
-            HanabiCommand.generator(TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.INSERT, value))
+            HanabiCommand.generator(trx
+                    ?: TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.INSERT, value))
+    EngineDataFlowControl.commandInvoke(oper)
+}
+
+fun delete(key: String, trx: Long? = null) {
+    val oper = Operation(OperationTypeEnum.COMMAND, key,
+            HanabiCommand.generator(trx
+                    ?: TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.DELETE))
     EngineDataFlowControl.commandInvoke(oper)
 }

@@ -22,13 +22,13 @@ object MemoryLSM {
     fun put(key: String, entry: HanabiEntry) {
         dataKeeper[key] = entry
     }
-
-    init {
-        HanabiExecutors.execute(Runnable {
-            while (true) {
-                Thread.sleep(10000)
-                logger.debug(JSON.toJSONString(dataKeeper))
-            }
-        })
-    }
+//
+//    init {
+//        HanabiExecutors.execute(Runnable {
+//            while (true) {
+//                Thread.sleep(10000)
+//                logger.debug(JSON.toJSONString(dataKeeper))
+//            }
+//        })
+//    }
 }

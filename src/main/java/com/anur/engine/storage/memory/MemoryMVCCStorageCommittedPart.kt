@@ -111,7 +111,7 @@ object MemoryMVCCStorageCommittedPart {
                 return
             currentVer.trxId == removeEntry.trxId -> {// 只需要提交最新的key即可
                 MemoryLSM.put(key, currentVer.hanabiEntry)
-                logger.info("key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
+                logger.debug("key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
                 prev.currentVersion == null
             }
             else -> commitVAHERecursive(currentVer, key, removeEntry)

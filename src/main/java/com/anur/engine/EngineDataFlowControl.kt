@@ -49,16 +49,19 @@ object EngineDataFlowControl {
             StorageTypeConst.STR -> {
                 when (cmd.getApi()) {
                     StrApiConst.SELECT -> {
-                        println(EngineDataQueryer.doQuery(trxId, key))
+                        logger.info("key [$key] trx [$trxId] 查询结果： ${EngineDataQueryer.doQuery(trxId, key)}")
                     }
                     StrApiConst.INSERT -> {
                         doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                        logger.info("key [$key] trx [$trxId] value [$value] 成功插入并进入 LSM 未提交队列")
                     }
                     StrApiConst.UPDATE -> {
                         doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                        logger.info("key [$key] trx [$trxId] value [$value] 成功修改并进入 LSM 未提交队列")
                     }
                     StrApiConst.DELETE -> {
                         doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
+                        logger.info("key [$key] trx [$trxId] 成功删除并进入 LSM 未提交队列")
                     }
                 }
             }

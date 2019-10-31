@@ -34,7 +34,7 @@
     <!--prelog situation-->
     <logger name="com.anur.io.hanalog.prelog" level="INFO"/>
 
-    <root level="DEBUG">
+    <root level="INFO">
         <appender-ref ref="STDOUT"/>
     </root>
 

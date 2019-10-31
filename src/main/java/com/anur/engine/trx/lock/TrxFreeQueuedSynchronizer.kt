@@ -64,7 +64,7 @@ object TrxFreeQueuedSynchronizer {
     fun release(trxId: Long, doWhileCommit: ((MutableSet<String>?) -> Unit)) {
 
         if (!trxHolderMap.containsKey(trxId)) {
-            logger.info("事务 $trxId 已经提交过，或者只是单纯的查询事务，无需释放")
+            logger.debug("事务 $trxId 已经提交过，或者只是单纯的查询事务，无需释放")
             doWhileCommit.invoke(null)
             return
         }
