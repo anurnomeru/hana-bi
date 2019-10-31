@@ -22,7 +22,7 @@ class HanabiCommand(val content: ByteBuffer) {
         private const val ApiLength = 1
         private const val ValueOffset = ApiOffset + ApiLength
 
-        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, value: String): HanabiCommand {
+        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, value: String = "null"): HanabiCommand {
             val valueArray = value.toByteArray()
             val bb = ByteBuffer.allocate(ValueOffset + valueArray.size)
             bb.putLong(trxId)

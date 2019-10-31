@@ -15,19 +15,19 @@ object MemoryLSM {
     private val logger = LoggerFactory.getLogger(MemoryLSM::class.java)
     private val dataKeeper = HashMap<String, HanabiEntry>()
 
-    fun put(key: String, entry: HanabiEntry) {
-        dataKeeper[key] = entry
+    fun get(key: String): HanabiEntry? {
+        return dataKeeper[key]
     }
 
-    private fun print() {
-        logger.debug(JSON.toJSONString(dataKeeper))
+    fun put(key: String, entry: HanabiEntry) {
+        dataKeeper[key] = entry
     }
 
     init {
         HanabiExecutors.execute(Runnable {
             while (true) {
                 Thread.sleep(10000)
-                print()
+                logger.debug(JSON.toJSONString(dataKeeper))
             }
         })
     }

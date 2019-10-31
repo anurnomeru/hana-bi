@@ -14,4 +14,8 @@ class HanabiEntry(var StorageType: StorageTypeConst, var value: Any, var operate
             DISABLE(1),
         }
     }
+
+    override fun toString(): String {
+        return "HanabiEntry(StorageType=$StorageType, value=$value, operateType=$operateType)"
+    }
 }

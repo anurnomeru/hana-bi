@@ -1,9 +1,8 @@
 package com.anur.engine.trx.lock
 
-import com.anur.engine.trx.manager.TrxManager
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import java.util.LinkedList
+import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 /**
@@ -22,6 +21,13 @@ object TrxFreeQueuedSynchronizer {
      * 存储那些需要被唤醒的执行内容
      */
     private val trxHolderMap: ConcurrentHashMap<Long, TrxHolder> = ConcurrentHashMap()
+
+    /**
+     * 判断key是否在未提交的事务里面
+     */
+    fun isKeyInUnCommitTrx(trxId: Long, key: String): Boolean {
+        return trxHolderMap[trxId]?.holdKeys?.contains(key) ?: false
+    }
 
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)

@@ -16,7 +16,15 @@ fun main() {
     insert("Anur", "zzzz")
     insert("Anur", "zzzzzzz")
     insert("123", "zxcv")
+    select("zzzz")
+    select("Anur")
     Thread.sleep(100000)
+}
+
+fun select(key: String) {
+    val oper = Operation(OperationTypeEnum.COMMAND, key,
+            HanabiCommand.generator(TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.SELECT))
+    EngineDataFlowControl.commandInvoke(oper)
 }
 
 fun insert(key: String, value: String) {

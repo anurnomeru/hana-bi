@@ -22,6 +22,23 @@ object MemoryMVCCStorageCommittedPart {
     private val logger = LoggerFactory.getLogger(MemoryMVCCStorageCommittedPart::class.java)
     private val locker = ReentrantLocker()
 
+    /**
+     * 和 uc 部分的有点像，但是这里要递归查找
+     */
+    fun queryKeyInTrx(trxId: Long, key: String): HanabiEntry? {
+        var verAndHanabiEntry = dataKeeper[key]
+        while (verAndHanabiEntry != null) {
+            if (verAndHanabiEntry.trxId <= trxId) {
+                return verAndHanabiEntry.hanabiEntry
+            }
+            verAndHanabiEntry = verAndHanabiEntry.currentVersion
+        }
+        return null
+    }
+
+    /**
+     * 将 uc 部分的数据提交到 mvcc 临界控制区
+     */
     fun commonOperate(trxId: Long, pairs: List<VAHEKVPair>) {
         logger.debug("事务 $trxId 已经进入 MVCC 临界控制区")
         for (pair in pairs) {
@@ -100,4 +117,5 @@ object MemoryMVCCStorageCommittedPart {
             else -> commitVAHERecursive(currentVer, key, removeEntry)
         }
     }
+
 }

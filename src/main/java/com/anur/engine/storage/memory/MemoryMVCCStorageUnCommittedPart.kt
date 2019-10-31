@@ -17,6 +17,17 @@ object MemoryMVCCStorageUnCommittedPart {
     private val logger = LoggerFactory.getLogger(MemoryMVCCStorageUnCommittedPart::class.java)
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
+    /**
+     * 迭代查找未提交的 hanabiEntry
+     */
+    fun queryKeyInTrx(trxId: Long, key: String): HanabiEntry? {
+        val verAndHanabiEntry = treeMap[key]
+        if (verAndHanabiEntry != null && verAndHanabiEntry.trxId == trxId) {
+            return verAndHanabiEntry.hanabiEntry
+        }
+        return null
+    }
+
     fun commonOperate(trxId: Long, key: String, hanabiEntry: HanabiEntry) {
         if (treeMap.containsKey(key) && treeMap[key]!!.trxId != trxId) {
             throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理一个 key 只会对应一个 val，注意无锁控制 TrxFreeQueuedSynchronizer 是否有问题！")
@@ -33,6 +44,5 @@ object MemoryMVCCStorageUnCommittedPart {
                             ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
         }
         MemoryMVCCStorageCommittedPart.commonOperate(trxId, vAHEKVPairs)
-
     }
 }
