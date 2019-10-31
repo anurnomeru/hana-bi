@@ -12,12 +12,12 @@ fun main() {
     for (i in -1000 until 10000L) {
         TrxManager.acquireTrx(i)
     }
-    println(TrxManager.minTrx())
+    val minBefore = TrxManager.minTrx()
 
     for (i in -1000 until 9998L) {
         TrxManager.releaseTrx(i)
     }
-    println(TrxManager.minTrx())
+    println(minBefore)
     println(TrxManager.minTrx() - (-1000))
 }
 

@@ -29,6 +29,8 @@ object EngineDataFlowControl {
         val value = cmd.getValue()
         val trxId = cmd.getTrxId()
 
+        TrxManager.acquireTrx(trxId)
+
         /*
          * common 操作比较特殊，它直接会有些特殊交互，比如开启一个事务，关闭一个事务等。
          */
@@ -36,7 +38,6 @@ object EngineDataFlowControl {
             StorageTypeConst.COMMON -> {
                 when (cmd.getApi()) {
                     CommonApiConst.START_TRX -> {
-                        TrxManager.acquireTrx(trxId)
                         return
                     }
                     CommonApiConst.COMMIT_TRX -> {
@@ -51,7 +52,6 @@ object EngineDataFlowControl {
             StorageTypeConst.STR -> {
                 when (cmd.getApi()) {
                     StrApiConst.SELECT -> {
-                        TrxManager.acquireTrx(trxId)
                         logger.info("还没实现23333")
                     }
                     StrApiConst.INSERT -> {
@@ -78,7 +78,6 @@ object EngineDataFlowControl {
      * 进行事务控制与数据流转
      */
     private fun doAcquire(trxId: Long, key: String, value: String, storageType: StorageTypeConst, operateType: HanabiEntry.Companion.OperateType) {
-        TrxManager.acquireTrx(trxId)
         TrxFreeQueuedSynchronizer.acquire(trxId, key) {
             MemoryMVCCStorageUnCommittedPart.commonOperate(trxId, key,
                     HanabiEntry(storageType, value, operateType)
@@ -95,12 +94,4 @@ object EngineDataFlowControl {
             TrxManager.releaseTrx(trxId)
         }
     }
-}
-
-fun main() {
-    val oper = Operation(OperationTypeEnum.COMMAND, "Anur",
-            HanabiCommand.generator(TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.INSERT, "keykeykey"))
-
-    EngineDataFlowControl.commandInvoke(oper)
-    Thread.sleep(100000)
 }

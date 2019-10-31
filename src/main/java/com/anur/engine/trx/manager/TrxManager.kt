@@ -9,6 +9,8 @@ import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.LinkedBlockingDeque
 import java.util.function.Supplier
 import kotlin.math.absoluteValue
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/15
@@ -26,7 +28,6 @@ object TrxManager {
     private val lockHolder = mutableMapOf<Long, ReentrantReadWriteLocker>()
     private val recycler = mutableListOf<ReentrantReadWriteLocker>()
     private val notifyQueue = LinkedBlockingDeque<Long>()
-
 
     /**
      * 分段锁获取
@@ -66,7 +67,7 @@ object TrxManager {
             if (!waterHolder.contains(head)) waterHolder[head] = TrxSegment(anyElse)
             waterHolder[head]!!.acquire(anyElse)
 
-            logger.debug("事务 $anyElse 已经激活")
+            logger.trace("事务 $anyElse 已经激活")
             return@Supplier anyElse
         })
     }
@@ -82,22 +83,24 @@ object TrxManager {
                 null -> logger.error("重复释放事务？？？？？？？？？？？？？？？？？？？？？")
                 else -> {
                     val releaseIndex = trxSegment.release(anyElse)
+                    logger.debug("事务 $anyElse 已经释放")
 
                     // 当事务段都为0，且
                     // （有比当前更大的head，才可以销毁这个head（代表不会有更多的申请来到这里）
                     // 或者
                     // 释放的是最后一个index）
+                    // 将相关用到的数据内存释放掉
                     if (trxSegment.trxBitMap == 0L && (waterHolder.higherEntry(head) != null || releaseIndex == IntervalMinusOne)) {
                         waterHolder.remove(head)
                         destroyLocker(head)
+                    }
 
-                        logger.debug("事务 $anyElse 已经释放")
-
-                        // 如果当前操作的是最小的段，最小段发生操作，则推送一下当前提交的最小事务
-                        val isMinSeg = waterHolder.firstEntry()?.value?.let { it == trxSegment } ?: false
-                        if (isMinSeg) {
-                            notifyQueue.push(minTrx())
-                        }
+                    // 如果当前操作的是最小的段，最小段发生操作，则推送一下当前提交的最小事务
+                    val isMinSeg = waterHolder.firstEntry()?.value?.let { it == trxSegment } ?: false
+                    if (isMinSeg) {
+                        logger.debug("当前最小事务 $anyElse 已经释放")
+                        logger.debug("${minTrx()}")
+                        notifyQueue.push(minTrx())
                     }
                 }
             }
@@ -134,21 +137,43 @@ object TrxManager {
      */
     class TrxSegment(anyElse: Long) {
 
+        /**
+         * 标记此事务第一位的事务id，比如为 100
+         * 那么 trxBitMap 0011 代表 100 101 事务已经激活
+         */
+        val start: Long = genSegmentHead(anyElse) * Interval
+
+        /**
+         * 使用 bitMap 来实现事务的激活与释放，如果一个事务被激活了，则此位标记为1，反之为0
+         */
         @Volatile
         var trxBitMap: Long = 0
 
-        var minIndex = -1
-
-        var minIndexAc = -1
-
-        val start: Long = genSegmentHead(anyElse) * Interval
+        /**
+         * 使用 bitMap 来实现事务的释放，如果一个事务被释放了，则此标记为为1，反之为0
+         */
+        @Volatile
+        var releaseBitMap: Long = 0
 
         init {
             acquire(anyElse)
         }
 
-        fun minTrx(): Long {
-            return start + minIndex + 1
+        fun minTrx(): Long? {
+            return if (releaseBitMap == 0L) {
+                null
+            } else {
+                var result = 0
+                var mask = 1L
+                while (result < Interval) {
+                    if (mask and releaseBitMap != mask) {
+                        break
+                    }
+                    result++
+                    mask = mask shl 1
+                }
+                start + max(result - 1,0)
+            }
         }
 
         fun acquire(trxId: Long) {
@@ -156,34 +181,35 @@ object TrxManager {
             val mask = 1L.shl(index)
             trxBitMap = trxBitMap or mask
 
-            if (index < minIndexAc || minIndexAc == -1) {
-                minIndexAc = index
-            }
+//            if (index < minIndexAc || minIndexAc == -1) {
+//                minIndexAc = index
+//            }
         }
 
         fun release(trxId: Long): Int {
             val index = calcIndex(trxId)
             val mask = 1L.shl(index)
-            trxBitMap = mask.inv() and trxBitMap
+            releaseBitMap = trxBitMap or mask
 
-            // 计算当前最小的 index
-            if (trxBitMap == 0L && index == IntervalMinusOne) {
-                minIndex = index
-            } else if (minIndex != -1 && trxBitMap == 0L) {
-                if (minIndex != minIndexAc) {
-                    logger.error("触发了！！ $minIndex - $minIndexAc")
-                }
-                minIndex = minIndexAc
-            } else {
-                for (i in 0 until 64) {
-                    val minIndexNeo = 1L.shl(i)
-
-                    if (minIndexNeo and trxBitMap == minIndexNeo) {
-                        minIndex = i - 1
-                        break
-                    }
-                }
-            }
+//            trxBitMap = mask.inv() and trxBitMap
+//            // 计算当前最小的 index
+//            if (trxBitMap == 0L && index == IntervalMinusOne) {
+//                minIndex = index
+//            } else if (minIndex != -1 && trxBitMap == 0L) {
+//                if (minIndex != minIndexAc) {
+//                    logger.error("触发了！！ $minIndex - $minIndexAc")
+//                }
+//                minIndex = minIndexAc
+//            } else {
+//                for (i in 0 until 64) {
+//                    val minIndexNeo = 1L.shl(i)
+//
+//                    if (minIndexNeo and trxBitMap == minIndexNeo) {
+//                        minIndex = i - 1
+//                        break
+//                    }
+//                }
+//            }
             return index
         }
 

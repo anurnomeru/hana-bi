@@ -7,6 +7,7 @@ import com.anur.engine.storage.core.VAHEKVPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
 import com.anur.engine.trx.manager.TrxManager
 import com.anur.util.HanabiExecutors
+import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
 
 /**
@@ -17,14 +18,16 @@ import java.util.concurrent.ConcurrentSkipListMap
 object MemoryMVCCStorageCommittedPart {
 
     private val dataKeeper = HashMap<String, VerAndHanabiEntry>()
-
     private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VAHEKVPair>>()
-
+    private val logger = LoggerFactory.getLogger(MemoryMVCCStorageCommittedPart::class.java)
     private val locker = ReentrantLocker()
 
     fun commonOperate(trxId: Long, pairs: List<VAHEKVPair>) {
+        logger.debug("事务 $trxId 已经进入 MVCC 临界控制区")
         for (pair in pairs) {
             locker.lockSupplier {
+                logger.debug("key [${pair.key}] val [${pair.value.hanabiEntry.value}] 已提交到 MVCC 临界控制区")
+
                 dataKeeper.compute(pair.key) { _, currentVersion ->
                     pair.value.also { it.currentVersion = currentVersion }
                 }
@@ -41,13 +44,14 @@ object MemoryMVCCStorageCommittedPart {
     init {
         HanabiExecutors.execute(
                 Runnable {
+                    logger.info("MVCC 临界控制区已经启动，等待从水位控制 TrxManager 获取最新提交水位")
                     while (true) {
                         val takeNotify = TrxManager.takeNotify()
                         val headMap = holdKeysMapping.headMap(takeNotify, true)
 
                         // TODO 虽然 pollLast 效率不是太高，但是明显从大到小去移除事务会快一些
                         // TODO 先这么写着试试
-                        val pollLastEntry = headMap.pollLastEntry()
+                        var pollLastEntry = headMap.pollLastEntry()
 
                         while (pollLastEntry != null) {
                             val trxId = pollLastEntry.key
@@ -72,6 +76,7 @@ object MemoryMVCCStorageCommittedPart {
 
                             // 释放整个trxId
                             holdKeysMapping.remove(trxId)
+                            pollLastEntry = headMap.pollLastEntry()
                         }
                     }
                 })
@@ -89,6 +94,7 @@ object MemoryMVCCStorageCommittedPart {
                 return
             currentVer.trxId == removeEntry.trxId -> {// 只需要提交最新的key即可
                 MemoryLSM.put(key, currentVer.hanabiEntry)
+                logger.info("key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
                 prev.currentVersion == null
             }
             else -> commitVAHERecursive(currentVer, key, removeEntry)

@@ -38,9 +38,8 @@ object TrxFreeQueuedSynchronizer {
         when (waitQueue.first()) {
             // 代表此键无锁
             trxId -> {
-                TrxManager.acquireTrx(trxId)
                 whatEverDo.invoke()
-                logger.debug("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
+                logger.trace("事务 $trxId 成功获取或重入位于键 $key 上的锁，并成功进行了操作")
             }
 
             // 代表有锁
@@ -59,6 +58,7 @@ object TrxFreeQueuedSynchronizer {
     fun release(trxId: Long, doWhileCommit: ((MutableSet<String>?) -> Unit)) {
 
         if (!trxHolderMap.containsKey(trxId)) {
+            logger.info("事务 $trxId 已经提交过，或者只是单纯的查询事务，无需释放")
             doWhileCommit.invoke(null)
             return
         }
@@ -84,7 +84,7 @@ object TrxFreeQueuedSynchronizer {
                 }
             }
 
-            logger.debug("事务 $trxId 已经成功释放锁")
+            logger.trace("事务 $trxId 已经成功释放锁")
 
             // 注销此事务
             trxHolderMap.remove(trxId)
