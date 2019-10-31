@@ -67,7 +67,6 @@ object EngineDataFlowControl {
             }
         }
 
-
         /*
          * 如果是短事务，操作完就直接提交
          */
@@ -103,6 +102,5 @@ fun main() {
             HanabiCommand.generator(TrxAllocator.allocate(), TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.INSERT, "keykeykey"))
 
     EngineDataFlowControl.commandInvoke(oper)
-
     Thread.sleep(100000)
 }

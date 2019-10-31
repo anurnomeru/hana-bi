@@ -57,7 +57,7 @@ object TrxManager {
     }
 
     /**
-     * 申请一个递增的事务id
+     * 申请激活一个递增的事务id
      */
     fun acquireTrx(anyElse: Long): Long {
         val head = genSegmentHead(anyElse)
@@ -65,6 +65,8 @@ object TrxManager {
             // 将事务扔进水位
             if (!waterHolder.contains(head)) waterHolder[head] = TrxSegment(anyElse)
             waterHolder[head]!!.acquire(anyElse)
+
+            logger.debug("事务 $anyElse 已经激活")
             return@Supplier anyElse
         })
     }
@@ -88,6 +90,8 @@ object TrxManager {
                     if (trxSegment.trxBitMap == 0L && (waterHolder.higherEntry(head) != null || releaseIndex == IntervalMinusOne)) {
                         waterHolder.remove(head)
                         destroyLocker(head)
+
+                        logger.debug("事务 $anyElse 已经释放")
 
                         // 如果当前操作的是最小的段，最小段发生操作，则推送一下当前提交的最小事务
                         val isMinSeg = waterHolder.firstEntry()?.value?.let { it == trxSegment } ?: false
