@@ -79,7 +79,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
 
                 // 找到最大的那个票数 >= quorum 的 fetch GAO
                 fetchMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }?.key?.also { logger.debug("进度 {} 已可提交 ~ 已经拟定 approach，半数节点同意则进行 commit", it.toString()) }
-                    ?: latestGAO
+                        ?: latestGAO
             })
         }
     }
@@ -131,15 +131,15 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
              * 将最高记录写入本地
              */
             commitMap.entries.findLast { e -> e.value.size + 1 >= ElectMeta.quorum }
-                ?.key
-                ?.also {
-                    // 写入 ByteBufPreLogManager(避免成为follower没有这个进度)
-                    ByteBufPreLogManager.cover(it)
-                    // 写入本地文件，并通知存储引擎继续工作
-                    EngineFacade.play(it)
-                    logger.debug("进度 {} 已经完成 commit ~", it.toString())
-                }
-                ?: latestCommitGAO
+                    ?.key
+                    ?.also {
+                        // 写入 ByteBufPreLogManager(避免成为follower没有这个进度)
+                        ByteBufPreLogManager.cover(it)
+                        // 写入本地文件，并通知存储引擎继续工作
+                        EngineFacade.play(it)
+                        logger.debug("进度 {} 已经完成 commit ~", it.toString())
+                    }
+                    ?: latestCommitGAO
         })
     }
 }

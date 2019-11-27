@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Created by Anur IjuoKaruKas on 2019/9/26
+ *
+ * 基于通知实现的无锁 “锁” 实现
  */
 object TrxFreeQueuedSynchronizer {
 

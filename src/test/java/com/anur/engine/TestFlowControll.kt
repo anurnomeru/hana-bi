@@ -14,25 +14,27 @@ import com.anur.engine.trx.manager.TrxAllocator
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    val longTrxForInsert = TrxAllocator.allocate()
-    insert("Anur", "Version 1", longTrxForInsert)
+    val trx1 = TrxAllocator.allocate()
+    insert("Anur", "Version 1", trx1)
 
-    val longTrxForQuery = TrxAllocator.allocate()
-    insert("zzz", "zzz", longTrxForQuery)
+    val trx2 = TrxAllocator.allocate()
+    insert("Anur", "zzz", trx2)
 
-    select("Anur")
-    select("Anur", longTrxForQuery)
+    select("Anur") // 由于隔离性，查不到
+    select("Anur", trx2)// 由于隔离性，查不到
 
-    commit(longTrxForInsert)
+    commit(trx1)
 
-    select("Anur")
-    select("Anur", longTrxForQuery)
+    select("Anur") // Version 1
+    select("Anur", trx2)// 由于 trx1已经提交，所以trx2进入了 未提交部分，所以能查到值为 zzz
 
-    insert("Anur", "zzzz")
-    insert("Anur", "zzzzzzz")
-    select("Anur")
+    insert("Anur", "zzzz")// 阻塞
+    insert("Anur", "zzzzzzz")// 阻塞
+
+    commit(trx2)
+    select("Anur")// zzzzzzz
     delete("Anur")
-    select("Anur")
+    select("Anur")// 空
     Thread.sleep(100000)
 }
 

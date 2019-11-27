@@ -31,3 +31,7 @@ TrxManager ->
 -> MemoryMVCCStorageUnCommittedPart 将数据冲刷到 -> MemoryMVCCStorageCommittedPart
 -> TrxManager 刷新水位
 -> 通知水位变更到 MemoryMVCCStorageCommittedPart，将数据刷入 MemoryLSM
+
+那么其实，我们查询的数据流向应该为：
+
+MemoryMVCCStorageUnCommittedPart(必须是本事务) -> MemoryMVCCStorageCommittedPart -> MemoryLSM -> LSM

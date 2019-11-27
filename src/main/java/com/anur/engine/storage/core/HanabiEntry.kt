@@ -7,7 +7,7 @@ import com.anur.engine.api.constant.StorageTypeConst
  *
  * 存储在内存中的展现形式
  */
-class HanabiEntry(var StorageType: StorageTypeConst, var value: Any, var operateType: OperateType) {
+class HanabiEntry(var storageType: StorageTypeConst, var value: Any, var operateType: OperateType) {
     companion object {
         enum class OperateType(val b: Byte) {
             ENABLE(0),
@@ -16,6 +16,6 @@ class HanabiEntry(var StorageType: StorageTypeConst, var value: Any, var operate
     }
 
     override fun toString(): String {
-        return "HanabiEntry(StorageType=$StorageType, value=$value, operateType=$operateType)"
+        return "HanabiEntry(StorageType=$storageType, value=$value, operateType=$operateType)"
     }
 }

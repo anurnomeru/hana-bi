@@ -23,7 +23,8 @@ object MemoryMVCCStorageCommittedPart {
     private val locker = ReentrantLocker()
 
     /**
-     * 和 uc 部分的有点像，但是这里要递归查找
+     * 和 uc 部分的有点像，但是这里要递归查找，
+     * 而且，基于隔离性，且要实现可重复读，如果key，只有事务小于当前事务才可
      */
     fun queryKeyInTrx(trxId: Long, key: String): HanabiEntry? {
         var verAndHanabiEntry = dataKeeper[key]

@@ -5,6 +5,7 @@ import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
 import com.anur.engine.api.constant.str.StrApiConst
+import com.anur.engine.queryer.EngineDataQueryer
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
@@ -53,15 +54,12 @@ object EngineDataFlowControl {
                     }
                     StrApiConst.INSERT -> {
                         doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                        logger.info("key [$key] trx [$trxId] value [$value] 成功插入并进入 LSM 未提交队列")
                     }
                     StrApiConst.UPDATE -> {
                         doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                        logger.info("key [$key] trx [$trxId] value [$value] 成功修改并进入 LSM 未提交队列")
                     }
                     StrApiConst.DELETE -> {
                         doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
-                        logger.info("key [$key] trx [$trxId] 成功删除并进入 LSM 未提交队列")
                     }
                 }
             }
@@ -75,7 +73,9 @@ object EngineDataFlowControl {
     }
 
     /**
-     * 进行事务控制与数据流转
+     * 进行事务控制与数据流转，通过无锁控制来进行阻塞与唤醒
+     *
+     * 如果拿到锁，则调用api，将数据插入 未提交部分(uc)
      */
     private fun doAcquire(trxId: Long, key: String, value: String, storageType: StorageTypeConst, operateType: HanabiEntry.Companion.OperateType) {
         TrxFreeQueuedSynchronizer.acquire(trxId, key) {

@@ -1,5 +1,6 @@
 package com.anur.engine.storage.memory
 
+import com.alibaba.fastjson.JSON
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VAHEKVPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
@@ -18,7 +19,8 @@ object MemoryMVCCStorageUnCommittedPart {
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
     /**
-     * 迭代查找未提交的 hanabiEntry
+     * 查找未提交的 hanabiEntry，传入的 trxId 必须为此 key 持有的那个事务id才可以查到，否则
+     * 由于隔离性，未提交的不可以查出来
      */
     fun queryKeyInTrx(trxId: Long, key: String): HanabiEntry? {
         val verAndHanabiEntry = treeMap[key]
