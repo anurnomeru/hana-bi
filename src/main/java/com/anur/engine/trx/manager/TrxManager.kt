@@ -20,7 +20,7 @@ import kotlin.math.min
 object TrxManager {
 
     const val Interval = 64L
-    const val IntervalMinusOne = 63
+    private const val IntervalMinusOne = 63
 
     private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
 
@@ -30,35 +30,15 @@ object TrxManager {
     private val notifyQueue = LinkedBlockingDeque<Long>()
 
     /**
-     * 分段锁获取
+     * 申请并激活一个递增的事务id，代表这个事务id是已经正式开始投入使用了，处于 “待提交水位”
      */
-    private fun acquireLocker(head: Long): ReentrantReadWriteLocker {
-        return synchronized(this) {
-            lockHolder.compute(head) { _, lock ->
-                lock ?: let {
-                    return@let if (recycler.size > 0) {
-                        val first = recycler.first()
-                        recycler.remove(first)
-                        first
-                    } else {
-                        ReentrantReadWriteLocker()
-                    }
-                }
-            }
-        }!!
+    fun acquireTrx(): Long {
+        val allocate = TrxAllocator.allocate()
+        return acquireTrx(allocate)
     }
 
     /**
-     * 分段锁销毁
-     */
-    private fun destroyLocker(head: Long) {
-        synchronized(this) {
-            lockHolder.remove(head)?.let { recycler.add(it) }
-        }
-    }
-
-    /**
-     * 申请激活一个递增的事务id
+     * 激活一个递增的事务id，代表这个事务id是已经正式开始投入使用了，处于 “待提交水位”
      */
     fun acquireTrx(anyElse: Long): Long {
         val head = genSegmentHead(anyElse)
@@ -73,7 +53,7 @@ object TrxManager {
     }
 
     /**
-     * 释放一个事务
+     * 释放一个事务，并可能刷新最低水位
      */
     fun releaseTrx(anyElse: Long) {
         val head = genSegmentHead(anyElse)
@@ -104,6 +84,36 @@ object TrxManager {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * TrxManager 的所有操作都是要获取锁的，这里的锁使用分段锁，间隔为64个事务
+     *
+     * 这里传入事务“头”，也就是64取余，来获取一个读写锁
+     */
+    private fun acquireLocker(head: Long): ReentrantReadWriteLocker {
+        return synchronized(this) {
+            lockHolder.compute(head) { _, lock ->
+                lock ?: let {
+                    return@let if (recycler.size > 0) {
+                        val first = recycler.first()
+                        recycler.remove(first)
+                        first
+                    } else {
+                        ReentrantReadWriteLocker()
+                    }
+                }
+            }
+        }!!
+    }
+
+    /**
+     * 分段锁销毁，销毁后将锁丢回 recycler 方便重复使用，因为锁这个东西实际没必要一直创建新的
+     */
+    private fun destroyLocker(head: Long) {
+        synchronized(this) {
+            lockHolder.remove(head)?.let { recycler.add(it) }
         }
     }
 
@@ -172,7 +182,7 @@ object TrxManager {
                     result++
                     mask = mask shl 1
                 }
-                start + max(result - 1,0)
+                start + max(result - 1, 0)
             }
         }
 

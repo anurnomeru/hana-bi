@@ -16,7 +16,7 @@ object TrxAllocator {
     /**
      * 申请一个递增的事务id
      */
-    fun allocate(): Long {
+    internal fun allocate(): Long {
         val trx = nowTrx
         if (trx == Long.MAX_VALUE) {
             nowTrx = Long.MIN_VALUE

@@ -57,10 +57,6 @@ public class Operation extends AbstractStruct {
         byte[] kBytes = key.getBytes(Charset.defaultCharset());
         int kSize = kBytes.length;
 
-//        if (kSize == 0) {
-//            throw new LogException("Operation Key的长度不合法，不能为0");
-//        }
-
         int vSize = value.getContentLength();
         ByteBuffer byteBuffer = ByteBuffer.allocate(BaseMessageOverhead + kSize + vSize);
 
