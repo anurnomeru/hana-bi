@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap
 object TrxFreeQueuedSynchronizer {
 
     private val logger: Debugger = Debugger(TrxFreeQueuedSynchronizer.javaClass)
-            .switch(DebuggerLevel.INFO)
 
     /**
      * 标识 key 上的锁
@@ -49,7 +48,7 @@ object TrxFreeQueuedSynchronizer {
                 trxHolder.undoEvent.compute(key) { _, undoList ->
                     (undoList ?: mutableListOf()).also { it.add(whatEverDo) }
                 }
-                logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
+                logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作")
             }
         }
     }
@@ -60,7 +59,7 @@ object TrxFreeQueuedSynchronizer {
     fun release(trxId: Long, doWhileCommit: ((MutableSet<String>?) -> Unit)) {
 
         if (!trxHolderMap.containsKey(trxId)) {
-            logger.debug("事务 $trxId 已经提交过，或者只是单纯的查询事务，无需释放")
+            logger.debug("事务 $trxId 已经提交过，无需释放")
             doWhileCommit.invoke(null)
             return
         }
@@ -72,7 +71,11 @@ object TrxFreeQueuedSynchronizer {
         } else {
             val holdKeys = trxHolder.holdKeys
 
-            // 移除所有锁
+            // 1、先执行需要执行的东西，其实就是把数据提交到uc去
+            doWhileCommit.invoke(holdKeys)
+
+
+            // 2、移除所有占有的锁
             holdKeys.forEach {
                 val queue = lockKeeper[it]
                 if (queue == null) logger.error("喵喵喵？？")
@@ -88,14 +91,12 @@ object TrxFreeQueuedSynchronizer {
 
             logger.trace("事务 $trxId 已经成功释放锁")
 
-            // 注销此事务
+            // 3、注销此事务
             trxHolderMap.remove(trxId)
 
-            // 通知其他事务
+            // 4、通知其他事务
             holdKeys.forEach { notify(it) }
 
-            // 执行需要执行的东西，其实就是把数据提交到uc去
-            doWhileCommit.invoke(holdKeys)
         }
     }
 
@@ -111,7 +112,7 @@ object TrxFreeQueuedSynchronizer {
             val first = mutableList.first()
             val trxHolder = trxHolderMap[first]!!
 
-            logger.debug("挂起的事务操作 trxId: $first, key = $key 被唤醒，并执行。")
+            logger.debug("挂起的事务操作 trxId: $first, key = $key 被唤醒，并执行")
             trxHolder.undoEvent[key]!!.forEach { it.invoke() }
             trxHolder.undoEvent.remove(key)
 

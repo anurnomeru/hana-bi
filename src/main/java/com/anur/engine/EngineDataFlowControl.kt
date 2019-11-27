@@ -46,21 +46,18 @@ object EngineDataFlowControl {
             }
         }
 
+        var isSelect = false
+
         when (StorageTypeConst.map(cmd.getType())) {
             StorageTypeConst.STR -> {
                 when (cmd.getApi()) {
                     StrApiConst.SELECT -> {
                         logger.info("key [$key] trx [$trxId] 查询结果： ${EngineDataQueryer.doQuery(trxId, key)}")
+                        isSelect = true
                     }
-                    StrApiConst.INSERT -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                    }
-                    StrApiConst.UPDATE -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                    }
-                    StrApiConst.DELETE -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
-                    }
+                    StrApiConst.INSERT -> doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                    StrApiConst.UPDATE -> doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                    StrApiConst.DELETE -> doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
                 }
             }
         }
@@ -69,7 +66,7 @@ object EngineDataFlowControl {
          * 如果是短事务，操作完就直接提交
          */
         val isShortTrx = TransactionTypeConst.map(cmd.getTransactionType()) == TransactionTypeConst.SHORT
-        if (isShortTrx) doCommit(trxId)
+        if (isShortTrx && !isSelect) doCommit(trxId)
     }
 
     /**

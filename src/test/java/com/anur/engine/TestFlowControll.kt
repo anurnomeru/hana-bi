@@ -35,7 +35,7 @@ fun main() {
     select("Anur")// zzzzzzz
     delete("Anur")
     select("Anur")// 空
-    Thread.sleep(100000)
+    Thread.sleep(10000)
 }
 
 fun select(key: String, trx: Long? = null) {
