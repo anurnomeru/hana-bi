@@ -1,7 +1,7 @@
 package com.anur.engine.trx.lock
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
+import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -12,7 +12,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 object TrxFreeQueuedSynchronizer {
 
-    private val logger: Logger = LoggerFactory.getLogger(TrxFreeQueuedSynchronizer::class.java)
+    private val logger: Debugger = Debugger(TrxFreeQueuedSynchronizer.javaClass)
+            .switch(DebuggerLevel.INFO)
 
     /**
      * 标识 key 上的锁
@@ -23,13 +24,6 @@ object TrxFreeQueuedSynchronizer {
      * 存储那些需要被唤醒的执行内容
      */
     private val trxHolderMap: ConcurrentHashMap<Long, TrxHolder> = ConcurrentHashMap()
-
-    /**
-     * 判断key是否在未提交的事务里面
-     */
-    fun isKeyInUnCommitTrx(trxId: Long, key: String): Boolean {
-        return trxHolderMap[trxId]?.holdKeys?.contains(key) ?: false
-    }
 
     /**
      * 仅广义上的互斥锁需要加锁 (此方法必须串行)
@@ -55,7 +49,7 @@ object TrxFreeQueuedSynchronizer {
                 trxHolder.undoEvent.compute(key) { _, undoList ->
                     (undoList ?: mutableListOf()).also { it.add(whatEverDo) }
                 }
-                logger.debug("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
+                logger.trace("事务 $trxId 无法获取位于键 $key 上的锁，将等待键上的前一个事务唤醒，且挂起需执行的操作。")
             }
         }
     }
