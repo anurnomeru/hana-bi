@@ -1,6 +1,7 @@
 package com.anur.engine.queryer
 
 import com.anur.engine.storage.core.HanabiEntry
+import com.anur.engine.trx.watermark.WaterMarker
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/31
@@ -18,5 +19,5 @@ object EngineDataQueryer {
         chain.next = cqc
     }
 
-    fun doQuery(trxId: Long, key: String): HanabiEntry? = chain.query(trxId, key)?.takeIf { it.operateType != HanabiEntry.Companion.OperateType.DISABLE }
+    fun doQuery(trxId: Long, key: String, waterMarker: WaterMarker): HanabiEntry? = chain.query(trxId, key, waterMarker)?.takeIf { it.operateType != HanabiEntry.Companion.OperateType.DISABLE }
 }

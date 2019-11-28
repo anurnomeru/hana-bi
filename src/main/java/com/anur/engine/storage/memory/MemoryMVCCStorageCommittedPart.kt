@@ -5,7 +5,9 @@ import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VAHEKVPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
+import com.anur.engine.trx.lock.TrxHolder
 import com.anur.engine.trx.manager.TrxManager
+import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.util.HanabiExecutors
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
@@ -24,12 +26,16 @@ object MemoryMVCCStorageCommittedPart {
 
     /**
      * 和 uc 部分的有点像，但是这里要递归查找，
-     * 而且，基于隔离性，且要实现可重复读，如果key，只有事务小于当前事务才可
+     * 而且，基于隔离性，且要实现可重复读
      */
-    fun queryKeyInTrx(trxId: Long, key: String): HanabiEntry? {
+    fun queryKeyInTrx(trxId: Long, key: String, waterMarker: WaterMarker): HanabiEntry? {
         var verAndHanabiEntry = dataKeeper[key]
+        val waterHolder = waterMarker.waterHolder
+
         while (verAndHanabiEntry != null) {
-            if (verAndHanabiEntry.trxId <= trxId) {
+
+            // 事务小于当前事务，且在创建时已经提交，才是可见的
+            if (verAndHanabiEntry.trxId <= trxId && !waterHolder.isActivateTrx(verAndHanabiEntry.trxId)) {
                 return verAndHanabiEntry.hanabiEntry
             }
             verAndHanabiEntry = verAndHanabiEntry.currentVersion

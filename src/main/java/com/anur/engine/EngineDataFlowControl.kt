@@ -10,6 +10,7 @@ import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import com.anur.engine.trx.manager.TrxManager
+import com.anur.engine.trx.watermark.WaterMarkRegistry
 import org.slf4j.LoggerFactory
 
 /**
@@ -26,8 +27,8 @@ object EngineDataFlowControl {
         val key = opera.key
         val value = cmd.getValue()
         val trxId = cmd.getTrxId()
-asdfadsfdsaf
-        TrxManager.acquireTrx(trxId)
+
+        val waterMarker = WaterMarkRegistry.findOut(trxId)
 
         /*
          * common 操作比较特殊，它直接会有些特殊交互，比如开启一个事务，关闭一个事务等。
@@ -52,7 +53,7 @@ asdfadsfdsaf
             StorageTypeConst.STR -> {
                 when (cmd.getApi()) {
                     StrApiConst.SELECT -> {
-                        logger.info("key [$key] trx [$trxId] 查询结果： ${EngineDataQueryer.doQuery(trxId, key)}")
+                        logger.info("key [$key] trx [$trxId] 查询结果： ${EngineDataQueryer.doQuery(trxId, key, waterMarker)}")
                         isSelect = true
                     }
                     StrApiConst.INSERT -> doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)

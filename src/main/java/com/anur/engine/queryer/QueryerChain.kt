@@ -1,6 +1,7 @@
 package com.anur.engine.queryer
 
 import com.anur.engine.storage.core.HanabiEntry
+import com.anur.engine.trx.watermark.WaterMarker
 
 
 /**
@@ -10,6 +11,8 @@ import com.anur.engine.storage.core.HanabiEntry
  */
 abstract class QueryerChain {
     var next: QueryerChain? = null
-    abstract fun doQuery(trxId: Long, key: String): HanabiEntry?
-    fun query(trxId: Long, key: String): HanabiEntry? = doQuery(trxId, key) ?: next?.query(trxId, key)
+    abstract fun doQuery(trxId: Long, key: String, waterMarker: WaterMarker): HanabiEntry?
+
+    fun query(trxId: Long, key: String, waterMarker: WaterMarker): HanabiEntry? =
+            doQuery(trxId, key, waterMarker) ?: next?.doQuery(trxId, key, waterMarker)
 }
