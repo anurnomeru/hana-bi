@@ -10,7 +10,7 @@ fun main() {
     val currentTimeMillis = System.currentTimeMillis()
 
     for (i in -1000 until 10000L) {
-        TrxManager.allocateTrx()
+        TrxManager.allocateTrx(false)
     }
     val minBefore = TrxManager.lowWaterMark()
 

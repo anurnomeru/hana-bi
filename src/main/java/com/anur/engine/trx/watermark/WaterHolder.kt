@@ -4,6 +4,7 @@ import com.anur.core.log.Debugger
 import com.anur.engine.trx.manager.TrxAllocator
 import com.anur.engine.trx.manager.TrxSegment
 import java.util.*
+import javax.xml.bind.annotation.XmlType
 import kotlin.Comparator
 import kotlin.math.absoluteValue
 
@@ -19,6 +20,7 @@ class WaterHolder {
         const val Interval = 64L
         private const val IntervalMinusOne = 63
         private val logger = Debugger(WaterHolder.javaClass)
+        val DEFAULT = WaterHolder()
 
         /**
          * 算出每一个段的“段头”

@@ -34,8 +34,11 @@ object MemoryMVCCStorageCommittedPart {
 
         while (verAndHanabiEntry != null) {
 
-            // 事务小于当前事务，且在创建时已经提交，才是可见的
-            if (verAndHanabiEntry.trxId <= trxId && !waterHolder.isActivateTrx(verAndHanabiEntry.trxId)) {
+            // NONE 代表不需要创建快照，而且这种短事务查询，到了这一层肯定是可见的，只要查到就可以返回
+            if (waterMarker == WaterMarker.NONE ||
+
+                    // 如果是长事务，则要求事务小于当前事务，且在创建时已经提交，才是可见的
+                    verAndHanabiEntry.trxId <= trxId && !waterHolder.isActivateTrx(verAndHanabiEntry.trxId)) {
                 return verAndHanabiEntry.hanabiEntry
             }
             verAndHanabiEntry = verAndHanabiEntry.currentVersion

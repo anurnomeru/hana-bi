@@ -2,12 +2,11 @@ package com.anur.engine.storage.core
 
 import com.anur.core.struct.OperationTypeEnum
 import com.anur.core.struct.base.Operation
-import com.anur.engine.EngineDataFlowControl
 import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
 import com.anur.engine.api.constant.str.StrApiConst
-import com.anur.engine.trx.manager.TrxAllocator
+import com.anur.engine.trx.manager.TrxManager
 
 
 /**
@@ -17,18 +16,18 @@ import com.anur.engine.trx.manager.TrxAllocator
  */
 object HanabiCommandBuilder {
 
-    fun select(key: String, trx: Long? = null): Operation {
+    fun select(key: String, trxId: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxAllocator.allocate(),
-                        trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
+                        trxId ?: TrxManager.allocateTrx(trxId?.let { false } ?: false),
+                        trxId?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.SELECT))
     }
 
     fun insert(key: String, value: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxAllocator.allocate(),
+                        trx ?: TrxManager.allocateTrx(trx?.let { false } ?: false),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.INSERT, value))
     }
@@ -36,7 +35,7 @@ object HanabiCommandBuilder {
     fun update(key: String, value: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxAllocator.allocate(),
+                        trx ?: TrxManager.allocateTrx(trx?.let { false } ?: false),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.UPDATE, value))
     }
@@ -44,7 +43,7 @@ object HanabiCommandBuilder {
     fun delete(key: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxAllocator.allocate(),
+                        trx ?: TrxManager.allocateTrx(trx?.let { false } ?: false),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.DELETE))
     }

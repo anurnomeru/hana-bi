@@ -24,12 +24,18 @@ object TrxManager {
 
     /**
      * 申请并激活一个递增的事务id，代表这个事务id是已经正式开始投入使用了，处于 “待提交水位”
+     *
+     * 长事务需要创建事务快照，以保证隔离性！
      */
-    fun allocateTrx(): Long {
+    fun allocateTrx(createSnapshot: Boolean): Long {
         val allocate = TrxAllocator.allocate()
 
         // 为每个事务生成一个事务快照，并注册
-        val watermarkSnapshot = WaterMarker(waterHolder.lowWaterMark(), allocate, waterHolder.snapshot())
+        val watermarkSnapshot = if (createSnapshot) {
+            WaterMarker(waterHolder.lowWaterMark(), allocate, waterHolder.snapshot())
+        } else {
+            WaterMarker.NONE
+        }
         WaterMarkRegistry.register(allocate, watermarkSnapshot)
 
         val head = WaterHolder.genSegmentHead(allocate)
@@ -47,12 +53,13 @@ object TrxManager {
     /**
      * 释放一个事务，并可能刷新最低水位
      */
-    fun releaseTrx(TrxId: Long) {
-        val head = WaterHolder.genSegmentHead(TrxId)
+    fun releaseTrx(trxId: Long) {
+        val head = WaterHolder.genSegmentHead(trxId)
         acquireLocker(head).writeLocker() {
-            val waterReleaseResult = waterHolder.releaseTrx(TrxId)
+            val waterReleaseResult = waterHolder.releaseTrx(trxId)
             if (waterReleaseResult.releaseSegment) destroyLocker(head)
             if (waterReleaseResult.releaseLowWaterMark) notifyQueue.push(waterHolder.lowWaterMark())
+            WaterMarkRegistry.release(trxId)
         }
     }
 
