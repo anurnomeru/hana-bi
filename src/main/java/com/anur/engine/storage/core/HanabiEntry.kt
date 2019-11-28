@@ -9,9 +9,12 @@ import com.anur.engine.api.constant.StorageTypeConst
  */
 class HanabiEntry(var storageType: StorageTypeConst, var value: Any, var operateType: OperateType) {
     companion object {
+        /**
+         * DISABLE 代表这个值被删掉了
+         */
         enum class OperateType(val b: Byte) {
             ENABLE(0),
-            DISABLE(1),
+            DISABLE(1)
         }
     }
 
