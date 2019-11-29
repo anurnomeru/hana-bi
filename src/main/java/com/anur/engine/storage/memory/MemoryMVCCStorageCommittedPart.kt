@@ -28,7 +28,8 @@ object MemoryMVCCStorageCommittedPart {
      * 保存一个事务持有多少 key，且从小打大排列
      */
     private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VerAndHanabiEntryWithKeyPair>>()
-    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass).switch(DebuggerLevel.INFO)
+    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass)
+//            .switch(DebuggerLevel.INFO)
     private val locker = ReentrantLocker()
 
     /**

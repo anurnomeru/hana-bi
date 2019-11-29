@@ -27,7 +27,6 @@ fun test4() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
 
-    Thread.sleep(2000)
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
