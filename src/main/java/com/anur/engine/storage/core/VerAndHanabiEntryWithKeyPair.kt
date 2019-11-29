@@ -4,4 +4,4 @@ package com.anur.engine.storage.core
 /**
  * Created by Anur IjuoKaruKas on 2019/10/15
  */
-class VAHEKVPair(val key: String, val value: VerAndHanabiEntry)
+class VerAndHanabiEntryWithKeyPair(val key: String, val value: VerAndHanabiEntry)

@@ -5,13 +5,11 @@ import com.anur.core.log.Debugger
 import com.anur.core.log.DebuggerLevel
 import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.storage.core.HanabiEntry
-import com.anur.engine.storage.core.VAHEKVPair
+import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
-import com.anur.engine.trx.lock.TrxHolder
 import com.anur.engine.trx.manager.TrxManager
 import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.util.HanabiExecutors
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentSkipListMap
 
 /**
@@ -29,7 +27,7 @@ object MemoryMVCCStorageCommittedPart {
     /**
      * 保存一个事务持有多少 key，且从小打大排列
      */
-    private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VAHEKVPair>>()
+    private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VerAndHanabiEntryWithKeyPair>>()
     private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass).switch(DebuggerLevel.INFO)
     private val locker = ReentrantLocker()
 
@@ -58,7 +56,7 @@ object MemoryMVCCStorageCommittedPart {
     /**
      * 将 uc 部分的数据提交到 mvcc 临界控制区，这部分需要做好隔离性控制
      */
-    fun commonOperate(trxId: Long, pairs: List<VAHEKVPair>) {
+    fun commonOperate(trxId: Long, pairs: List<VerAndHanabiEntryWithKeyPair>) {
         logger.debug("事务 $trxId 已经进入 MVCC 临界控制区")
         for (pair in pairs) {
             locker.lockSupplier {
@@ -135,8 +133,9 @@ object MemoryMVCCStorageCommittedPart {
                 return
             currentVer.trxId == removeEntry.trxId -> {// 只需要提交最新的key即可
                 MemoryLSM.put(key, currentVer.hanabiEntry)
-                logger.debug("key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
-                prev.currentVersion == null
+                logger.debug("由事务 [${currentVer.trxId}] 提交的 key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
+                prev.currentVersion = null// 抹除当前版本
+                currentVer.currentVersion = null// 将小于此版本的抹除
             }
             else -> commitVAHERecursive(currentVer, key, removeEntry)
         }

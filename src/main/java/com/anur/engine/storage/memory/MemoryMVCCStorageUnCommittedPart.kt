@@ -1,12 +1,10 @@
 package com.anur.engine.storage.memory
 
 import com.anur.core.log.Debugger
-import com.anur.core.log.DebuggerLevel
 import com.anur.engine.storage.core.HanabiEntry
-import com.anur.engine.storage.core.VAHEKVPair
+import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
 import com.anur.exception.MemoryMVCCStorageUnCommittedPartException
-import org.slf4j.LoggerFactory
 import java.util.*
 
 /**
@@ -48,13 +46,13 @@ object MemoryMVCCStorageUnCommittedPart {
      * 将数据推入 commit 部分
      */
     fun flushToCommittedPart(trxId: Long, holdKeys: MutableSet<String>) {
-        val vAHEKVPairs = holdKeys.map {
-            VAHEKVPair(it,
+        val verAndHanabiEntryWithKeyPairList = holdKeys.map {
+            VerAndHanabiEntryWithKeyPair(it,
                     treeMap[it]
                             ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
         }
         logger.debug("事务 $trxId 以及其键们 [${holdKeys}] 已经进入待提交区域")
-        MemoryMVCCStorageCommittedPart.commonOperate(trxId, vAHEKVPairs)
+        MemoryMVCCStorageCommittedPart.commonOperate(trxId, verAndHanabiEntryWithKeyPairList)
 
         // 必须要先拿出来，存到 commit 的才可以删除，不然查询的时候可能会有疏漏
         holdKeys.forEach { treeMap.remove(it) }
