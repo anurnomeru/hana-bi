@@ -50,10 +50,13 @@ object MemoryMVCCStorageUnCommittedPart {
     fun flushToCommittedPart(trxId: Long, holdKeys: MutableSet<String>) {
         val vAHEKVPairs = holdKeys.map {
             VAHEKVPair(it,
-                    treeMap.remove(it)
+                    treeMap[it]
                             ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
         }
         logger.debug("事务 $trxId 以及其键们 [${holdKeys}] 已经进入待提交区域")
         MemoryMVCCStorageCommittedPart.commonOperate(trxId, vAHEKVPairs)
+
+        // 必须要先拿出来，存到 commit 的才可以删除，不然查询的时候可能会有疏漏
+        holdKeys.forEach { treeMap.remove(it) }
     }
 }

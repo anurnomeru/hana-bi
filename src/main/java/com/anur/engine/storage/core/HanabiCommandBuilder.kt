@@ -19,7 +19,7 @@ object HanabiCommandBuilder {
     fun select(key: String, trxId: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trxId ?: TrxManager.allocateTrx(trxId?.let { false } ?: false),
+                        trxId ?: TrxManager.allocateTrx(),
                         trxId?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.SELECT))
     }
@@ -27,7 +27,7 @@ object HanabiCommandBuilder {
     fun insert(key: String, value: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxManager.allocateTrx(trx?.let { false } ?: false),
+                        trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.INSERT, value))
     }
@@ -35,7 +35,7 @@ object HanabiCommandBuilder {
     fun update(key: String, value: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxManager.allocateTrx(trx?.let { false } ?: false),
+                        trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.UPDATE, value))
     }
@@ -43,7 +43,7 @@ object HanabiCommandBuilder {
     fun delete(key: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
-                        trx ?: TrxManager.allocateTrx(trx?.let { false } ?: false),
+                        trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
                         StorageTypeConst.STR, StrApiConst.DELETE))
     }

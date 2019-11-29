@@ -14,8 +14,11 @@ import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import com.anur.engine.trx.manager.TrxManager
 import com.anur.engine.trx.watermark.WaterMarkRegistry
+import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.exception.RollbackException
+import com.anur.exception.WaterMarkCreationException
 import org.slf4j.LoggerFactory
+import java.rmi.UnexpectedException
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/24
@@ -34,8 +37,23 @@ object EngineDataFlowControl {
         val value = cmd.getValue()
         val trxId = cmd.getTrxId()
         val storageType = StorageTypeConst.map(cmd.getType())
+        var waterMarker = WaterMarkRegistry.findOut(trxId)
 
-        val waterMarker = WaterMarkRegistry.findOut(trxId)
+        /*
+         * 如果是短事务，操作完就直接提交
+         *
+         * 如果是长事务，则如果没有激活过事务，需要进行事务的激活(创建快照)
+         */
+        val isShortTrx = TransactionTypeConst.map(cmd.getTransactionType()) == TransactionTypeConst.SHORT
+
+        if (!isShortTrx && waterMarker == WaterMarker.NONE) {
+            TrxManager.activateTrx(trxId)
+            waterMarker = WaterMarkRegistry.findOut(trxId)
+
+            if (waterMarker == WaterMarker.NONE) {
+                throw WaterMarkCreationException("事务 [$trxId] 创建事务快照失败")
+            }
+        }
 
         try {
             /*
@@ -63,8 +81,8 @@ object EngineDataFlowControl {
                     when (cmd.getApi()) {
                         StrApiConst.SELECT -> {
                             result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
-                            logger.trace("事务 [$trxId] 查询 key [$key] \n" +
-                                    "      >> ${result.hanabiEntry}")
+                            logger.trace(
+                                    "事务 [$trxId] 查询 key [$key]       >>       ${result.hanabiEntry}")
                         }
                         StrApiConst.INSERT -> {
                             doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
@@ -83,10 +101,6 @@ object EngineDataFlowControl {
                 }
             }
 
-            /*
-             * 如果是短事务，操作完就直接提交
-             */
-            val isShortTrx = TransactionTypeConst.map(cmd.getTransactionType()) == TransactionTypeConst.SHORT
             if (isShortTrx) doCommit(trxId)
         } catch (e: Throwable) {
             logger.error("存储引擎执行出错，将执行回滚，原因 [$e.message]")

@@ -23,10 +23,6 @@ object WaterMarkRegistry {
 
     fun findOut(trxId: Long): WaterMarker {
         val waterMarker = registry[trxId]
-        if (waterMarker == null) {
-            throw TransactionNotActivateException()
-        } else {
-            return waterMarker
-        }
+        return waterMarker ?: WaterMarker.NONE
     }
 }

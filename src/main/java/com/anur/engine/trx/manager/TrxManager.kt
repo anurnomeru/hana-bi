@@ -23,30 +23,29 @@ object TrxManager {
     private val waterHolder = WaterHolder()
 
     /**
-     * 申请并激活一个递增的事务id，代表这个事务id是已经正式开始投入使用了，处于 “待提交水位”
+     * 申请一个事务id
+     */
+    fun allocateTrx(): Long {
+        return TrxAllocator.allocate()
+    }
+
+    /**
+     * 激活一个递增的事务id，代表这个事务id是已经正式开始投入使用了，处于 “待提交水位”
      *
      * 长事务需要创建事务快照，以保证隔离性！
      */
-    fun allocateTrx(createSnapshot: Boolean): Long {
-        val allocate = TrxAllocator.allocate()
-
+    fun activateTrx(trxId: Long) {
         // 为每个事务生成一个事务快照，并注册
-        val watermarkSnapshot = if (createSnapshot) {
-            WaterMarker(waterHolder.lowWaterMark(), allocate, waterHolder.snapshot())
-        } else {
-            WaterMarker.NONE
-        }
-        WaterMarkRegistry.register(allocate, watermarkSnapshot)
+        val watermarkSnapshot = WaterMarker(waterHolder.lowWaterMark(), trxId, waterHolder.snapshot())
+        WaterMarkRegistry.register(trxId, watermarkSnapshot)
 
-        val head = WaterHolder.genSegmentHead(allocate)
-        return acquireLocker(head).writeLockSupplierCompel(Supplier {
+        val head = WaterHolder.genSegmentHead(trxId)
+        acquireLocker(head).writeLockSupplier(Supplier {
             // 将事务扔进水位
-            if (!waterHolder.activateTrx(allocate)) {
-                logger.error("事务 [$allocate] 不应该被激活，因为已经激活过了")
+            if (!waterHolder.activateTrx(trxId)) {
+                logger.error("事务 [$trxId] 不应该被激活，因为已经激活过了")
             }
-
-            logger.trace("事务 [$allocate] 已经激活")
-            return@Supplier allocate
+            logger.trace("事务 [$trxId] 已经激活")
         })
     }
 

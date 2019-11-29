@@ -19,7 +19,14 @@ import java.util.concurrent.ConcurrentSkipListMap
  */
 object MemoryMVCCStorageCommittedPart {
 
+    /**
+     * 数据存储使用一个map，数据键 <-> VerAndHanabiEntry
+     */
     private val dataKeeper = HashMap<String, VerAndHanabiEntry>()
+
+    /**
+     * 保存一个事务持有多少 key，且从小打大排列
+     */
     private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VAHEKVPair>>()
     private val logger = LoggerFactory.getLogger(MemoryMVCCStorageCommittedPart::class.java)
     private val locker = ReentrantLocker()
@@ -47,7 +54,7 @@ object MemoryMVCCStorageCommittedPart {
     }
 
     /**
-     * 将 uc 部分的数据提交到 mvcc 临界控制区
+     * 将 uc 部分的数据提交到 mvcc 临界控制区，这部分需要做好隔离性控制
      */
     fun commonOperate(trxId: Long, pairs: List<VAHEKVPair>) {
         logger.debug("事务 $trxId 已经进入 MVCC 临界控制区")
@@ -69,23 +76,28 @@ object MemoryMVCCStorageCommittedPart {
     private val SENTINEL = VerAndHanabiEntry(0, HanabiEntry(StorageTypeConst.COMMON, "", HanabiEntry.Companion.OperateType.ENABLE))
 
     init {
+        /**
+         *
+         */
         HanabiExecutors.execute(
                 Runnable {
-                    logger.info("MVCC 临界控制区已经启动，等待从水位控制 TrxManager 获取最新提交水位")
+                    logger.info("MVCC 临界控制区已经启动，等待从水位控制 TrxManager 获取最新提交水位，并将数据提交到 LSM")
                     while (true) {
                         val takeNotify = TrxManager.takeNotify()
+                        // 拿到小于等于当前最低水位的部分
                         val headMap = holdKeysMapping.headMap(takeNotify, true)
 
-                        // TODO 虽然 pollLast 效率不是太高，但是明显从大到小去移除事务会快一些
-                        // TODO 先这么写着试试
+                        // 取部分中最大的事务
+                        // TODO 虽然 pollLast 效率不是太高，但是由于从大到小去移除事务会快一些，先这么写着试试
                         var pollLastEntry = headMap.pollLastEntry()
 
+                        // 迭代拿到事务
                         while (pollLastEntry != null) {
                             val trxId = pollLastEntry.key
 
                             // 释放单个key
                             for (pair in pollLastEntry.value) {
-                                // 拿到当前键最新的一个版本，再进行移除
+                                // 拿到当前键最新的一个版本
                                 val head = dataKeeper[pair.key]
                                 SENTINEL.currentVersion = head
 

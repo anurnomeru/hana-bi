@@ -7,10 +7,10 @@ import com.anur.engine.trx.manager.TrxManager
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    val trx1 = TrxManager.allocateTrx(true)
+    val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1", trx1))
 
-    val trx2 = TrxManager.allocateTrx(true)
+    val trx2 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2", trx2))
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 由于隔离性，查不到
