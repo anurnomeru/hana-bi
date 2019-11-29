@@ -1,6 +1,8 @@
 package com.anur.engine.storage.memory
 
 import com.anur.core.lock.rentrant.ReentrantLocker
+import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VAHEKVPair
@@ -28,7 +30,7 @@ object MemoryMVCCStorageCommittedPart {
      * 保存一个事务持有多少 key，且从小打大排列
      */
     private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VAHEKVPair>>()
-    private val logger = LoggerFactory.getLogger(MemoryMVCCStorageCommittedPart::class.java)
+    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass).switch(DebuggerLevel.INFO)
     private val locker = ReentrantLocker()
 
     /**

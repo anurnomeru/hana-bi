@@ -1,6 +1,7 @@
 package com.anur.engine.trx.manager
 
 import com.anur.engine.trx.watermark.WaterHolder
+import com.anur.exception.UnexpectedException
 import kotlin.math.max
 
 /**
@@ -36,23 +37,6 @@ class TrxSegment(anyElse: Long) {
         return neo
     }
 
-    fun minTrx(): Long? {
-        return if (releaseBitMap == 0L) {
-            null
-        } else {
-            var result = 0
-            var mask = 1L
-            while (result < WaterHolder.Interval) {
-                if (mask and releaseBitMap != mask) {
-                    break
-                }
-                result++
-                mask = mask shl 1
-            }
-            start + max(result - 1, 0)
-        }
-    }
-
     /**
      * 激活某个事务，其实就是把它置为1
      *
@@ -64,6 +48,7 @@ class TrxSegment(anyElse: Long) {
         val mask = 1L.shl(index)
 
         val firstActive = mask and trxBitMap == 0L
+
         trxBitMap = trxBitMap or mask
         return firstActive
     }
@@ -75,20 +60,63 @@ class TrxSegment(anyElse: Long) {
         val index = calcIndex(trxId)
         val mask = 1L.shl(index)
 
-        return mask and trxBitMap != 0L
+        val hasBeanActivate = mask and trxBitMap == mask
+        val hasBeanRelease = mask and releaseBitMap == mask
+        return hasBeanActivate && !hasBeanRelease
     }
 
     /**
-     * 标记某个事务已经释放
+     * 标记某个事务已经释放，其实就是把它变为 0
      */
     fun release(trxId: Long): Int {
         val index = calcIndex(trxId)
         val mask = 1L.shl(index)
-        releaseBitMap = trxBitMap or mask
+        releaseBitMap = releaseBitMap or mask
         return index
     }
 
+    /**
+     * 计算事务所处位置
+     */
     private fun calcIndex(trxId: Long): Int {
         return ((WaterHolder.Interval - 1) and trxId).toInt()
+    }
+
+    /**
+     * 获取最小的有效事务
+     */
+    fun minTrx(): Long? {
+        val activateAndNotRelease = releaseBitMap xor trxBitMap
+
+        // 表示所有事务都已经释放
+        return if (activateAndNotRelease == 0L) {
+             // 找到最后一个活跃事务
+             if (trxBitMap == 0L) {
+                 throw UnexpectedException()
+             }
+
+             var result = 63
+             var mask = 1L shl 63
+             while (result > 0) {
+                 if (mask and trxBitMap == mask) {
+                     break
+                 }
+                 result--
+                 mask = mask ushr  1
+             }
+             start + max(result, 0)
+         }else{
+            // 部分事务没有释放
+            var result = 0
+            var mask = 1L
+            while (result < WaterHolder.Interval) {
+                if (mask and activateAndNotRelease == mask) {
+                    break
+                }
+                result++
+                mask = mask shl 1
+            }
+            start + max(result, 0)
+         }
     }
 }

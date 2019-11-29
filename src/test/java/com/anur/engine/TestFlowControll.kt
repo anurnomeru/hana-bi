@@ -7,6 +7,79 @@ import com.anur.engine.trx.manager.TrxManager
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
+    test4()
+}
+
+/**
+ * 事务1不提交，提交后，数据将一次性都刷入 LSM
+ */
+fun test4() {
+    val trx1 = TrxManager.allocateTrx()
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("EXT", "EXT 1", trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 4"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 5"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 6"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 7"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 8"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
+
+    Thread.sleep(2000)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
+    Thread.sleep(5000)
+}
+
+/**
+ * 所有的插入都将阻塞
+ */
+fun test3() {
+    val trx1 = TrxManager.allocateTrx()
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1", trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 4"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 5"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 6"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 7"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 8"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
+
+    Thread.sleep(2000)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
+    Thread.sleep(5000)
+}
+
+/**
+ * 简单的插入测试
+ */
+fun test2() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 4"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 5"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 6"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 7"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 8"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
+
+    Thread.sleep(10000)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
+}
+
+/**
+ * 简单的隔离性测试
+ */
+fun test1() {
     val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1", trx1))
 

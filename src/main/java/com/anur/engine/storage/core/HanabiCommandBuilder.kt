@@ -29,7 +29,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.INSERT, value))
+                        StorageTypeConst.STR, StrApiConst.SET, value))
     }
 
     fun update(key: String, value: String, trx: Long? = null): Operation {
@@ -37,7 +37,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.UPDATE, value))
+                        StorageTypeConst.STR, StrApiConst.SET_EXIST, value))
     }
 
     fun delete(key: String, trx: Long? = null): Operation {

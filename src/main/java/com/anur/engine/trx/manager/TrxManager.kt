@@ -31,13 +31,14 @@ object TrxManager {
 
     /**
      * 激活一个递增的事务id，代表这个事务id是已经正式开始投入使用了，处于 “待提交水位”
-     *
-     * 长事务需要创建事务快照，以保证隔离性！
+     * 长事务需要创建事务快照，以保证隔离性，短事务没必要创建快照
      */
-    fun activateTrx(trxId: Long) {
-        // 为每个事务生成一个事务快照，并注册
-        val watermarkSnapshot = WaterMarker(waterHolder.lowWaterMark(), trxId, waterHolder.snapshot())
-        WaterMarkRegistry.register(trxId, watermarkSnapshot)
+    fun activateTrx(trxId: Long, createWaterMarkSnapshot: Boolean) {
+        if (createWaterMarkSnapshot) {
+            // 为每个事务生成一个事务快照，并注册
+            val watermarkSnapshot = WaterMarker(waterHolder.lowWaterMark(), trxId, waterHolder.snapshot())
+            WaterMarkRegistry.register(trxId, watermarkSnapshot)
+        }
 
         val head = WaterHolder.genSegmentHead(trxId)
         acquireLocker(head).writeLockSupplier(Supplier {
@@ -55,9 +56,16 @@ object TrxManager {
     fun releaseTrx(trxId: Long) {
         val head = WaterHolder.genSegmentHead(trxId)
         acquireLocker(head).writeLocker() {
+            // 释放锁
             val waterReleaseResult = waterHolder.releaseTrx(trxId)
+
+            // 如果当前事务段已经用完，则将其锁回收
             if (waterReleaseResult.releaseSegment) destroyLocker(head)
+
+            // 刷新低水位，以便将数据从 commitPart 推入 lsm 树
             if (waterReleaseResult.releaseLowWaterMark) notifyQueue.push(waterHolder.lowWaterMark())
+
+            // 释放数位快照
             WaterMarkRegistry.release(trxId)
         }
     }
@@ -104,6 +112,4 @@ object TrxManager {
      * 获取当前最低水位
      */
     fun lowWaterMark(): Long = waterHolder.lowWaterMark()
-
-
 }

@@ -94,7 +94,7 @@ class WaterHolder {
                     releaseSegment = true
                 }
 
-                // 如果当前操作的是最小的段，最小段发生操作，则推送一下当前提交的最小事务
+                // 如果当前操作的是最小的段，最小段发生操作，则有可能会更新最小水位，此时需要推送一下当前提交的最小事务
                 val isMinSeg = waterHolder.firstEntry()?.value?.let { it == trxSegment } ?: false
                 if (isMinSeg) {
                     logger.debug("当前最小事务 $TrxId 已经释放")

@@ -17,8 +17,6 @@ import com.anur.engine.trx.watermark.WaterMarkRegistry
 import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.exception.RollbackException
 import com.anur.exception.WaterMarkCreationException
-import org.slf4j.LoggerFactory
-import java.rmi.UnexpectedException
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/24
@@ -46,12 +44,19 @@ object EngineDataFlowControl {
          */
         val isShortTrx = TransactionTypeConst.map(cmd.getTransactionType()) == TransactionTypeConst.SHORT
 
-        if (!isShortTrx && waterMarker == WaterMarker.NONE) {
-            TrxManager.activateTrx(trxId)
-            waterMarker = WaterMarkRegistry.findOut(trxId)
+        // 如果没有水位快照，代表此事务从未激活过，需要去激活一下
+        if (waterMarker == WaterMarker.NONE) {
+            if (isShortTrx) {
+                TrxManager.activateTrx(trxId, false)
+            } else {
+                TrxManager.activateTrx(trxId, true)
 
-            if (waterMarker == WaterMarker.NONE) {
-                throw WaterMarkCreationException("事务 [$trxId] 创建事务快照失败")
+                // 从事务控制器申请激活该事务
+                waterMarker = WaterMarkRegistry.findOut(trxId)
+
+                if (waterMarker == WaterMarker.NONE) {
+                    throw WaterMarkCreationException("事务 [$trxId] 创建事务快照失败")
+                }
             }
         }
 
@@ -63,7 +68,7 @@ object EngineDataFlowControl {
                 StorageTypeConst.COMMON -> {
                     when (cmd.getApi()) {
                         CommonApiConst.START_TRX -> {
-                            logger.trace("事务 [$trxId] 已经开启（实际上没有什么卵用，在申请的时候就开启了）")
+                            logger.trace("事务 [$trxId] 已经开启")
                             return result
                         }
                         CommonApiConst.COMMIT_TRX -> {
@@ -81,22 +86,20 @@ object EngineDataFlowControl {
                     when (cmd.getApi()) {
                         StrApiConst.SELECT -> {
                             result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
-                            logger.trace(
-                                    "事务 [$trxId] 查询 key [$key]       >>       ${result.hanabiEntry}")
-                        }
-                        StrApiConst.INSERT -> {
-                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                            logger.trace("事务 [$trxId] 将插入数据 key [$key] val [$value]")
-                        }
-                        StrApiConst.UPDATE -> {
-                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                            logger.trace("事务 [$trxId] 将修改数据 key [$key] --> val [$value]")
+                            logger.trace("事务 [$trxId] 查询 key [$key]       >>       ${result.hanabiEntry}")
                         }
                         StrApiConst.DELETE -> {
                             doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
-                            logger.trace("事务 [$trxId] 将删除数据 key [$key]")
+                            logger.trace("事务 [$trxId] 请求将数据 key [$key] 删除")
                         }
-
+                        StrApiConst.SET -> {
+                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            logger.trace("事务 [$trxId] 请求将 key [$key] SET 为 [$value]")
+                        }
+                        StrApiConst.SET_EXIST -> {
+                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            logger.trace("事务 [$trxId] 请求将 key [$key] SET 为 [$value]，仅当 {$key} 存在时有效")
+                        }
                     }
                 }
             }
@@ -125,7 +128,10 @@ object EngineDataFlowControl {
     }
 
     /**
-     * 进行事务控制与数据流转
+     * 进行事务控制与数据流转，
+     * 1、首先要从无锁控制释放该锁，我们的很多操作都是经由 TrxFreeQueuedSynchronizer 进行控制锁并发的
+     * 2、将数据推入 commitPart
+     * 3、通知事务控制器，事务已经被销毁
      */
     private fun doCommit(trxId: Long) {
         TrxFreeQueuedSynchronizer.release(trxId) { keys ->

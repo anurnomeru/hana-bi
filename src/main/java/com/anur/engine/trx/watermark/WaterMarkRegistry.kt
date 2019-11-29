@@ -1,8 +1,5 @@
 package com.anur.engine.trx.watermark
 
-import com.anur.exception.TransactionNotActivateException
-
-
 /**
  * Created by Anur IjuoKaruKas on 2019/11/28
  *
