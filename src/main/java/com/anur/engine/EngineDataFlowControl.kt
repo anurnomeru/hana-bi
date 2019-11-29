@@ -14,6 +14,7 @@ import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import com.anur.engine.trx.manager.TrxManager
 import com.anur.engine.trx.watermark.WaterMarkRegistry
+import com.anur.exception.RollbackException
 import org.slf4j.LoggerFactory
 
 /**
@@ -36,55 +37,64 @@ object EngineDataFlowControl {
 
         val waterMarker = WaterMarkRegistry.findOut(trxId)
 
-        /*
-         * common 操作比较特殊，它直接会有些特殊交互，比如开启一个事务，关闭一个事务等。
-         */
-        when (storageType) {
-            StorageTypeConst.COMMON -> {
-                when (cmd.getApi()) {
-                    CommonApiConst.START_TRX -> {
-                        logger.trace("事务 [$trxId] 已经开启（实际上没有什么卵用，在申请的时候就开启了）")
-                        return result
+        try {
+            /*
+             * common 操作比较特殊，它直接会有些特殊交互，比如开启一个事务，关闭一个事务等。
+             */
+            when (storageType) {
+                StorageTypeConst.COMMON -> {
+                    when (cmd.getApi()) {
+                        CommonApiConst.START_TRX -> {
+                            logger.trace("事务 [$trxId] 已经开启（实际上没有什么卵用，在申请的时候就开启了）")
+                            return result
+                        }
+                        CommonApiConst.COMMIT_TRX -> {
+                            doCommit(trxId)
+                            logger.trace("事务 [$trxId] 已经提交（数据会冲刷到 MVCC CommitPart）")
+                            return result
+                        }
+                        CommonApiConst.ROLL_BACK -> {
+                            throw RollbackException()
+                        }
                     }
-                    CommonApiConst.COMMIT_TRX -> {
-                        doCommit(trxId)
-                        logger.trace("事务 [$trxId] 已经提交（数据会冲刷到 MVCC CommitPart）")
-                        return result
+                }
+
+                StorageTypeConst.STR -> {
+                    when (cmd.getApi()) {
+                        StrApiConst.SELECT -> {
+                            result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
+                            logger.trace("事务 [$trxId] 查询 key [$key] \n" +
+                                    "      >> ${result.hanabiEntry}")
+                        }
+                        StrApiConst.INSERT -> {
+                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            logger.trace("事务 [$trxId] 将插入数据 key [$key] val [$value]")
+                        }
+                        StrApiConst.UPDATE -> {
+                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            logger.trace("事务 [$trxId] 将修改数据 key [$key] --> val [$value]")
+                        }
+                        StrApiConst.DELETE -> {
+                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
+                            logger.trace("事务 [$trxId] 将删除数据 key [$key]")
+                        }
+
                     }
                 }
             }
+
+            /*
+             * 如果是短事务，操作完就直接提交
+             */
+            val isShortTrx = TransactionTypeConst.map(cmd.getTransactionType()) == TransactionTypeConst.SHORT
+            if (isShortTrx) doCommit(trxId)
+        } catch (e: Throwable) {
+            logger.error("存储引擎执行出错，将执行回滚，原因 [$e.message]")
+            doRollBack(trxId)
+            result.result = false
+            result.err = e
         }
 
-        when (storageType) {
-            StorageTypeConst.STR -> {
-                when (cmd.getApi()) {
-                    StrApiConst.SELECT -> {
-                        result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
-                        logger.trace("事务 [$trxId] 查询 key [$key] \n" +
-                                "      >> ${result.hanabiEntry}")
-                    }
-                    StrApiConst.INSERT -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                        logger.trace("事务 [$trxId] 将插入数据 key [$key] val [$value]")
-                    }
-                    StrApiConst.UPDATE -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                        logger.trace("事务 [$trxId] 将修改数据 key [$key] --> val [$value]")
-                    }
-                    StrApiConst.DELETE -> {
-                        doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
-                        logger.trace("事务 [$trxId] 将删除数据 key [$key]")
-                    }
-
-                }
-            }
-        }
-
-        /*
-         * 如果是短事务，操作完就直接提交
-         */
-        val isShortTrx = TransactionTypeConst.map(cmd.getTransactionType()) == TransactionTypeConst.SHORT
-        if (isShortTrx) doCommit(trxId)
         return result
     }
 
@@ -95,8 +105,7 @@ object EngineDataFlowControl {
      */
     private fun doAcquire(trxId: Long, key: String, value: String, storageType: StorageTypeConst, operateType: HanabiEntry.Companion.OperateType) {
         TrxFreeQueuedSynchronizer.acquire(trxId, key) {
-            MemoryMVCCStorageUnCommittedPart.commonOperate(trxId, key,
-                    HanabiEntry(storageType, value, operateType)
+            MemoryMVCCStorageUnCommittedPart.commonOperate(trxId, key, HanabiEntry(storageType, value, operateType)
             )
         }
     }
@@ -109,5 +118,9 @@ object EngineDataFlowControl {
             keys?.let { MemoryMVCCStorageUnCommittedPart.flushToCommittedPart(trxId, it) }
             TrxManager.releaseTrx(trxId)
         }
+    }
+
+    private fun doRollBack(trxId: Long) {
+        // todo 还没写 懒得写
     }
 }

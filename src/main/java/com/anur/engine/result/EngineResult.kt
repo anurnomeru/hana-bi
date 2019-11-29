@@ -19,4 +19,9 @@ class EngineResult {
      * 是否操作成功，比如插入失败，则为 false
      */
     var result: Boolean = true
+
+    /**
+     * result 为 false 才会有 err
+     */
+    var err: Throwable? = null
 }
