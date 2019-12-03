@@ -11,20 +11,25 @@ object StrApiConst {
     /**
      * 不管存不存在都删除（效率高）
      */
-    const val DELETE: Byte = -125
+    const val DELETE: Byte = -127
 
     /**
      * 不管存不存在都插入（效率高）
      */
-    const val SET: Byte = -127
+    const val SET: Byte = -126
 
     /**
      * 存在才会写入
      */
-    const val SET_EXIST: Byte = -126
+    const val SET_EXIST: Byte = -125
 
     /**
      * 不存在才会写入
      */
-    const val SET_NOT_EXIST: Byte = -125
+    const val SET_NOT_EXIST: Byte = -124
+
+    /**
+     * 如果值为 xx 才写入
+     */
+    const val SET_IF: Byte = -123
 }

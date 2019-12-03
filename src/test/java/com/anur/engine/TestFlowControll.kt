@@ -7,7 +7,7 @@ import com.anur.engine.trx.manager.TrxManager
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    test4()
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("EXT", "EXT 1", null))
 }
 
 /**
@@ -15,17 +15,17 @@ fun main() {
  */
 fun test4() {
     val trx1 = TrxManager.allocateTrx()
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("EXT", "EXT 1", trx1))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 4"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 5"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 6"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 7"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 8"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("EXT", "EXT 1", trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 3"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 4"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 5"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 6"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 7"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 8"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 9"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
@@ -38,16 +38,16 @@ fun test4() {
  */
 fun test3() {
     val trx1 = TrxManager.allocateTrx()
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1", trx1))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 4"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 5"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 6"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 7"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 8"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1", trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 3"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 4"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 5"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 6"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 7"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 8"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 9"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
     Thread.sleep(2000)
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
@@ -60,16 +60,16 @@ fun test3() {
  * 简单的插入测试
  */
 fun test2() {
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 4"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 5"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 6"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 7"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 8"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 9"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 10"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 3"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 4"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 5"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 6"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 7"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 8"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 9"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
     Thread.sleep(10000)
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
@@ -80,10 +80,10 @@ fun test2() {
  */
 fun test1() {
     val trx1 = TrxManager.allocateTrx()
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 1", trx1))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1", trx1))
 
     val trx2 = TrxManager.allocateTrx()
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 2", trx2))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2", trx2))
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 由于隔离性，查不到
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur", trx2))// 由于隔离性，查不到
@@ -93,7 +93,7 @@ fun test1() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 1 已经提交，所以查到这个值
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur", trx2))// 由于 trx1已经提交，所以trx2进入了 未提交部分，所以能查到值为 Version 2
 
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.insert("Anur", "Version 3"))// 阻塞
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 3"))// 阻塞
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx2))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 3

@@ -32,7 +32,7 @@ object EngineDataFlowControl {
 
         val cmd = opera.hanabiCommand
         val key = opera.key
-        val value = cmd.getValue()
+        val values = cmd.getValues()
         val trxId = cmd.getTrxId()
         val storageType = StorageTypeConst.map(cmd.getType())
         var waterMarker = WaterMarkRegistry.findOut(trxId)
@@ -86,19 +86,36 @@ object EngineDataFlowControl {
                     when (cmd.getApi()) {
                         StrApiConst.SELECT -> {
                             result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
-                            logger.trace("事务 [$trxId] 查询 key [$key]       >>       ${result.hanabiEntry}")
                         }
                         StrApiConst.DELETE -> {
-                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
-                            logger.trace("事务 [$trxId] 请求将数据 key [$key] 删除")
+                            doAcquire(trxId, key, values[0], StorageTypeConst.STR, HanabiEntry.Companion.OperateType.DISABLE)
                         }
                         StrApiConst.SET -> {
-                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                            logger.trace("事务 [$trxId] 请求将 key [$key] SET 为 [$value]")
+                            doAcquire(trxId, key, values[0], StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
                         }
                         StrApiConst.SET_EXIST -> {
-                            doAcquire(trxId, key, value, StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
-                            logger.trace("事务 [$trxId] 请求将 key [$key] SET 为 [$value]，仅当 {$key} 存在时有效")
+                            result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
+                            if (result.hanabiEntry == null) {
+                                doAcquire(trxId, key, values[0], StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            } else {
+                                result.result = false
+                            }
+                        }
+                        StrApiConst.SET_NOT_EXIST -> {
+                            result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
+                            if (result.hanabiEntry != null) {
+                                doAcquire(trxId, key, values[0], StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            } else {
+                                result.result = false
+                            }
+                        }
+                        StrApiConst.SET_IF -> {
+                            result.hanabiEntry = EngineDataQueryer.doQuery(trxId, key, waterMarker)
+                            if (values[1] == result.hanabiEntry?.value) {
+                                doAcquire(trxId, key, values[0], StorageTypeConst.STR, HanabiEntry.Companion.OperateType.ENABLE)
+                            } else {
+                                result.result = false
+                            }
                         }
                     }
                 }

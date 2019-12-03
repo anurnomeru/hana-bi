@@ -24,7 +24,15 @@ object HanabiCommandBuilder {
                         StorageTypeConst.STR, StrApiConst.SELECT))
     }
 
-    fun insert(key: String, value: String, trx: Long? = null): Operation {
+    fun delete(key: String, trx: Long? = null): Operation {
+        return Operation(OperationTypeEnum.COMMAND, key,
+                HanabiCommand.generator(
+                        trx ?: TrxManager.allocateTrx(),
+                        trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
+                        StorageTypeConst.STR, StrApiConst.DELETE))
+    }
+
+    fun set(key: String, value: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
@@ -32,7 +40,15 @@ object HanabiCommandBuilder {
                         StorageTypeConst.STR, StrApiConst.SET, value))
     }
 
-    fun update(key: String, value: String, trx: Long? = null): Operation {
+    fun setIfNotExist(key: String, value: String, trx: Long? = null): Operation {
+        return Operation(OperationTypeEnum.COMMAND, key,
+                HanabiCommand.generator(
+                        trx ?: TrxManager.allocateTrx(),
+                        trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
+                        StorageTypeConst.STR, StrApiConst.SET_NOT_EXIST, value))
+    }
+
+    fun setIfExist(key: String, value: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
@@ -40,12 +56,12 @@ object HanabiCommandBuilder {
                         StorageTypeConst.STR, StrApiConst.SET_EXIST, value))
     }
 
-    fun delete(key: String, trx: Long? = null): Operation {
+    fun setIf(key: String, value: String, expect: String?, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.DELETE))
+                        StorageTypeConst.STR, StrApiConst.SET_EXIST, value, expect))
     }
 
     fun commit(trx: Long): Operation {

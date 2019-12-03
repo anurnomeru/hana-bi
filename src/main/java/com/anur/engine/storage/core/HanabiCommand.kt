@@ -2,6 +2,7 @@ package com.anur.engine.storage.core
 
 import com.anur.engine.api.constant.StorageTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
+import com.anur.exception.HanabiException
 import java.nio.ByteBuffer
 
 /**
@@ -20,16 +21,42 @@ class HanabiCommand(val content: ByteBuffer) {
         private const val TypeLength = 1
         private const val ApiOffset = TypeOffset + TypeLength
         private const val ApiLength = 1
+
+        /**
+         * 此值可传多参数，参数个数int + length + value 组成
+         */
         private const val ValueOffset = ApiOffset + ApiLength
 
-        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, value: String = ""): HanabiCommand {
-            val valueArray = value.toByteArray()
-            val bb = ByteBuffer.allocate(ValueOffset + valueArray.size)
+        /**
+         * 表明参数长度，四个字节
+         */
+        private const val ValuesSizeLength = 4
+
+        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, vararg values: String? = arrayOf("")): HanabiCommand {
+            if (values.isEmpty()) {
+                throw HanabiException("不允许生成值为空数组的命令！至少要传一个含有空字符串的数组")
+            }
+
+            val valuesSizeLengthTotal = values.size * ValuesSizeLength
+            val valuesByteArr = values.map { it?.toByteArray() }
+            val bb = ByteBuffer.allocate(
+                    ValueOffset
+                            + valuesSizeLengthTotal
+                            + valuesByteArr.map { it?.size ?: 0 }.reduce(operation = { i1, i2 -> i1 + i2 }))
             bb.putLong(trxId)
             bb.put(transaction.byte)
             bb.put(type.byte)
             bb.put(api)
-            bb.put(valueArray)
+            valuesByteArr.forEach {
+                it.also { arr ->
+                    if (arr==null) {
+                        bb.putInt(0)
+                    }else{
+                        bb.putInt(arr.size)
+                        bb.put(arr)
+                    }
+                }
+            }
             bb.flip()
             return HanabiCommand(bb)
         }
@@ -66,13 +93,15 @@ class HanabiCommand(val content: ByteBuffer) {
     }
 
     @Synchronized
-    fun getValue(): String {
-        val valueLength = contentLength - ValueOffset
-        val bs = ByteArray(valueLength)
+    fun getValues(): MutableList<String> {
+        val list = mutableListOf<String>()
         content.position(ValueOffset)
-        content.get(bs)
-        content.position(0)
-        return String(bs)
+        while (content.position() < contentLength) {
+            val param = ByteArray(content.getInt())
+            content.get(param)
+            list.add(String(param))
+        }
+        return list
     }
 
     override fun toString(): String {
@@ -80,7 +109,7 @@ class HanabiCommand(val content: ByteBuffer) {
                 "trxId='" + getTrxId() + '\'' +
                 ", type='" + getType() + '\'' +
                 ", api='" + getApi() + '\'' +
-                ", value='" + getValue() + '\'' +
+                ", value='" + getValues() + '\'' +
                 "}"
     }
 }
