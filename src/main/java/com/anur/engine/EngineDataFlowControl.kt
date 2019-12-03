@@ -136,7 +136,7 @@ object EngineDataFlowControl {
             keys?.let { MemoryMVCCStorageUnCommittedPartExecutor.flushToCommittedPart(trxId, it) }
             TrxManager.releaseTrx(trxId)
         }
-        logger.trace("事务 [${trxId}] 已经提交（数据会冲刷到 MVCC CommitPart）")
+        logger.trace("事务 [${trxId}] 已经提交")
     }
 
     private fun doRollBack(trxId: Long) {

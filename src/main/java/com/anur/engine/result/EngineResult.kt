@@ -1,6 +1,7 @@
 package com.anur.engine.result
 
 import com.anur.engine.storage.core.HanabiEntry
+import com.anur.exception.UnexpectedException
 
 /**
  * Created by Anur IjuoKaruKas on 2019/11/28
@@ -30,4 +31,10 @@ open class EngineResult {
      * 查询结果
      */
     var hanabiEntry: HanabiEntry? = null
+
+    fun expect(str: String) {
+        if (hanabiEntry?.value?.equals(str) == false) {
+            throw UnexpectedException()
+        }
+    }
 }

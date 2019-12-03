@@ -7,18 +7,17 @@ import com.anur.engine.trx.manager.TrxManager
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-//    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", ""))
-//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
-//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
-//
-//    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 2", "Version 10"))
-//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
-//    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 3", ""))
-//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
-//
-//    Thread.sleep(10000L)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "fff",""))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", ""))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
 
-    test3()
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 2", "Version 10"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 3", ""))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("EXT 4")
+
+    Thread.sleep(10000L)
 }
 
 /**

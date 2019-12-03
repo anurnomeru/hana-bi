@@ -2,6 +2,7 @@ package com.anur.engine.storage.memory
 
 import com.anur.core.lock.rentrant.ReentrantLocker
 import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentSkipListMap
  */
 object MemoryMVCCStorageCommittedPartExecutor {
 
-    private val logger = Debugger(MemoryMVCCStorageCommittedPartExecutor.javaClass)
+    private val logger = Debugger(MemoryMVCCStorageCommittedPartExecutor.javaClass).switch(DebuggerLevel.INFO)
 
     /**
      * 数据存储使用一个map，数据键 <-> VerAndHanabiEntry

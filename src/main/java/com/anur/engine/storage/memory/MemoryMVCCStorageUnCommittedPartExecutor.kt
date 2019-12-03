@@ -16,7 +16,7 @@ import java.util.*
  */
 object MemoryMVCCStorageUnCommittedPartExecutor {
 
-    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass)
+    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass).switch(DebuggerLevel.INFO)
 
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
@@ -56,7 +56,7 @@ object MemoryMVCCStorageUnCommittedPartExecutor {
                     treeMap[it]
                             ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
         }
-        logger.debug("事务 $trxId 以及其键们 [${holdKeys}] 已经进入待提交区域")
+        logger.debug("事务 $trxId 以及其键们 $holdKeys 已经进入待提交区域")
         MemoryMVCCStorageCommittedPartExecutor.commonOperate(trxId, verAndHanabiEntryWithKeyPairList)
 
         // 必须要先拿出来，存到 commit 的才可以删除，不然查询的时候可能会有疏漏
