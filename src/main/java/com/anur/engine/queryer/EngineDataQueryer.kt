@@ -1,7 +1,6 @@
 package com.anur.engine.queryer
 
-import com.anur.engine.result.common.ParameterHandler
-import com.anur.engine.result.common.ResultHandler
+import com.anur.engine.result.common.EngineExecutor
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/31
@@ -20,5 +19,5 @@ object EngineDataQueryer {
         cqc.next = lsmqc
     }
 
-    fun doQuery(resultHandler: ResultHandler) = firstChain.query(resultHandler)
+    fun doQuery(engineExecutor: EngineExecutor) = firstChain.query(engineExecutor)
 }

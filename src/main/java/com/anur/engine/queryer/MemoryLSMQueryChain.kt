@@ -2,7 +2,7 @@ package com.anur.engine.queryer
 
 import com.anur.engine.queryer.common.QueryerChain
 import com.anur.engine.result.QueryerDefinition
-import com.anur.engine.result.common.ResultHandler
+import com.anur.engine.result.common.EngineExecutor
 import com.anur.engine.storage.memory.MemoryLSMExecutor
 
 /**
@@ -11,12 +11,12 @@ import com.anur.engine.storage.memory.MemoryLSMExecutor
  * 未提交部分的查询
  */
 class MemoryLSMQueryChain : QueryerChain() {
-    override fun doQuery(resultHandler: ResultHandler) {
-        val parameterHandler = resultHandler.getParameterHandler()
+    override fun doQuery(engineExecutor: EngineExecutor) {
+        val parameterHandler = engineExecutor.getParameterHandler()
         MemoryLSMExecutor.get(parameterHandler.key)
                 ?.also {
-                    resultHandler.engineResult.hanabiEntry = it
-                    resultHandler.engineResult.queryExecutorDefinition = QueryerDefinition.MEMORY_LSM
+                    engineExecutor.engineResult.hanabiEntry = it
+                    engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.MEMORY_LSM
                 }
     }
 

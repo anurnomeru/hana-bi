@@ -16,7 +16,7 @@ import java.util.*
  */
 object MemoryMVCCStorageUnCommittedPartExecutor {
 
-    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass).switch(DebuggerLevel.INFO)
+    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass)
 
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 

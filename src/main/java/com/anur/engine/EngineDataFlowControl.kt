@@ -8,15 +8,12 @@ import com.anur.engine.api.constant.str.StrApiConst
 import com.anur.engine.queryer.EngineDataQueryer
 import com.anur.engine.result.common.ParameterHandler
 import com.anur.engine.result.EngineResult
-import com.anur.engine.result.common.ResultHandler
+import com.anur.engine.result.common.EngineExecutor
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPartExecutor
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import com.anur.engine.trx.manager.TrxManager
-import com.anur.engine.trx.watermark.WaterMarkRegistry
-import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.exception.RollbackException
-import com.anur.exception.WaterMarkCreationException
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/24
@@ -28,7 +25,7 @@ object EngineDataFlowControl {
     private val logger = Debugger(EngineDataFlowControl.javaClass)
 
     fun commandInvoke(opera: Operation): EngineResult {
-        val resultHandler = ResultHandler(EngineResult())
+        val resultHandler = EngineExecutor(EngineResult())
         val parameterHandler = ParameterHandler(opera)
         resultHandler.setParameterHandler(parameterHandler)
 
@@ -104,6 +101,7 @@ object EngineDataFlowControl {
             doRollBack(parameterHandler.trxId)
             resultHandler.exceptionCaught(e)
         }
+        resultHandler.printResult()
         return resultHandler.engineResult
     }
 
@@ -112,8 +110,8 @@ object EngineDataFlowControl {
      *
      * 如果拿到锁，则调用api，将数据插入 未提交部分(uc)
      */
-    private fun doAcquire(resultHandler: ResultHandler, operateType: HanabiEntry.Companion.OperateType) {
-        val parameterHandler = resultHandler.getParameterHandler()
+    private fun doAcquire(engineExecutor: EngineExecutor, operateType: HanabiEntry.Companion.OperateType) {
+        val parameterHandler = engineExecutor.getParameterHandler()
         parameterHandler.operateType = operateType
         TrxFreeQueuedSynchronizer.acquire(parameterHandler.trxId, parameterHandler.key) {
             MemoryMVCCStorageUnCommittedPartExecutor.commonOperate(parameterHandler)

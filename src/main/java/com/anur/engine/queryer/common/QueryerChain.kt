@@ -1,8 +1,7 @@
 package com.anur.engine.queryer.common
 
 import com.anur.engine.result.QueryerDefinition
-import com.anur.engine.result.common.ParameterHandler
-import com.anur.engine.result.common.ResultHandler
+import com.anur.engine.result.common.EngineExecutor
 
 
 /**
@@ -17,20 +16,20 @@ abstract class QueryerChain {
     /**
      * 本层如何去执行查询
      */
-    abstract fun doQuery(resultHandler: ResultHandler)
+    abstract fun doQuery(engineExecutor: EngineExecutor)
 
     /**
      * 如果到了最后一层都找不到，则返回此结果
      */
-    private fun keyNotFoundTilEnd(resultHandler: ResultHandler) {
-        resultHandler.engineResult.queryExecutorDefinition = QueryerDefinition.TIL_END
+    private fun keyNotFoundTilEnd(engineExecutor: EngineExecutor) {
+        engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.TIL_END
     }
 
-    fun query(resultHandler: ResultHandler) {
+    fun query(engineExecutor: EngineExecutor) {
 
-        doQuery(resultHandler).let { resultHandler.engineResult.hanabiEntry }
-                ?: next?.doQuery(resultHandler).let { resultHandler.engineResult.hanabiEntry }
-                ?: keyNotFoundTilEnd(resultHandler)
+        doQuery(engineExecutor).let { engineExecutor.engineResult.hanabiEntry }
+                ?: next?.doQuery(engineExecutor).let { engineExecutor.engineResult.hanabiEntry }
+                ?: keyNotFoundTilEnd(engineExecutor)
     }
 }
 
