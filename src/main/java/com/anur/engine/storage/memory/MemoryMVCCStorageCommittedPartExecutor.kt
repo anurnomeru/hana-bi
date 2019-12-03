@@ -2,8 +2,7 @@ package com.anur.engine.storage.memory
 
 import com.anur.core.lock.rentrant.ReentrantLocker
 import com.anur.core.log.Debugger
-import com.anur.core.log.DebuggerLevel
-import com.anur.engine.api.constant.StorageTypeConst
+import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
@@ -74,7 +73,7 @@ object MemoryMVCCStorageCommittedPartExecutor {
     /**
      * 单链表哨兵，它没有别的作用，就是方便写代码用的
      */
-    private val SENTINEL = VerAndHanabiEntry(0, HanabiEntry(StorageTypeConst.COMMON, "", HanabiEntry.Companion.OperateType.ENABLE))
+    private val SENTINEL = VerAndHanabiEntry(0, HanabiEntry(CommandTypeConst.COMMON, "", HanabiEntry.Companion.OperateType.ENABLE))
 
     init {
         /**

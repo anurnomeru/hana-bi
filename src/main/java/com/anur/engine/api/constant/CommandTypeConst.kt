@@ -5,7 +5,7 @@ import com.anur.exception.UnSupportStorageTypeException
 /**
  * Created by Anur IjuoKaruKas on 2019/9/18
  */
-enum class StorageTypeConst(val byte: Byte) {
+enum class CommandTypeConst(val byte: Byte) {
 
     /** 这个类型表示为，此操作为基础操作 */
     COMMON(-128),
@@ -14,7 +14,7 @@ enum class StorageTypeConst(val byte: Byte) {
     STR(-127);
 
     companion object {
-        private val MAPPER = HashMap<Byte, StorageTypeConst>()
+        private val MAPPER = HashMap<Byte, CommandTypeConst>()
 
         init {
             for (value in values()) {
@@ -22,7 +22,7 @@ enum class StorageTypeConst(val byte: Byte) {
             }
         }
 
-        fun map(byte: Byte): StorageTypeConst {
+        fun map(byte: Byte): CommandTypeConst {
             return MAPPER[byte] ?: throw UnSupportStorageTypeException()
         }
     }

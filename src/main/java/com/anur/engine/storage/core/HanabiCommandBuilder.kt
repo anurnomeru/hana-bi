@@ -2,7 +2,7 @@ package com.anur.engine.storage.core
 
 import com.anur.core.struct.OperationTypeEnum
 import com.anur.core.struct.base.Operation
-import com.anur.engine.api.constant.StorageTypeConst
+import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
 import com.anur.engine.api.constant.str.StrApiConst
@@ -21,7 +21,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trxId ?: TrxManager.allocateTrx(),
                         trxId?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.SELECT))
+                        CommandTypeConst.STR, StrApiConst.SELECT))
     }
 
     fun delete(key: String, trx: Long? = null): Operation {
@@ -29,7 +29,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.DELETE))
+                        CommandTypeConst.STR, StrApiConst.DELETE))
     }
 
     fun set(key: String, value: String, trx: Long? = null): Operation {
@@ -37,7 +37,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.SET, value))
+                        CommandTypeConst.STR, StrApiConst.SET, value))
     }
 
     fun setIfNotExist(key: String, value: String, trx: Long? = null): Operation {
@@ -45,7 +45,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.SET_NOT_EXIST, value))
+                        CommandTypeConst.STR, StrApiConst.SET_NOT_EXIST, value))
     }
 
     fun setIfExist(key: String, value: String, trx: Long? = null): Operation {
@@ -53,7 +53,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.SET_EXIST, value))
+                        CommandTypeConst.STR, StrApiConst.SET_EXIST, value))
     }
 
     fun setIf(key: String, value: String, expect: String, trx: Long? = null): Operation {
@@ -61,7 +61,7 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.SET_IF, value, expect))
+                        CommandTypeConst.STR, StrApiConst.SET_IF, value, expect))
     }
 
     fun commit(trx: Long): Operation {
@@ -69,6 +69,6 @@ object HanabiCommandBuilder {
                 HanabiCommand.generator(
                         trx,
                         TransactionTypeConst.LONG,
-                        StorageTypeConst.COMMON, CommonApiConst.COMMIT_TRX))
+                        CommandTypeConst.COMMON, CommonApiConst.COMMIT_TRX))
     }
 }

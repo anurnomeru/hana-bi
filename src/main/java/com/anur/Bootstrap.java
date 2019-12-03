@@ -1,6 +1,6 @@
 package com.anur;
 
-import com.anur.engine.api.constant.StorageTypeConst;
+import com.anur.engine.api.constant.CommandTypeConst;
 import com.anur.engine.api.constant.TransactionTypeConst;
 import com.anur.engine.api.constant.str.StrApiConst;
 import org.slf4j.Logger;
@@ -120,7 +120,7 @@ public class Bootstrap {
                 for (int i = 0; i < 10000000; i++) {
                     
                     Operation operation = new Operation(OperationTypeEnum.COMMAND, "AnurKey",
-                                                        HanabiCommand.Companion.generator(99, TransactionTypeConst.SHORT, StorageTypeConst.STR, StrApiConst.SET, "HanabiValue-中文-"));
+                                                        HanabiCommand.Companion.generator(99, TransactionTypeConst.SHORT, CommandTypeConst.STR, StrApiConst.SET, "HanabiValue-中文-"));
                     LogManager.INSTANCE.appendWhileClusterValid(operation);
                 }
                 

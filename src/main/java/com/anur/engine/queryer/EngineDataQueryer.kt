@@ -1,6 +1,6 @@
 package com.anur.engine.queryer
 
-import com.anur.engine.queryer.common.QueryParameterHandler
+import com.anur.engine.result.common.ParameterHandler
 import com.anur.engine.result.common.ResultHandler
 
 /**
@@ -20,5 +20,5 @@ object EngineDataQueryer {
         cqc.next = lsmqc
     }
 
-    fun doQuery(parameterHandler: QueryParameterHandler, resultHandler: ResultHandler) = firstChain.query(parameterHandler, resultHandler)
+    fun doQuery(resultHandler: ResultHandler) = firstChain.query(resultHandler)
 }

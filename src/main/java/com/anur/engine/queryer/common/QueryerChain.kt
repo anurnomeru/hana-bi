@@ -1,6 +1,7 @@
 package com.anur.engine.queryer.common
 
 import com.anur.engine.result.QueryerDefinition
+import com.anur.engine.result.common.ParameterHandler
 import com.anur.engine.result.common.ResultHandler
 
 
@@ -16,7 +17,7 @@ abstract class QueryerChain {
     /**
      * 本层如何去执行查询
      */
-    abstract fun doQuery(parameterHandler: QueryParameterHandler, resultHandler: ResultHandler)
+    abstract fun doQuery(resultHandler: ResultHandler)
 
     /**
      * 如果到了最后一层都找不到，则返回此结果
@@ -25,9 +26,10 @@ abstract class QueryerChain {
         resultHandler.engineResult.queryExecutorDefinition = QueryerDefinition.TIL_END
     }
 
-    fun query(parameterHandler: QueryParameterHandler, resultHandler: ResultHandler) {
-        doQuery(parameterHandler, resultHandler).let { resultHandler.engineResult.hanabiEntry }
-                ?: next?.doQuery(parameterHandler, resultHandler).let { resultHandler.engineResult.hanabiEntry }
+    fun query(resultHandler: ResultHandler) {
+
+        doQuery(resultHandler).let { resultHandler.engineResult.hanabiEntry }
+                ?: next?.doQuery(resultHandler).let { resultHandler.engineResult.hanabiEntry }
                 ?: keyNotFoundTilEnd(resultHandler)
     }
 }

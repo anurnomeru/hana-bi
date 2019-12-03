@@ -2,6 +2,7 @@ package com.anur.engine.storage.memory
 
 import com.anur.core.log.Debugger
 import com.anur.core.log.DebuggerLevel
+import com.anur.engine.result.common.ParameterHandler
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
@@ -15,7 +16,7 @@ import java.util.*
  */
 object MemoryMVCCStorageUnCommittedPartExecutor {
 
-    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass)
+    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass).switch(DebuggerLevel.INFO)
 
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
@@ -34,7 +35,10 @@ object MemoryMVCCStorageUnCommittedPartExecutor {
     /**
      * 将数据存入 unCommit 部分
      */
-    fun commonOperate(trxId: Long, key: String, hanabiEntry: HanabiEntry) {
+    fun commonOperate(parameterHandler: ParameterHandler) {
+        val key = parameterHandler.key
+        val trxId = parameterHandler.trxId
+        val hanabiEntry = parameterHandler.genHanabiEntry()
         if (treeMap.containsKey(key) && treeMap[key]!!.trxId != trxId) {
             throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理一个 key 只会对应一个 val，注意无锁控制 TrxFreeQueuedSynchronizer 是否有问题！")
         } else {
