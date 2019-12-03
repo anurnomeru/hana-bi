@@ -56,12 +56,12 @@ object HanabiCommandBuilder {
                         StorageTypeConst.STR, StrApiConst.SET_EXIST, value))
     }
 
-    fun setIf(key: String, value: String, expect: String?, trx: Long? = null): Operation {
+    fun setIf(key: String, value: String, expect: String, trx: Long? = null): Operation {
         return Operation(OperationTypeEnum.COMMAND, key,
                 HanabiCommand.generator(
                         trx ?: TrxManager.allocateTrx(),
                         trx?.let { TransactionTypeConst.LONG } ?: TransactionTypeConst.SHORT,
-                        StorageTypeConst.STR, StrApiConst.SET_EXIST, value, expect))
+                        StorageTypeConst.STR, StrApiConst.SET_IF, value, expect))
     }
 
     fun commit(trx: Long): Operation {

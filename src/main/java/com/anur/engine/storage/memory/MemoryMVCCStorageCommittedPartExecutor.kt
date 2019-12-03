@@ -17,19 +17,18 @@ import java.util.concurrent.ConcurrentSkipListMap
  *
  * 内存存储实现，支持 mvcc （提交部分）
  */
-object MemoryMVCCStorageCommittedPart {
+object MemoryMVCCStorageCommittedPartExecutor {
+
+    private val logger = Debugger(MemoryMVCCStorageCommittedPartExecutor.javaClass)
 
     /**
      * 数据存储使用一个map，数据键 <-> VerAndHanabiEntry
      */
     private val dataKeeper = HashMap<String, VerAndHanabiEntry>()
-
     /**
      * 保存一个事务持有多少 key，且从小打大排列
      */
     private val holdKeysMapping = ConcurrentSkipListMap<Long, List<VerAndHanabiEntryWithKeyPair>>()
-    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass)
-//            .switch(DebuggerLevel.INFO)
     private val locker = ReentrantLocker()
 
     /**
@@ -134,7 +133,7 @@ object MemoryMVCCStorageCommittedPart {
             currentVer.trxId < removeEntry.trxId -> // 找到更小的也没必要继续找下去了
                 return
             currentVer.trxId == removeEntry.trxId -> {// 只需要提交最新的key即可
-                MemoryLSM.put(key, currentVer.hanabiEntry)
+                MemoryLSMExecutor.put(key, currentVer.hanabiEntry)
                 logger.debug("由事务 [${currentVer.trxId}] 提交的 key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
                 prev.currentVersion = null// 抹除当前版本
                 currentVer.currentVersion = null// 将小于此版本的抹除

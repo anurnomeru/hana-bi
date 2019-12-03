@@ -32,7 +32,7 @@ class HanabiCommand(val content: ByteBuffer) {
          */
         private const val ValuesSizeLength = 4
 
-        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, vararg values: String? = arrayOf("")): HanabiCommand {
+        fun generator(trxId: Long, transaction: TransactionTypeConst, type: StorageTypeConst, api: Byte, vararg values: String = arrayOf("")): HanabiCommand {
             if (values.isEmpty()) {
                 throw HanabiException("不允许生成值为空数组的命令！至少要传一个含有空字符串的数组")
             }

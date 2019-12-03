@@ -1,7 +1,7 @@
 package com.anur.engine.queryer
 
-import com.anur.engine.storage.core.HanabiEntry
-import com.anur.engine.trx.watermark.WaterMarker
+import com.anur.engine.queryer.common.QueryParameterHandler
+import com.anur.engine.result.common.ResultHandler
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/31
@@ -10,14 +10,15 @@ import com.anur.engine.trx.watermark.WaterMarker
  */
 object EngineDataQueryer {
 
-    private val chain = UnCommittedPartQueryChain()
+    private val firstChain = UnCommittedPartQueryChain()
 
     init {
         val cqc = CommittedPartQueryChain()
+        firstChain.next = cqc
+
         val lsmqc = MemoryLSMQueryChain()
         cqc.next = lsmqc
-        chain.next = cqc
     }
 
-    fun doQuery(trxId: Long, key: String, waterMarker: WaterMarker): HanabiEntry? = chain.query(trxId, key, waterMarker)?.takeIf { it.operateType != HanabiEntry.Companion.OperateType.DISABLE }
+    fun doQuery(parameterHandler: QueryParameterHandler, resultHandler: ResultHandler) = firstChain.query(parameterHandler, resultHandler)
 }

@@ -1,6 +1,7 @@
 package com.anur.engine.storage.memory
 
 import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
@@ -12,9 +13,9 @@ import java.util.*
  *
  * 内存存储实现，支持 mvcc （未提交部分）
  */
-object MemoryMVCCStorageUnCommittedPart {
+object MemoryMVCCStorageUnCommittedPartExecutor {
 
-    private val logger = Debugger(MemoryMVCCStorageUnCommittedPart.javaClass)
+    private val logger = Debugger(MemoryMVCCStorageUnCommittedPartExecutor.javaClass)
 
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
@@ -52,7 +53,7 @@ object MemoryMVCCStorageUnCommittedPart {
                             ?: throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理holdKeys拥有所有key的值，注意无锁控制是否有问题！"))
         }
         logger.debug("事务 $trxId 以及其键们 [${holdKeys}] 已经进入待提交区域")
-        MemoryMVCCStorageCommittedPart.commonOperate(trxId, verAndHanabiEntryWithKeyPairList)
+        MemoryMVCCStorageCommittedPartExecutor.commonOperate(trxId, verAndHanabiEntryWithKeyPairList)
 
         // 必须要先拿出来，存到 commit 的才可以删除，不然查询的时候可能会有疏漏
         holdKeys.forEach { treeMap.remove(it) }

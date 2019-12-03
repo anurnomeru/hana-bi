@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory
 /**
  * Created by Anur IjuoKaruKas on 2019/10/23
  */
-object MemoryLSM {
+object MemoryLSMExecutor {
 
     private val dataKeeper = HashMap<String, HanabiEntry>()
 

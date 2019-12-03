@@ -7,7 +7,18 @@ import com.anur.engine.trx.manager.TrxManager
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("EXT", "EXT 1", null))
+//    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", ""))
+//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
+//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
+//
+//    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 2", "Version 10"))
+//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
+//    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 3", ""))
+//    println(EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).hanabiEntry)
+//
+//    Thread.sleep(10000L)
+
+    test1()
 }
 
 /**
