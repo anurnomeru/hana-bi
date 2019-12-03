@@ -30,13 +30,6 @@ class EngineExecutor(val engineResult: EngineResult) {
     fun getParameterHandler(): ParameterHandler = parameterHandler ?: throw UnexpectedException("参数没有设置？？？？")
 
     /**
-     * 打印结果
-     */
-    fun printResult() {
-        logger.trace("${engineResult.hanabiEntry}")
-    }
-
-    /**
      * 标记为失败
      */
     fun shotFailure() {

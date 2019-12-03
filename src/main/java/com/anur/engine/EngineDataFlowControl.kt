@@ -1,6 +1,7 @@
 package com.anur.engine
 
 import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.core.struct.base.Operation
 import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
@@ -22,12 +23,12 @@ import com.anur.exception.RollbackException
  */
 object EngineDataFlowControl {
 
-    private val logger = Debugger(EngineDataFlowControl.javaClass)
+    private val logger = Debugger(EngineDataFlowControl.javaClass).switch(DebuggerLevel.INFO)
 
     fun commandInvoke(opera: Operation): EngineResult {
-        val resultHandler = EngineExecutor(EngineResult())
+        val engineExecutor = EngineExecutor(EngineResult())
         val parameterHandler = ParameterHandler(opera)
-        resultHandler.setParameterHandler(parameterHandler)
+        engineExecutor.setParameterHandler(parameterHandler)
 
         try {
             /*
@@ -38,12 +39,11 @@ object EngineDataFlowControl {
                     when (parameterHandler.api) {
                         CommonApiConst.START_TRX -> {
                             logger.trace("事务 [${parameterHandler.trxId}] 已经开启")
-                            return resultHandler.engineResult // TODO
+                            return engineExecutor.engineResult // TODO
                         }
                         CommonApiConst.COMMIT_TRX -> {
                             doCommit(parameterHandler.trxId)
-                            logger.trace("事务 [${parameterHandler.trxId}] 已经提交（数据会冲刷到 MVCC CommitPart）")
-                            return resultHandler.engineResult // TODO
+                            return engineExecutor.engineResult // TODO
                         }
                         CommonApiConst.ROLL_BACK -> {
                             throw RollbackException()
@@ -54,39 +54,39 @@ object EngineDataFlowControl {
                 CommandTypeConst.STR -> {
                     when (parameterHandler.api) {
                         StrApiConst.SELECT -> {
-                            EngineDataQueryer.doQuery(resultHandler)
+                            doQuery(engineExecutor)
                         }
                         StrApiConst.DELETE -> {
-                            doAcquire(resultHandler, HanabiEntry.Companion.OperateType.DISABLE)
+                            doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.DISABLE)
                         }
                         StrApiConst.SET -> {
-                            doAcquire(resultHandler, HanabiEntry.Companion.OperateType.ENABLE)
+                            doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
                         }
                         StrApiConst.SET_EXIST -> {
-                            EngineDataQueryer.doQuery(resultHandler)
-                            resultHandler.hanabiEntry()
-                                    ?.also { resultHandler.shotFailure() }
+                            EngineDataQueryer.doQuery(engineExecutor)
+                            engineExecutor.hanabiEntry()
+                                    ?.also { engineExecutor.shotFailure() }
                                     ?: also {
-                                        doAcquire(resultHandler, HanabiEntry.Companion.OperateType.ENABLE)
+                                        doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
                                     }
                         }
                         StrApiConst.SET_NOT_EXIST -> {
-                            EngineDataQueryer.doQuery(resultHandler)
-                            resultHandler.hanabiEntry()
+                            EngineDataQueryer.doQuery(engineExecutor)
+                            engineExecutor.hanabiEntry()
                                     ?.also {
-                                        doAcquire(resultHandler, HanabiEntry.Companion.OperateType.ENABLE)
+                                        doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
                                     }
-                                    ?: also { resultHandler.shotFailure() }
+                                    ?: also { engineExecutor.shotFailure() }
                         }
                         StrApiConst.SET_IF -> {
-                            EngineDataQueryer.doQuery(resultHandler)
-                            val currentValue = resultHandler.hanabiEntry()?.value
+                            EngineDataQueryer.doQuery(engineExecutor)
+                            val currentValue = engineExecutor.hanabiEntry()?.value
                             val expectValue = parameterHandler.values[1]
 
                             if (expectValue == currentValue) {
-                                doAcquire(resultHandler, HanabiEntry.Companion.OperateType.ENABLE)
+                                doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
                             } else {
-                                resultHandler.shotFailure()
+                                engineExecutor.shotFailure()
                             }
                         }
                     }
@@ -99,10 +99,15 @@ object EngineDataFlowControl {
             e.printStackTrace()
 
             doRollBack(parameterHandler.trxId)
-            resultHandler.exceptionCaught(e)
+            engineExecutor.exceptionCaught(e)
         }
-        resultHandler.printResult()
-        return resultHandler.engineResult
+        return engineExecutor.engineResult
+    }
+
+    private fun doQuery(engineExecutor: EngineExecutor) {
+        EngineDataQueryer.doQuery(engineExecutor)
+        logger.trace("事务 [${engineExecutor.getParameterHandler().trxId}] 对 key [${engineExecutor.getParameterHandler().key}] 进行了查询操作" +
+                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.engineResult.hanabiEntry}}")
     }
 
     /**
@@ -116,6 +121,8 @@ object EngineDataFlowControl {
         TrxFreeQueuedSynchronizer.acquire(parameterHandler.trxId, parameterHandler.key) {
             MemoryMVCCStorageUnCommittedPartExecutor.commonOperate(parameterHandler)
         }
+        logger.trace("事务 [${engineExecutor.getParameterHandler().trxId}] 将 key [${engineExecutor.getParameterHandler().key}] 设置为了" +
+                " {${engineExecutor.getParameterHandler().values[0]}}")
     }
 
     /**
@@ -129,6 +136,7 @@ object EngineDataFlowControl {
             keys?.let { MemoryMVCCStorageUnCommittedPartExecutor.flushToCommittedPart(trxId, it) }
             TrxManager.releaseTrx(trxId)
         }
+        logger.trace("事务 [${trxId}] 已经提交（数据会冲刷到 MVCC CommitPart）")
     }
 
     private fun doRollBack(trxId: Long) {

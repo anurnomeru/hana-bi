@@ -13,6 +13,10 @@ class Debugger(clazz: Class<Any>) {
     private val h: Logger = LoggerFactory.getLogger(clazz)
     private var level: DebuggerLevel = DebuggerLevel.NONE
 
+    fun level(): DebuggerLevel {
+        return level
+    }
+
     fun switch(level: DebuggerLevel): Debugger {
         this.level = level
         return this

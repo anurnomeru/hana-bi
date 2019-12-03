@@ -18,7 +18,7 @@ fun main() {
 //
 //    Thread.sleep(10000L)
 
-    test1()
+    test3()
 }
 
 /**
@@ -109,6 +109,9 @@ fun test1() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx2))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 3
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
     Thread.sleep(10000)
 }
