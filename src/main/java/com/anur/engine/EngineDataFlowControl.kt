@@ -107,7 +107,7 @@ object EngineDataFlowControl {
     private fun doQuery(engineExecutor: EngineExecutor) {
         EngineDataQueryer.doQuery(engineExecutor)
         logger.trace("事务 [${engineExecutor.getParameterHandler().trxId}] 对 key [${engineExecutor.getParameterHandler().key}] 进行了查询操作" +
-                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.engineResult.hanabiEntry}}")
+                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.engineResult.getHanabiEntry()}}")
     }
 
     /**

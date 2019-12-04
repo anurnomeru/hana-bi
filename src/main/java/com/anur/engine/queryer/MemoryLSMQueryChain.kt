@@ -15,7 +15,7 @@ class MemoryLSMQueryChain : QueryerChain() {
         val parameterHandler = engineExecutor.getParameterHandler()
         MemoryLSMExecutor.get(parameterHandler.key)
                 ?.also {
-                    engineExecutor.engineResult.hanabiEntry = it
+                    engineExecutor.engineResult.setHanabiEntry(it)
                     engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.MEMORY_LSM
                 }
     }

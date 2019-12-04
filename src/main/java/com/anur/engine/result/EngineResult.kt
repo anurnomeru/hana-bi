@@ -30,11 +30,17 @@ open class EngineResult {
     /**
      * 查询结果
      */
-    var hanabiEntry: HanabiEntry? = null
+    private var hanabiEntry: HanabiEntry? = null
 
-    fun expect(str: String) {
-        if (hanabiEntry?.value?.equals(str) == false) {
-            throw UnexpectedException()
+    fun setHanabiEntry(hanabiEntry: HanabiEntry) {
+        this.hanabiEntry = hanabiEntry
+    }
+
+    fun getHanabiEntry(): HanabiEntry? = hanabiEntry?.takeIf { it.operateType == HanabiEntry.Companion.OperateType.ENABLE }
+
+    fun expect(str: String?) {
+        if (getHanabiEntry()?.value?.equals(str) == false) {
+            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.value}]")
         }
     }
 }

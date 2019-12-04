@@ -15,7 +15,7 @@ class UnCommittedPartQueryChain : QueryerChain() {
         val parameterHandler = engineExecutor.getParameterHandler()
         MemoryMVCCStorageUnCommittedPartExecutor.queryKeyInTrx(parameterHandler.trxId, parameterHandler.key)
                 ?.also {
-                    engineExecutor.engineResult.hanabiEntry = it
+                    engineExecutor.engineResult.setHanabiEntry(it)
                     engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.UN_COMMIT_PART
                 }
     }

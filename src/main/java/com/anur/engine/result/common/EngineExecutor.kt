@@ -21,7 +21,7 @@ class EngineExecutor(val engineResult: EngineResult) {
 
     private var parameterHandler: ParameterHandler? = null
 
-    fun hanabiEntry(): HanabiEntry? = engineResult.hanabiEntry
+    fun hanabiEntry(): HanabiEntry? = engineResult.getHanabiEntry()
 
     fun setParameterHandler(parameterHandler: ParameterHandler) {
         this.parameterHandler = parameterHandler

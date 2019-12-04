@@ -18,7 +18,7 @@ class CommittedPartQueryChain : QueryerChain() {
         val parameterHandler = engineExecutor.getParameterHandler()
         MemoryMVCCStorageCommittedPartExecutor.queryKeyInTrx(parameterHandler.trxId, parameterHandler.key, parameterHandler.getWaterMarker())
                 ?.also {
-                    engineExecutor.engineResult.hanabiEntry = it
+                    engineExecutor.engineResult.setHanabiEntry(it)
                     engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.COMMIT_PART
                 }
     }

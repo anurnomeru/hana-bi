@@ -7,7 +7,15 @@ import com.anur.engine.trx.manager.TrxManager
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "fff",""))
+    test1()
+    test2()
+    test3()
+    test4()
+    test5()
+}
+
+fun test5() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "fff", ""))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", ""))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
@@ -15,9 +23,7 @@ fun main() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 2", "Version 10"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "EXT 3", ""))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("EXT 4")
-
-    Thread.sleep(10000L)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("EXT 3")
 }
 
 /**
@@ -37,10 +43,9 @@ fun test4() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 9"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 10")// Version 10
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
-    Thread.sleep(500000)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 10")// Version 10
 }
 
 /**
@@ -59,11 +64,10 @@ fun test3() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 9"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
-    Thread.sleep(2000)
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Null
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// Null
+    Thread.sleep(1000)
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
-    Thread.sleep(500000)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 10")// Version 10
 }
 
 /**
@@ -81,8 +85,7 @@ fun test2() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 9"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
-    Thread.sleep(10000)
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 10
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 10")// Version 10
 }
 
 /**
@@ -95,22 +98,20 @@ fun test1() {
     val trx2 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2", trx2))
 
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 由于隔离性，查不到
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur", trx2))// 由于隔离性，查不到
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// 由于隔离性，查不到
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur", trx2)).expect(null)// 由于隔离性，查不到
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
 
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 1 已经提交，所以查到这个值
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur", trx2))// 由于 trx1已经提交，所以trx2进入了 未提交部分，所以能查到值为 Version 2
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 1")// Version 1 已经提交，所以查到这个值
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur", trx2)).expect("Version 2")// 由于 trx1已经提交，所以trx2进入了 未提交部分，所以能查到值为 Version 2
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 3"))// 阻塞
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx2))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// Version 3
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 3")// Version 3
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur"))// 空
-    Thread.sleep(10000)
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// 空
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// 空
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// 空
 }
