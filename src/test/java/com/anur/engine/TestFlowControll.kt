@@ -15,6 +15,8 @@ fun main() {
 }
 
 fun test5() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.setIf("Anur", "fff", ""))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("")// ""
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", ""))
@@ -30,6 +32,8 @@ fun test5() {
  * 事务1不提交，提交后，数据将一次性都刷入 LSM
  */
 fun test4() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+
     val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("EXT", "EXT 1", trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1"))
@@ -52,6 +56,8 @@ fun test4() {
  * 所有的插入都将阻塞
  */
 fun test3() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+
     val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1", trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))
@@ -74,6 +80,8 @@ fun test3() {
  * 简单的插入测试
  */
 fun test2() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 3"))
@@ -92,6 +100,8 @@ fun test2() {
  * 简单的隔离性测试
  */
 fun test1() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+
     val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1", trx1))
 

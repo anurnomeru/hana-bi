@@ -10,7 +10,7 @@ object TrxAllocator {
 
     const val StartTrx: Long =
 //            Long.MIN_VALUE
-            0
+            1
     private var nowTrx: Long = StartTrx
 
     /**
