@@ -11,7 +11,7 @@ import com.anur.engine.result.common.ParameterHandler
 import com.anur.engine.result.EngineResult
 import com.anur.engine.result.common.EngineExecutor
 import com.anur.engine.storage.core.HanabiEntry
-import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPartExecutor
+import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import com.anur.engine.trx.manager.TrxManager
 import com.anur.exception.RollbackException
@@ -119,7 +119,7 @@ object EngineDataFlowControl {
         val parameterHandler = engineExecutor.getParameterHandler()
         parameterHandler.operateType = operateType
         TrxFreeQueuedSynchronizer.acquire(parameterHandler.trxId, parameterHandler.key) {
-            MemoryMVCCStorageUnCommittedPartExecutor.commonOperate(parameterHandler)
+            MemoryMVCCStorageUnCommittedPart.commonOperate(parameterHandler)
         }
         logger.trace("事务 [${engineExecutor.getParameterHandler().trxId}] 将 key [${engineExecutor.getParameterHandler().key}] 设置为了" +
                 " {${engineExecutor.getParameterHandler().values[0]}}")
@@ -133,7 +133,7 @@ object EngineDataFlowControl {
      */
     private fun doCommit(trxId: Long) {
         TrxFreeQueuedSynchronizer.release(trxId) { keys ->
-            keys?.let { MemoryMVCCStorageUnCommittedPartExecutor.flushToCommittedPart(trxId, it) }
+            keys?.let { MemoryMVCCStorageUnCommittedPart.flushToCommittedPart(trxId, it) }
             TrxManager.releaseTrx(trxId)
         }
         logger.trace("事务 [${trxId}] 已经提交")

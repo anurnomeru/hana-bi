@@ -3,7 +3,7 @@ package com.anur.engine.queryer
 import com.anur.engine.queryer.common.QueryerChain
 import com.anur.engine.result.QueryerDefinition
 import com.anur.engine.result.common.EngineExecutor
-import com.anur.engine.storage.memory.MemoryMVCCStorageCommittedPartExecutor
+import com.anur.engine.storage.memory.MemoryMVCCStorageCommittedPart
 
 /**
  * Created by Anur IjuoKaruKas on 2019/11/27
@@ -16,7 +16,7 @@ import com.anur.engine.storage.memory.MemoryMVCCStorageCommittedPartExecutor
 class CommittedPartQueryChain : QueryerChain() {
     override fun doQuery(engineExecutor: EngineExecutor) {
         val parameterHandler = engineExecutor.getParameterHandler()
-        MemoryMVCCStorageCommittedPartExecutor.queryKeyInTrx(parameterHandler.trxId, parameterHandler.key, parameterHandler.getWaterMarker())
+        MemoryMVCCStorageCommittedPart.queryKeyInTrx(parameterHandler.trxId, parameterHandler.key, parameterHandler.getWaterMarker())
                 ?.also {
                     engineExecutor.engineResult.setHanabiEntry(it)
                     engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.COMMIT_PART

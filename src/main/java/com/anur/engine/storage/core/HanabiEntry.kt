@@ -7,7 +7,7 @@ import com.anur.engine.api.constant.CommandTypeConst
  *
  * 存储在内存中的展现形式
  */
-class HanabiEntry(var commandType: CommandTypeConst, var value: Any, var operateType: OperateType) {
+class HanabiEntry(var commandType: CommandTypeConst, var value: String, var operateType: OperateType) {
     companion object {
         /**
          * DISABLE 代表这个值被删掉了
