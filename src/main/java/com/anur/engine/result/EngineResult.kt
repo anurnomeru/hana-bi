@@ -1,6 +1,6 @@
 package com.anur.engine.result
 
-import com.anur.engine.storage.core.HanabiEntry
+import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.exception.UnexpectedException
 
 /**
@@ -30,17 +30,17 @@ open class EngineResult {
     /**
      * 查询结果
      */
-    private var hanabiEntry: HanabiEntry? = null
+    private var hanabiEntry: ByteBufferHanabiEntry? = null
 
-    fun setHanabiEntry(hanabiEntry: HanabiEntry) {
+    fun setHanabiEntry(hanabiEntry: ByteBufferHanabiEntry) {
         this.hanabiEntry = hanabiEntry
     }
 
-    fun getHanabiEntry(): HanabiEntry? = hanabiEntry?.takeIf { it.operateType == HanabiEntry.Companion.OperateType.ENABLE }
+    fun getHanabiEntry(): ByteBufferHanabiEntry? = hanabiEntry?.takeIf { it.getOperateType() == ByteBufferHanabiEntry.Companion.OperateType.ENABLE }
 
     fun expect(str: String?) {
-        if (getHanabiEntry()?.value?.equals(str) == false) {
-            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.value}]")
+        if (getHanabiEntry()?.getValue()?.equals(str) == false) {
+            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.getValue()}]")
         }
     }
 }

@@ -1,17 +1,45 @@
 package com.anur.engine
 
 import com.anur.engine.storage.core.HanabiCommandBuilder
+import com.anur.engine.storage.memory.MemoryLSM
 import com.anur.engine.trx.manager.TrxManager
+import kotlin.random.Random
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    test1()
-    test2()
-    test3()
-    test4()
-    test5()
+//    test1()
+//    test2()
+//    test3()
+//    test4()
+//    test5()
+    test6()
+}
+
+// 100w 1.48g
+// 200w 2.97g
+fun test6() {
+
+    val random = Random(1)
+    for (i in 0 until 2000000) {
+        EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set(i.toString(), getRandomString(random.nextInt(200))))
+    }
+
+    Thread.sleep(10000000)
+
+    MemoryLSM.get("1")
+}
+
+fun getRandomString(length: Int): String {
+    val str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+    val random = Random(1)
+    val sb = StringBuffer()
+    for (i in 0 until length) {
+        val number = random.nextInt(62)
+        sb.append(str[number])
+    }
+    return sb.toString()
 }
 
 fun test5() {

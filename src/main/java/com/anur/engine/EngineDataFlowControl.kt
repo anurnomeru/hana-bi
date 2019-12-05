@@ -1,16 +1,15 @@
 package com.anur.engine
 
 import com.anur.core.log.Debugger
-import com.anur.core.log.DebuggerLevel
 import com.anur.core.struct.base.Operation
 import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
 import com.anur.engine.api.constant.str.StrApiConst
 import com.anur.engine.queryer.EngineDataQueryer
-import com.anur.engine.result.common.ParameterHandler
+import com.anur.engine.result.common.DataHandler
 import com.anur.engine.result.EngineResult
 import com.anur.engine.result.common.EngineExecutor
-import com.anur.engine.storage.core.HanabiEntry
+import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
 import com.anur.engine.trx.lock.TrxFreeQueuedSynchronizer
 import com.anur.engine.trx.manager.TrxManager
@@ -23,26 +22,28 @@ import com.anur.exception.RollbackException
  */
 object EngineDataFlowControl {
 
-    private val logger = Debugger(EngineDataFlowControl.javaClass).switch(DebuggerLevel.INFO)
+    private val logger = Debugger(EngineDataFlowControl.javaClass)
 
     fun commandInvoke(opera: Operation): EngineResult {
         val engineExecutor = EngineExecutor(EngineResult())
-        val parameterHandler = ParameterHandler(opera)
-        engineExecutor.setParameterHandler(parameterHandler)
+        val dataHandler = DataHandler(opera)
+        engineExecutor.setDataHandler(dataHandler)
+
+        var trxId = dataHandler.getTrxId()
 
         try {
             /*
              * common 操作比较特殊，它直接会有些特殊交互，比如开启一个事务，关闭一个事务等。
              */
-            when (parameterHandler.storageType) {
+            when (dataHandler.getCommandType()) {
                 CommandTypeConst.COMMON -> {
-                    when (parameterHandler.api) {
+                    when (dataHandler.getApi()) {
                         CommonApiConst.START_TRX -> {
-                            logger.trace("事务 [${parameterHandler.trxId}] 已经开启")
+                            logger.trace("事务 [${trxId}] 已经开启")
                             return engineExecutor.engineResult // TODO
                         }
                         CommonApiConst.COMMIT_TRX -> {
-                            doCommit(parameterHandler.trxId)
+                            doCommit(trxId)
                             return engineExecutor.engineResult // TODO
                         }
                         CommonApiConst.ROLL_BACK -> {
@@ -52,39 +53,39 @@ object EngineDataFlowControl {
                 }
 
                 CommandTypeConst.STR -> {
-                    when (parameterHandler.api) {
+                    when (dataHandler.getApi()) {
                         StrApiConst.SELECT -> {
                             doQuery(engineExecutor)
                         }
                         StrApiConst.DELETE -> {
-                            doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.DISABLE)
+                            doAcquire(engineExecutor, ByteBufferHanabiEntry.Companion.OperateType.DISABLE)
                         }
                         StrApiConst.SET -> {
-                            doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
+                            doAcquire(engineExecutor, ByteBufferHanabiEntry.Companion.OperateType.ENABLE)
                         }
                         StrApiConst.SET_EXIST -> {
                             EngineDataQueryer.doQuery(engineExecutor)
                             engineExecutor.hanabiEntry()
                                     ?.also { engineExecutor.shotFailure() }
                                     ?: also {
-                                        doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
+                                        doAcquire(engineExecutor, ByteBufferHanabiEntry.Companion.OperateType.ENABLE)
                                     }
                         }
                         StrApiConst.SET_NOT_EXIST -> {
-                            EngineDataQueryer.doQuery(engineExecutor)
+                            doQuery(engineExecutor)
                             engineExecutor.hanabiEntry()
                                     ?.also {
-                                        doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
+                                        doAcquire(engineExecutor, ByteBufferHanabiEntry.Companion.OperateType.ENABLE)
                                     }
                                     ?: also { engineExecutor.shotFailure() }
                         }
                         StrApiConst.SET_IF -> {
-                            EngineDataQueryer.doQuery(engineExecutor)
-                            val currentValue = engineExecutor.hanabiEntry()?.value
-                            val expectValue = parameterHandler.values[1]
+                            doQuery(engineExecutor)
+                            val currentValue = engineExecutor.hanabiEntry()?.getValue()
+                            val expectValue = dataHandler.extraParams[0]
 
                             if (expectValue == currentValue) {
-                                doAcquire(engineExecutor, HanabiEntry.Companion.OperateType.ENABLE)
+                                doAcquire(engineExecutor, ByteBufferHanabiEntry.Companion.OperateType.ENABLE)
                             } else {
                                 engineExecutor.shotFailure()
                             }
@@ -93,12 +94,12 @@ object EngineDataFlowControl {
                 }
             }
 
-            if (parameterHandler.shortTransaction) doCommit(parameterHandler.trxId)
+            if (dataHandler.shortTransaction) doCommit(trxId)
         } catch (e: Throwable) {
             logger.error("存储引擎执行出错，将执行回滚，原因 [$e.message]")
             e.printStackTrace()
 
-            doRollBack(parameterHandler.trxId)
+            doRollBack(trxId)
             engineExecutor.exceptionCaught(e)
         }
         return engineExecutor.engineResult
@@ -106,7 +107,7 @@ object EngineDataFlowControl {
 
     private fun doQuery(engineExecutor: EngineExecutor) {
         EngineDataQueryer.doQuery(engineExecutor)
-        logger.trace("事务 [${engineExecutor.getParameterHandler().trxId}] 对 key [${engineExecutor.getParameterHandler().key}] 进行了查询操作" +
+        logger.trace("事务 [${engineExecutor.getDataHandler().getTrxId()}] 对 key [${engineExecutor.getDataHandler().key}] 进行了查询操作" +
                 " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.engineResult.getHanabiEntry()}}")
     }
 
@@ -115,14 +116,16 @@ object EngineDataFlowControl {
      *
      * 如果拿到锁，则调用api，将数据插入 未提交部分(uc)
      */
-    private fun doAcquire(engineExecutor: EngineExecutor, operateType: HanabiEntry.Companion.OperateType) {
-        val parameterHandler = engineExecutor.getParameterHandler()
-        parameterHandler.operateType = operateType
-        TrxFreeQueuedSynchronizer.acquire(parameterHandler.trxId, parameterHandler.key) {
-            MemoryMVCCStorageUnCommittedPart.commonOperate(parameterHandler)
+    private fun doAcquire(engineExecutor: EngineExecutor, operateType: ByteBufferHanabiEntry.Companion.OperateType) {
+        val dataHandler = engineExecutor.getDataHandler()
+        val trxId = dataHandler.getTrxId()
+
+        dataHandler.setOperateType(operateType)
+        TrxFreeQueuedSynchronizer.acquire(trxId, dataHandler.key) {
+            MemoryMVCCStorageUnCommittedPart.commonOperate(dataHandler)
         }
-        logger.trace("事务 [${engineExecutor.getParameterHandler().trxId}] 将 key [${engineExecutor.getParameterHandler().key}] 设置为了" +
-                " {${engineExecutor.getParameterHandler().values[0]}}")
+        logger.trace("事务 [${trxId}] 将 key [${engineExecutor.getDataHandler().key}] 设置为了" +
+                " {${engineExecutor.getDataHandler().getValue()}}")
     }
 
     /**

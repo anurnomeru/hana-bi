@@ -19,6 +19,7 @@ class WaterHolder {
     companion object {
         const val Interval = 64L
         private const val IntervalMinusOne = 63
+        private const val IntervalMinusMask = 1L.shl(IntervalMinusOne)
         private val logger = Debugger(WaterHolder.javaClass)
         val DEFAULT = WaterHolder()
 
@@ -84,12 +85,9 @@ class WaterHolder {
                 var releaseSegment = false
                 var releaseLowWaterMark = false
 
-                // 当事务段都为0，且
-                // （有比当前更大的head，才可以销毁这个head（代表不会有更多的申请来到这里）
-                // 或者
-                // 释放的是最后一个index）
-                // 将相关用到的数据内存释放掉
-                if (trxSegment.trxBitMap == 0L && (waterHolder.higherEntry(head) != null || releaseIndex == IntervalMinusOne)) {
+                // 只有当 trxBitMap == releaseBitMap
+                // 并且 trxBitMap 最后一位为 1
+                if (trxSegment.trxBitMap == trxSegment.releaseBitMap && trxSegment.trxBitMap and IntervalMinusMask == IntervalMinusMask) {
                     waterHolder.remove(head)
                     releaseSegment = true
                 }
@@ -112,7 +110,8 @@ class WaterHolder {
      * 获取的最小的有效的事务
      */
     fun lowWaterMark(): Long {
-        return waterHolder.firstEntry()?.value?.minTrx() ?: TrxAllocator.StartTrx
+        val min = waterHolder.firstEntry()?.value?.minTrx() ?: TrxAllocator.StartTrx
+        return min
     }
 
 }

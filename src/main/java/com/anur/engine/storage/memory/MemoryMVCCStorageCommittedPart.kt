@@ -4,12 +4,13 @@ import com.anur.core.lock.rentrant.ReentrantLocker
 import com.anur.core.log.Debugger
 import com.anur.core.log.DebuggerLevel
 import com.anur.engine.api.constant.CommandTypeConst
-import com.anur.engine.storage.core.HanabiEntry
 import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
+import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.engine.trx.manager.TrxManager
 import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.util.HanabiExecutors
+import java.nio.ByteBuffer
 import java.util.concurrent.ConcurrentSkipListMap
 
 /**
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap
  */
 object MemoryMVCCStorageCommittedPart {
 
-    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass).switch(DebuggerLevel.INFO)
+    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass)
 
     /**
      * 数据存储使用一个map，数据键 <-> VerAndHanabiEntry
@@ -36,7 +37,7 @@ object MemoryMVCCStorageCommittedPart {
      * 和 uc 部分的有点像，但是这里要递归查找，
      * 而且，基于隔离性，且要实现可重复读
      */
-    fun queryKeyInTrx(trxId: Long, key: String, waterMarker: WaterMarker): HanabiEntry? {
+    fun queryKeyInTrx(trxId: Long, key: String, waterMarker: WaterMarker): ByteBufferHanabiEntry? {
         var verAndHanabiEntry = dataKeeper[key]
         val waterHolder = waterMarker.waterHolder
 
@@ -58,10 +59,10 @@ object MemoryMVCCStorageCommittedPart {
      * 将 uc 部分的数据提交到 mvcc 临界控制区，这部分需要做好隔离性控制
      */
     fun commonOperate(trxId: Long, pairs: List<VerAndHanabiEntryWithKeyPair>) {
-        logger.debug("事务 $trxId 已经进入 MVCC 临界控制区")
+        logger.debug("事务 $trxId 已经进入 MVCC 临界控制区 commit part")
         for (pair in pairs) {
             locker.lockSupplier {
-                logger.debug("key [${pair.key}] val [${pair.value.hanabiEntry.value}] 已提交到 MVCC 临界控制区")
+                logger.debug("事务 $trxId : 【 key [${pair.key}] -> val [${pair.value.hanabiEntry.getValue()}] 】 已提交到 MVCC 临界控制区 commit part")
 
                 dataKeeper.compute(pair.key) { _, currentVersion ->
                     pair.value.also { it.currentVersion = currentVersion }
@@ -74,7 +75,7 @@ object MemoryMVCCStorageCommittedPart {
     /**
      * 单链表哨兵，它没有别的作用，就是方便写代码用的
      */
-    private val SENTINEL = VerAndHanabiEntry(0, HanabiEntry(CommandTypeConst.COMMON, "", HanabiEntry.Companion.OperateType.ENABLE))
+    private val SENTINEL = VerAndHanabiEntry(0, ByteBufferHanabiEntry(ByteBuffer.allocate(0)))
 
     init {
         /**
@@ -85,6 +86,7 @@ object MemoryMVCCStorageCommittedPart {
                     logger.info("MVCC 临界控制区已经启动，等待从水位控制 TrxManager 获取最新提交水位，并将数据提交到 LSM")
                     while (true) {
                         val takeNotify = TrxManager.takeNotify()
+
                         // 拿到小于等于当前最低水位的部分
                         val headMap = holdKeysMapping.headMap(takeNotify, true)
 
@@ -134,7 +136,7 @@ object MemoryMVCCStorageCommittedPart {
                 return
             currentVer.trxId == removeEntry.trxId -> {// 只需要提交最新的key即可
                 MemoryLSM.put(key, currentVer.hanabiEntry)
-                logger.debug("由事务 [${currentVer.trxId}] 提交的 key [$key] val [${currentVer.hanabiEntry.value}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
+                logger.debug("由事务 [${currentVer.trxId}] 提交的 key [$key] val [${currentVer.hanabiEntry.getValue()}] 正式提交到 LSM 树，此 key 上早于 ${currentVer.trxId} 的事务将失效")
                 prev.currentVersion = null// 抹除当前版本
                 currentVer.currentVersion = null// 将小于此版本的抹除
             }

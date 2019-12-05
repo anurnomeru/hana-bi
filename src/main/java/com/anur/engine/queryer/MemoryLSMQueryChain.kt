@@ -12,8 +12,8 @@ import com.anur.engine.storage.memory.MemoryLSM
  */
 class MemoryLSMQueryChain : QueryerChain() {
     override fun doQuery(engineExecutor: EngineExecutor) {
-        val parameterHandler = engineExecutor.getParameterHandler()
-        MemoryLSM.get(parameterHandler.key)
+        val dataHandler = engineExecutor.getDataHandler()
+        MemoryLSM.get(dataHandler.key)
                 ?.also {
                     engineExecutor.engineResult.setHanabiEntry(it)
                     engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.MEMORY_LSM

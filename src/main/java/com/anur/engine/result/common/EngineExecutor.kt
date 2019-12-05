@@ -3,9 +3,8 @@ package com.anur.engine.result.common
 import com.anur.core.log.Debugger
 import com.anur.core.log.DebuggerLevel
 import com.anur.engine.result.EngineResult
-import com.anur.engine.storage.core.HanabiEntry
+import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.exception.UnexpectedException
-import java.lang.StringBuilder
 
 
 /**
@@ -19,20 +18,21 @@ class EngineExecutor(val engineResult: EngineResult) {
         val logger = Debugger(EngineExecutor.javaClass).switch(DebuggerLevel.INFO)
     }
 
-    private var parameterHandler: ParameterHandler? = null
+    private var dataHandler: DataHandler? = null
 
-    fun hanabiEntry(): HanabiEntry? = engineResult.getHanabiEntry()
+    fun hanabiEntry(): ByteBufferHanabiEntry? = engineResult.getHanabiEntry()
 
-    fun setParameterHandler(parameterHandler: ParameterHandler) {
-        this.parameterHandler = parameterHandler
+    fun setDataHandler(dataHandler: DataHandler) {
+        this.dataHandler = dataHandler
     }
 
-    fun getParameterHandler(): ParameterHandler = parameterHandler ?: throw UnexpectedException("参数没有设置？？？？")
+    fun getDataHandler(): DataHandler = dataHandler ?: throw UnexpectedException("参数没有设置？？？？")
 
     /**
      * 标记为失败
      */
     fun shotFailure() {
+        logger.error("事务 ${dataHandler!!.getTrxId()} 执行失败")
         engineResult.result = false
     }
 

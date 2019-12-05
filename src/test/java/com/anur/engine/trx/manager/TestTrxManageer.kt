@@ -9,16 +9,20 @@ import java.lang.StringBuilder
 fun main() {
     val currentTimeMillis = System.currentTimeMillis()
 
-    for (i in -1000 until 10000L) {
+    val intervalTest = 10000L
+
+    for (i in 0..intervalTest) {
         TrxManager.activateTrx(TrxManager.allocateTrx(), false)
     }
     val minBefore = TrxManager.lowWaterMark()
 
-    for (i in -1000 until 9998L) {
+    for (i in TrxAllocator.StartTrx until TrxAllocator.StartTrx + intervalTest) {
         TrxManager.releaseTrx(i)
     }
-    println(minBefore)
-    println(TrxManager.lowWaterMark() - (-1000))
+    println("Before : $minBefore")
+    println("Now : ${TrxManager.lowWaterMark()}")
+
+    println(TrxManager.lowWaterMark() - minBefore)
 }
 
 

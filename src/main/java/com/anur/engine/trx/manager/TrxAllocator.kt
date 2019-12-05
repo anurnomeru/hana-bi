@@ -8,9 +8,7 @@ package com.anur.engine.trx.manager
  */
 object TrxAllocator {
 
-    const val StartTrx: Long =
-//            Long.MIN_VALUE
-            1
+    const val StartTrx: Long = 1
     private var nowTrx: Long = StartTrx
 
     /**

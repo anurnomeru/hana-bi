@@ -60,10 +60,14 @@ object TrxManager {
             val waterReleaseResult = waterHolder.releaseTrx(trxId)
 
             // 如果当前事务段已经用完，则将其锁回收
-            if (waterReleaseResult.releaseSegment) destroyLocker(head)
+            if (waterReleaseResult.releaseSegment) {
+                destroyLocker(head)
+            }
 
             // 刷新低水位，以便将数据从 commitPart 推入 lsm 树
-            if (waterReleaseResult.releaseLowWaterMark) notifyQueue.push(waterHolder.lowWaterMark())
+            if (waterReleaseResult.releaseLowWaterMark) {
+                notifyQueue.push(waterHolder.lowWaterMark())
+            }
 
             // 释放数位快照
             WaterMarkRegistry.release(trxId)

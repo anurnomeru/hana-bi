@@ -12,8 +12,8 @@ import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
  */
 class UnCommittedPartQueryChain : QueryerChain() {
     override fun doQuery(engineExecutor: EngineExecutor) {
-        val parameterHandler = engineExecutor.getParameterHandler()
-        MemoryMVCCStorageUnCommittedPart.queryKeyInTrx(parameterHandler.trxId, parameterHandler.key)
+        val dataHandler = engineExecutor.getDataHandler()
+        MemoryMVCCStorageUnCommittedPart.queryKeyInTrx(dataHandler.getTrxId(), dataHandler.key)
                 ?.also {
                     engineExecutor.engineResult.setHanabiEntry(it)
                     engineExecutor.engineResult.queryExecutorDefinition = QueryerDefinition.UN_COMMIT_PART

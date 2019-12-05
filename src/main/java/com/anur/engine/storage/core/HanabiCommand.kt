@@ -4,57 +4,62 @@ import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
 import com.anur.exception.HanabiException
 import java.nio.ByteBuffer
+import javax.annotation.concurrent.NotThreadSafe
 
 /**
  * Created by Anur IjuoKaruKas on 2019/9/17
  *
  * 对应一个最基础最基础的操作
+ *
+ * 一个 Command 由以下部分组成：
+ *
+ * 　8　   +    1    +       1       +        1        +      4 + x ...
+ * trxId  +   api   +  commandType  + transactionSign +  valueSize + value...
  */
+@NotThreadSafe
 class HanabiCommand(val content: ByteBuffer) {
 
     companion object {
-        private const val TrxIdOffset = 0
-        private const val TrxIdLength = 8
-        private const val TransactionOffset = TrxIdOffset + TrxIdLength
-        private const val TransactionLength = 1
-        private const val TypeOffset = TransactionOffset + TransactionLength
-        private const val TypeLength = 1
-        private const val ApiOffset = TypeOffset + TypeLength
-        private const val ApiLength = 1
+        const val TrxIdOffset = 0
+        const val TrxIdLength = 8
+
+        const val ApiOffset = TrxIdOffset + TrxIdLength
+        const val ApiLength = 1
+
+        const val CommandTypeOffset = ApiOffset + ApiLength
+        const val CommandTypeLength = 1
+
+        const val TransactionSignOffset = CommandTypeOffset + CommandTypeLength
+        const val TransactionSignLength = 1
+
+        const val ValuesSizeOffset = TransactionSignOffset + TransactionSignLength
 
         /**
-         * 此值可传多参数，参数个数int + length + value 组成
+         * 表明参数长度，四个字节 values size 可传多参数，格式为 size+value size+value
+         *
+         * 第一个参数为真正 HanabiEntry的值
          */
-        private const val ValueOffset = ApiOffset + ApiLength
+        const val ValuesSizeLength = 4
 
-        /**
-         * 表明参数长度，四个字节
-         */
-        private const val ValuesSizeLength = 4
-
-        fun generator(trxId: Long, transaction: TransactionTypeConst, type: CommandTypeConst, api: Byte, vararg values: String = arrayOf("")): HanabiCommand {
+        fun generator(trxId: Long, transactionSign: TransactionTypeConst, commandType: CommandTypeConst, api: Byte, vararg values: String = arrayOf("")): HanabiCommand {
             if (values.isEmpty()) {
                 throw HanabiException("不允许生成值为空数组的命令！至少要传一个含有空字符串的数组")
             }
 
             val valuesSizeLengthTotal = values.size * ValuesSizeLength
-            val valuesByteArr = values.map { it?.toByteArray() }
+            val valuesByteArr = values.map { it.toByteArray() }
             val bb = ByteBuffer.allocate(
-                    ValueOffset
+                    ValuesSizeOffset
                             + valuesSizeLengthTotal
-                            + valuesByteArr.map { it?.size ?: 0 }.reduce(operation = { i1, i2 -> i1 + i2 }))
+                            + valuesByteArr.map { it.size }.reduce(operation = { i1, i2 -> i1 + i2 }))
             bb.putLong(trxId)
-            bb.put(transaction.byte)
-            bb.put(type.byte)
             bb.put(api)
+            bb.put(commandType.byte)
+            bb.put(transactionSign.byte)
             valuesByteArr.forEach {
                 it.also { arr ->
-                    if (arr==null) {
-                        bb.putInt(0)
-                    }else{
-                        bb.putInt(arr.size)
-                        bb.put(arr)
-                    }
+                    bb.putInt(arr.size)
+                    bb.put(arr)
                 }
             }
             bb.flip()
@@ -75,14 +80,14 @@ class HanabiCommand(val content: ByteBuffer) {
      * 是否开启了（长）事务
      */
     fun getTransactionType(): Byte {
-        return content.get(TransactionOffset)
+        return content.get(TransactionSignOffset)
     }
 
     /**
      * 操作类型，目前仅支持String类操作，第一版不要做那么复杂
      */
-    fun getType(): Byte {
-        return content.get(TypeOffset)
+    fun getCommandType(): Byte {
+        return content.get(CommandTypeOffset)
     }
 
     /**
@@ -92,24 +97,29 @@ class HanabiCommand(val content: ByteBuffer) {
         return content.get(ApiOffset)
     }
 
-    @Synchronized
-    fun getValues(): MutableList<String> {
+    /**
+     * 获取非第一个参数的额外参数们
+     */
+    fun getExtraValues(): MutableList<String> {
         val list = mutableListOf<String>()
-        content.position(ValueOffset)
+        content.mark()
+        content.position(ValuesSizeOffset)
+        val mainParamSize = content.getInt()
+        content.position(ValuesSizeOffset + ValuesSizeLength + mainParamSize)
         while (content.position() < contentLength) {
             val param = ByteArray(content.getInt())
             content.get(param)
             list.add(String(param))
         }
+        content.reset()
         return list
     }
 
     override fun toString(): String {
         return "HanabiEntry{" +
                 "trxId='" + getTrxId() + '\'' +
-                ", type='" + getType() + '\'' +
+                ", type='" + getCommandType() + '\'' +
                 ", api='" + getApi() + '\'' +
-                ", value='" + getValues() + '\'' +
                 "}"
     }
 }
