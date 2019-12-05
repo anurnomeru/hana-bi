@@ -90,22 +90,22 @@ class TrxSegment(anyElse: Long) {
 
         // 表示所有事务都已经释放
         return if (activateAndNotRelease == 0L) {
-             // 找到最后一个活跃事务
-             if (trxBitMap == 0L) {
-                 throw UnexpectedException()
-             }
+            // 找到最后一个活跃事务
+            if (trxBitMap == 0L) {
+                throw UnexpectedException()
+            }
 
-             var result = 63
-             var mask = 1L shl 63
-             while (result > 0) {
-                 if (mask and trxBitMap == mask) {
-                     break
-                 }
-                 result--
-                 mask = mask ushr  1
-             }
-             start + max(result, 0)
-         }else{
+            var result = 63
+            var mask = 1L shl 63
+            while (result > 0) {
+                if (mask and trxBitMap == mask) {
+                    break
+                }
+                result--
+                mask = mask ushr 1
+            }
+            start + max(result, 0)
+        } else {
             // 部分事务没有释放
             var result = 0
             var mask = 1L
@@ -116,7 +116,7 @@ class TrxSegment(anyElse: Long) {
                 result++
                 mask = mask shl 1
             }
-            start + max(result, 0)
-         }
+            start + max(result, 0) - 1
+        }
     }
 }

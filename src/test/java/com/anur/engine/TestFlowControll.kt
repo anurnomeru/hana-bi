@@ -11,14 +11,19 @@ import kotlin.random.Random
 fun main() {
 //    test1()
 //    test2()
-//    test3()
+
+    for (i in 0 until 1000) {
+        test3()
+    }
+
 //    test4()
 //    test5()
-    test6()
+//    test6()
 }
 
 // 100w 1.48g
 // 200w 2.97g
+// 优化后 200w -> 2.15g
 fun test6() {
 
     val random = Random(1)
@@ -84,8 +89,6 @@ fun test4() {
  * 所有的插入都将阻塞
  */
 fun test3() {
-    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
-
     val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1", trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))
@@ -99,6 +102,7 @@ fun test3() {
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 10"))
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// Null
+
     Thread.sleep(1000)
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 10")// Version 10

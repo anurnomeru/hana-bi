@@ -32,7 +32,6 @@ class EngineExecutor(val engineResult: EngineResult) {
      * 标记为失败
      */
     fun shotFailure() {
-        logger.error("事务 ${dataHandler!!.getTrxId()} 执行失败")
         engineResult.result = false
     }
 

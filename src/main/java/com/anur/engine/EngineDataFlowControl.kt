@@ -102,6 +102,7 @@ object EngineDataFlowControl {
             doRollBack(trxId)
             engineExecutor.exceptionCaught(e)
         }
+
         return engineExecutor.engineResult
     }
 

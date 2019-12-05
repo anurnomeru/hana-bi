@@ -63,8 +63,7 @@ class ByteBufferHanabiEntry(val content: ByteBuffer) {
             }
         }
     }
-
-
+    
     /**
      * 对整个 ByteBufferHanabiEntry 大小的预估
      */
@@ -74,22 +73,6 @@ class ByteBufferHanabiEntry(val content: ByteBuffer) {
      * 获取操作类型
      */
     fun getOperateType(): OperateType = OperateType.map(content.get(OperateTypeOffset))
-
-//
-//    var valueArr = hanabiEntry.value.toByteArray()
-//
-//    private var keyArrSize = key.toByteArray().size
-//    private var expectedSize = sizeWithoutValue + keyArrSize + valueArr.size
-//    fun getExpectedSize(): Int = expectedSize
-//
-//    /**
-//     * 更新内部元素
-//     */
-//    fun update(entry: HanabiEntry): Int {
-//        valueArr = entry.value.toByteArray()
-//        expectedSize = sizeWithoutValue + keyArrSize + valueArr.size
-//        return expectedSize
-//    }
 
     fun getValue(): String {
         content.position(ValueOffset)

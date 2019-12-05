@@ -66,7 +66,8 @@ object TrxManager {
 
             // 刷新低水位，以便将数据从 commitPart 推入 lsm 树
             if (waterReleaseResult.releaseLowWaterMark) {
-                notifyQueue.push(waterHolder.lowWaterMark())
+                val lowWaterMark = waterHolder.lowWaterMark()
+                notifyQueue.push(lowWaterMark)
             }
 
             // 释放数位快照

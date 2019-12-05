@@ -1,10 +1,10 @@
 package com.anur.engine.trx.watermark
 
 import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.engine.trx.manager.TrxAllocator
 import com.anur.engine.trx.manager.TrxSegment
 import java.util.*
-import javax.xml.bind.annotation.XmlType
 import kotlin.Comparator
 import kotlin.math.absoluteValue
 
@@ -95,8 +95,8 @@ class WaterHolder {
                 // 如果当前操作的是最小的段，最小段发生操作，则有可能会更新最小水位，此时需要推送一下当前提交的最小事务
                 val isMinSeg = waterHolder.firstEntry()?.value?.let { it == trxSegment } ?: false
                 if (isMinSeg) {
-                    logger.debug("当前最小事务 $TrxId 已经释放")
-                    logger.debug("${lowWaterMark()}")
+                    logger.debug("当前最小事务段 start[${waterHolder.firstEntry().value.start}] 已经释放元素，" +
+                            "最小事务为 [${waterHolder.firstEntry().value.minTrx()}]")
                     releaseLowWaterMark = true
                 }
                 return WaterReleaseResult(releaseSegment, releaseLowWaterMark)
@@ -110,8 +110,7 @@ class WaterHolder {
      * 获取的最小的有效的事务
      */
     fun lowWaterMark(): Long {
-        val min = waterHolder.firstEntry()?.value?.minTrx() ?: TrxAllocator.StartTrx
-        return min
+        return waterHolder.firstEntry()?.value?.minTrx() ?: TrxAllocator.StartTrx
     }
 
 }
