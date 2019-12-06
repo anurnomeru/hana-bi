@@ -81,7 +81,7 @@ object EngineDataFlowControl {
                         }
                         StrApiConst.SET_IF -> {
                             doQuery(engineExecutor)
-                            val currentValue = engineExecutor.hanabiEntry()?.getValue()
+                            val currentValue = engineExecutor.hanabiEntry()?.value
                             val expectValue = dataHandler.extraParams[0]
 
                             if (expectValue == currentValue) {
@@ -109,7 +109,7 @@ object EngineDataFlowControl {
     private fun doQuery(engineExecutor: EngineExecutor) {
         EngineDataQueryer.doQuery(engineExecutor)
         logger.trace("事务 [${engineExecutor.getDataHandler().getTrxId()}] 对 key [${engineExecutor.getDataHandler().key}] 进行了查询操作" +
-                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.engineResult.getHanabiEntry()}}")
+                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.hanabiEntry()}}")
     }
 
     /**

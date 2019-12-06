@@ -26,8 +26,8 @@ abstract class QueryerChain {
     }
 
     fun query(engineExecutor: EngineExecutor) {
-        doQuery(engineExecutor).let { engineExecutor.engineResult.getHanabiEntry() }
-                ?: next?.query(engineExecutor).let { engineExecutor.engineResult.getHanabiEntry() }
+        doQuery(engineExecutor).let { engineExecutor.engineResult.getHanabiEntryOrigin() }
+                ?: next?.query(engineExecutor).let { engineExecutor.engineResult.getHanabiEntryOrigin() }
                 ?: keyNotFoundTilEnd(engineExecutor)
     }
 }

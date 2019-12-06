@@ -11,14 +11,14 @@ import kotlin.random.Random
 fun main() {
 
     for (i in 0 until 1000) {
-        test1()
-        test2()
-        test3()
-        test4()
-        test5()
+//        test1()
+//        test2()
+//        test3()
+//        test4()
+//        test5()
     }
 
-//    test6()
+    test6()
 }
 
 // 100w 1.48g

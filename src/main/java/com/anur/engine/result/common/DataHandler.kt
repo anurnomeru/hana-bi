@@ -1,5 +1,7 @@
 package com.anur.engine.result.common
 
+import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.core.struct.base.Operation
 import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
@@ -11,6 +13,7 @@ import com.anur.engine.trx.watermark.WaterMarker
 import com.anur.exception.UnexpectedException
 import com.anur.exception.WaterMarkCreationException
 import java.nio.ByteBuffer
+import javax.xml.crypto.Data
 
 /**
  * Created by Anur IjuoKaruKas on 2019/12/3
@@ -20,6 +23,10 @@ import java.nio.ByteBuffer
  * 那么如何节省内存，实际上就是这个类所做的事情
  */
 class DataHandler(val operation: Operation) {
+
+    companion object {
+        val logger = Debugger(DataHandler.javaClass)
+    }
 
     /////////////////////////////////////////// init
 
@@ -70,27 +77,10 @@ class DataHandler(val operation: Operation) {
 
         // 取出额外参数
         extraParams = operation.hanabiCommand.getExtraValues()
+        byteBufferHanabiEntry = operation.hanabiCommand.getHanabiEntry()
 
-        val byteBuffer = operation.hanabiCommand.content
-
-        // EXTRA: hanabiCommand 可以和  ByteBufferHanabiEntry 共享底层 byteBuffer
-        byteBuffer.position(HanabiCommand.ValuesSizeOffset)
-        val mainParamSize = byteBuffer.getInt()
-
-        val from = HanabiCommand.CommandTypeOffset
-        val to = HanabiCommand.ValuesSizeOffset + HanabiCommand.ValuesSizeLength + mainParamSize
-
-//        println("byteBuffer total: ${byteBuffer.limit()} sliceFrom: ${from} sliceTo: ${to}")
-
-        byteBuffer.position(from)
-        byteBuffer.limit(to)
-
-        val slice = byteBuffer.slice()
-
-//        println("slice \t\t-> Position: ${slice.position()} limit: ${slice.limit()}")
-//        println("byteBuffer \t-> Position: ${byteBuffer.position()} limit: ${byteBuffer.limit()}")
-
-        byteBufferHanabiEntry = ByteBufferHanabiEntry(slice)
+        // 这后面的内存可以释放掉了
+        operation.hanabiCommand.content.limit(HanabiCommand.TransactionSignOffset)
     }
 
     // ================================ ↓↓↓↓↓↓↓  直接访问 byteBuffer 拉取数据
@@ -103,7 +93,7 @@ class DataHandler(val operation: Operation) {
     /**
      * 获取第一个参数
      */
-    fun getValue() = byteBufferHanabiEntry.getValue()
+    fun getValue() = byteBufferHanabiEntry.value
 
     /**
      * 从 hanabiCommand 中的 byteBuffer 中获取 commandType
@@ -116,31 +106,24 @@ class DataHandler(val operation: Operation) {
     fun getApi() = operation.hanabiCommand.getApi()
 
     /**
-     * 进行数据操作时必须设置这个值
+     * 除了select操作，其余操作必须指定这个
      */
-    private var operateType: ByteBufferHanabiEntry.Companion.OperateType? = null
-
     fun setOperateType(operateType: ByteBufferHanabiEntry.Companion.OperateType) {
-        this.operateType = operateType
-
-        val byteBuffer = byteBufferHanabiEntry.content
-        byteBuffer.mark()
-
-        byteBuffer.position(ByteBufferHanabiEntry.OperateTypeOffset)
-        byteBuffer.put(operateType.byte)
-
-        byteBuffer.reset()
-
-//        println(byteBufferHanabiEntry.getExpectedSize())
-//        println(byteBufferHanabiEntry.getValue())
-//        println(byteBufferHanabiEntry.getOperateType())
+        byteBufferHanabiEntry.operateType = operateType
     }
 
     @Synchronized
     fun genHanabiEntry(): ByteBufferHanabiEntry {
-        if (operateType == null) {
+        if (byteBufferHanabiEntry.operateType == null) {
             throw UnexpectedException("operateType 在进行非查询操作时必须指定！ 估计是代码哪里有 bug 导致没有指定！")
         }
         return byteBufferHanabiEntry
+    }
+
+    /**
+     * 释放内存
+     */
+    fun destroy() {
+
     }
 }

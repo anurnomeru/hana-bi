@@ -1,5 +1,8 @@
 package com.anur.engine.storage.entry
 
+import com.anur.engine.api.constant.CommandTypeConst
+import com.anur.engine.result.common.DataHandler
+import com.anur.engine.storage.core.HanabiCommand
 import com.anur.exception.UnSupportStorageTypeException
 import java.nio.ByteBuffer
 
@@ -16,9 +19,36 @@ import java.nio.ByteBuffer
  *      1       +        1        +      4     + x
  *  commandType  + operationType  +  valueSize + value.
  */
-class ByteBufferHanabiEntry(val content: ByteBuffer) {
+class ByteBufferHanabiEntry(
+        /**
+         * 对整个 ByteBufferHanabiEntry 大小的预估
+         */
+        val expectedSize: Int,
+
+        /**
+         * STR操作还是LIST还是什么别的
+         */
+        val commandType: CommandTypeConst,
+
+        /**
+         * 值
+         */
+        val value: String) {
+
+
+    /**
+     * 操作类型
+     */
+    var operateType: OperateType? = null
 
     companion object {
+
+        val NONE: ByteBufferHanabiEntry
+
+        init {
+            NONE = ByteBufferHanabiEntry(6, CommandTypeConst.COMMON, "")
+        }
+
         // 理论上key 可以支持到很大，但是一个key 2g = = 玩呢？
 
         /**
@@ -62,22 +92,5 @@ class ByteBufferHanabiEntry(val content: ByteBuffer) {
                 }
             }
         }
-    }
-    
-    /**
-     * 对整个 ByteBufferHanabiEntry 大小的预估
-     */
-    fun getExpectedSize(): Int = content.limit()
-
-    /**
-     * 获取操作类型
-     */
-    fun getOperateType(): OperateType = OperateType.map(content.get(OperateTypeOffset))
-
-    fun getValue(): String {
-        content.position(ValueOffset)
-        val arr = ByteArray(content.limit() - ValueOffset)
-        content.get(arr)
-        return String(arr)
     }
 }

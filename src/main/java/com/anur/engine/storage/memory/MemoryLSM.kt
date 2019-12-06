@@ -10,8 +10,7 @@ import com.anur.engine.storage.entry.FileHanabiEntry
  */
 object MemoryLSM {
 
-    val logger = Debugger(MemoryLSM.javaClass)
-
+    val logger = Debugger(MemoryLSM.javaClass).switch(DebuggerLevel.INFO)
 
     /**
      * 一个块 block 为 4Kb，假定平均一个元素为 64 - 128 byte，所以平均一下能存 1024 个 key
@@ -25,11 +24,6 @@ object MemoryLSM {
 
     private var chainCount = 1
 
-    fun calcExpectedSize(entry: ByteBufferHanabiEntry, key: String) {
-        val keySize = key.toByteArray().size
-        val valueSize = entry.getExpectedSize()
-    }
-
     /**
      * 通过责任链去获取到数据
      */
@@ -39,7 +33,9 @@ object MemoryLSM {
      * compute，并更新空间
      */
     fun put(key: String, entry: ByteBufferHanabiEntry) {
-        val expectedSize = FileHanabiEntry.getExpectedSize(key, entry)
+        val expectedSizeOverHead = FileHanabiEntry.getExpectedSizeOverHead(key)
+        val entryExpectedSize = entry.expectedSize
+        val expectedSize = expectedSizeOverHead + entryExpectedSize
 
         when {
             /*
@@ -57,7 +53,7 @@ object MemoryLSM {
 
                 if (firstChain.dataKeeper.containsKey(key)) {
                     val remove = firstChain.dataKeeper.remove(key)!!
-                    firstChain.memoryAssess -= FileHanabiEntry.getExpectedSize(key, remove)
+                    firstChain.memoryAssess -= (expectedSizeOverHead + remove.expectedSize)
                 }
                 chainCount++
 
@@ -84,7 +80,7 @@ object MemoryLSM {
             else -> {
                 firstChain.dataKeeper.compute(key) { _, v ->
                     v?.also {
-                        firstChain.memoryAssess -= v.getExpectedSize()
+                        firstChain.memoryAssess -= (expectedSizeOverHead + v.expectedSize)
                     }
                     firstChain.memoryAssess += expectedSize
                     entry

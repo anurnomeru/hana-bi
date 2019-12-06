@@ -36,12 +36,13 @@ open class EngineResult {
         this.hanabiEntry = hanabiEntry
     }
 
-    fun getHanabiEntry(): ByteBufferHanabiEntry? = hanabiEntry?.takeIf { it.getOperateType() == ByteBufferHanabiEntry.Companion.OperateType.ENABLE }
+    fun getHanabiEntry(): ByteBufferHanabiEntry? = hanabiEntry?.takeIf { it.operateType == ByteBufferHanabiEntry.Companion.OperateType.ENABLE }
 
+    fun getHanabiEntryOrigin(): ByteBufferHanabiEntry? = hanabiEntry
 
     fun expect(str: String?) {
-        if (getHanabiEntry()?.getValue()?.equals(str) == false) {
-            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.getValue()}] 数据来自 $queryExecutorDefinition")
+        if (getHanabiEntry()?.value?.equals(str) == false) {
+            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.value}] 数据来自 $queryExecutorDefinition")
         }
     }
 }

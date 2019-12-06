@@ -2,6 +2,7 @@ package com.anur.engine.storage.core
 
 import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.TransactionTypeConst
+import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.exception.HanabiException
 import java.nio.ByteBuffer
 import javax.annotation.concurrent.NotThreadSafe
@@ -113,6 +114,31 @@ class HanabiCommand(val content: ByteBuffer) {
         }
         content.reset()
         return list
+    }
+
+    /**
+     * 通过 hanabiCommand 来生成一个 ByteBufferHanabiEntry
+     */
+    fun getHanabiEntry(): ByteBufferHanabiEntry {
+        val byteBuffer = content
+        byteBuffer.mark()
+
+        byteBuffer.position(ValuesSizeOffset)
+        val mainParamSize = byteBuffer.getInt()
+
+        val valueArray = ByteArray(mainParamSize)
+        byteBuffer.get(valueArray)
+
+        val from = CommandTypeOffset
+        val to = ValuesSizeOffset + ValuesSizeLength + mainParamSize
+
+        val expectedSize = from - to
+        val commandType = CommandTypeConst.map(byteBuffer.get(CommandTypeOffset))
+        val value = String(valueArray)
+
+        val hanabiEntry = ByteBufferHanabiEntry(expectedSize, commandType, value)
+        byteBuffer.reset()
+        return hanabiEntry
     }
 
     override fun toString(): String {

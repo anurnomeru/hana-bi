@@ -16,7 +16,7 @@ import java.util.*
  */
 object MemoryMVCCStorageUnCommittedPart {
 
-    private val logger = Debugger(MemoryMVCCStorageUnCommittedPart.javaClass).switch(DebuggerLevel.INFO)
+    private val logger = Debugger(MemoryMVCCStorageUnCommittedPart.javaClass)
 
     private val treeMap = TreeMap<String, VerAndHanabiEntry>()
 
@@ -42,7 +42,7 @@ object MemoryMVCCStorageUnCommittedPart {
         if (treeMap.containsKey(key) && treeMap[key]!!.trxId != trxId) {
             throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理一个 key 只会对应一个 val，注意无锁控制 TrxFreeQueuedSynchronizer 是否有问题！")
         } else {
-            logger.debug("key [$key] val [${hanabiEntry.getValue()}] 已经进入 un commit part")
+            logger.debug("事务 [$trxId] key [$key] val [${hanabiEntry.value}] 已经进入 un commit part")
             treeMap[key] = VerAndHanabiEntry(trxId, hanabiEntry)
         }
     }

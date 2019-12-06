@@ -20,8 +20,6 @@ class FileHanabiEntry {
         /**
          * 对整个 ByteBufferHanabiEntry 大小的预估
          */
-        fun getExpectedSize(key: String, entry: ByteBufferHanabiEntry): Int = minFileHanabiEntryOverHead + key.toByteArray().size + entry.getExpectedSize()
+        fun getExpectedSizeOverHead(key: String): Int = minFileHanabiEntryOverHead + key.toByteArray().size
     }
-
-
 }
