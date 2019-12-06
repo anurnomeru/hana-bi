@@ -1,6 +1,7 @@
 package com.anur.engine
 
 import com.anur.engine.storage.core.HanabiCommandBuilder
+import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.engine.storage.memory.MemoryLSM
 import com.anur.engine.trx.manager.TrxManager
 import kotlin.random.Random
@@ -10,24 +11,29 @@ import kotlin.random.Random
  */
 fun main() {
 
-    for (i in 0 until 1000) {
+//    for (i in 0 until 1000) {
 //        test1()
 //        test2()
 //        test3()
 //        test4()
 //        test5()
-    }
+//    }
 
     test6()
 }
 
+
+val map = HashMap<String, ByteBufferHanabiEntry>()
 // 100w 1.48g
 // 200w 2.97g
 // 优化后 200w -> 2.15g
+// 优化后 1g
 fun test6() {
 
     val random = Random(1)
+
     for (i in 0 until 2000000) {
+
         EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set(i.toString(), getRandomString(random.nextInt(200))))
     }
 
@@ -105,7 +111,6 @@ fun test3() {
 
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect(null)// Null
 
-    Thread.sleep(1000)
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.commit(trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.select("Anur")).expect("Version 10")// Version 10
 }

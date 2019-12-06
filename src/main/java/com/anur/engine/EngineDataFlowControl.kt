@@ -81,7 +81,7 @@ object EngineDataFlowControl {
                         }
                         StrApiConst.SET_IF -> {
                             doQuery(engineExecutor)
-                            val currentValue = engineExecutor.hanabiEntry()?.value
+                            val currentValue = engineExecutor.hanabiEntry()?.getValue()
                             val expectValue = dataHandler.extraParams[0]
 
                             if (expectValue == currentValue) {
@@ -125,8 +125,7 @@ object EngineDataFlowControl {
         TrxFreeQueuedSynchronizer.acquire(trxId, dataHandler.key) {
             MemoryMVCCStorageUnCommittedPart.commonOperate(dataHandler)
         }
-        logger.trace("事务 [${trxId}] 将 key [${engineExecutor.getDataHandler().key}] 设置为了" +
-                " {${engineExecutor.getDataHandler().getValue()}}")
+        logger.trace("事务 [${trxId}] 将 key [${engineExecutor.getDataHandler().key}] 设置为了新值")
     }
 
     /**

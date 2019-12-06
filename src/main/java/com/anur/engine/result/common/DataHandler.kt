@@ -91,11 +91,6 @@ class DataHandler(val operation: Operation) {
     fun getTrxId() = operation.hanabiCommand.getTrxId()
 
     /**
-     * 获取第一个参数
-     */
-    fun getValue() = byteBufferHanabiEntry.value
-
-    /**
      * 从 hanabiCommand 中的 byteBuffer 中获取 commandType
      */
     fun getCommandType() = CommandTypeConst.map(operation.hanabiCommand.getCommandType())
@@ -109,12 +104,12 @@ class DataHandler(val operation: Operation) {
      * 除了select操作，其余操作必须指定这个
      */
     fun setOperateType(operateType: ByteBufferHanabiEntry.Companion.OperateType) {
-        byteBufferHanabiEntry.operateType = operateType
+        byteBufferHanabiEntry.setOperateType(operateType)
     }
 
     @Synchronized
     fun genHanabiEntry(): ByteBufferHanabiEntry {
-        if (byteBufferHanabiEntry.operateType == null) {
+        if (!byteBufferHanabiEntry.operateTypeSet) {
             throw UnexpectedException("operateType 在进行非查询操作时必须指定！ 估计是代码哪里有 bug 导致没有指定！")
         }
         return byteBufferHanabiEntry

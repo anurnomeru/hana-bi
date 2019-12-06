@@ -118,6 +118,8 @@ class HanabiCommand(val content: ByteBuffer) {
 
     /**
      * 通过 hanabiCommand 来生成一个 ByteBufferHanabiEntry
+     *
+     * 调用后，limit会发生变化，第一个参数之后的数据将丢失
      */
     fun getHanabiEntry(): ByteBufferHanabiEntry {
         val byteBuffer = content
@@ -126,17 +128,13 @@ class HanabiCommand(val content: ByteBuffer) {
         byteBuffer.position(ValuesSizeOffset)
         val mainParamSize = byteBuffer.getInt()
 
-        val valueArray = ByteArray(mainParamSize)
-        byteBuffer.get(valueArray)
-
         val from = CommandTypeOffset
         val to = ValuesSizeOffset + ValuesSizeLength + mainParamSize
 
-        val expectedSize = from - to
-        val commandType = CommandTypeConst.map(byteBuffer.get(CommandTypeOffset))
-        val value = String(valueArray)
+        byteBuffer.position(from)
+        byteBuffer.limit(to)
 
-        val hanabiEntry = ByteBufferHanabiEntry(expectedSize, commandType, value)
+        val hanabiEntry = ByteBufferHanabiEntry(byteBuffer.slice())
         byteBuffer.reset()
         return hanabiEntry
     }

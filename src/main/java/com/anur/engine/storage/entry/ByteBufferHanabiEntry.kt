@@ -19,34 +19,54 @@ import java.nio.ByteBuffer
  *      1       +        1        +      4     + x
  *  commandType  + operationType  +  valueSize + value.
  */
-class ByteBufferHanabiEntry(
-        /**
-         * 对整个 ByteBufferHanabiEntry 大小的预估
-         */
-        val expectedSize: Int,
+class ByteBufferHanabiEntry(val byteBuffer: ByteBuffer) {
 
-        /**
-         * STR操作还是LIST还是什么别的
-         */
-        val commandType: CommandTypeConst,
+    /**
+     * 对整个 ByteBufferHanabiEntry 大小的预估
+     */
+    val expectedSize: Int = byteBuffer.limit()
 
-        /**
-         * 值
-         */
-        val value: String) {
+    var operateTypeSet = false
 
+    /**
+     *设置 operateType
+     */
+    fun setOperateType(operateType: OperateType) {
+        byteBuffer.mark()
+        byteBuffer.position(OperateTypeOffset)
+        byteBuffer.put(operateType.byte)
+        byteBuffer.reset()
+        operateTypeSet = true
+    }
 
     /**
      * 操作类型
      */
-    var operateType: OperateType? = null
+    fun getOperateType() = OperateType.map(byteBuffer.get(OperateTypeOffset))
+
+    /**
+     * STR操作还是LIST还是什么别的
+     */
+    fun getCommandType() = CommandTypeConst.map(byteBuffer.get(CommandTypeOffset))
+
+    fun getValue(): String {
+        byteBuffer.mark()
+        byteBuffer.position(ValueSizeOffset)
+        val mainParamSize = byteBuffer.getInt()
+
+        val valueArray = ByteArray(mainParamSize)
+        byteBuffer.get(valueArray)
+        byteBuffer.reset()
+        return String(valueArray)
+    }
 
     companion object {
 
         val NONE: ByteBufferHanabiEntry
 
         init {
-            NONE = ByteBufferHanabiEntry(6, CommandTypeConst.COMMON, "")
+            val allocate = ByteBuffer.allocate(1)
+            NONE = ByteBufferHanabiEntry(allocate)
         }
 
         // 理论上key 可以支持到很大，但是一个key 2g = = 玩呢？
