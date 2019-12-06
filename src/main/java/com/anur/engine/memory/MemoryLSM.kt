@@ -2,7 +2,7 @@ package com.anur.engine.memory
 
 import com.anur.core.log.Debugger
 import com.anur.engine.common.entry.ByteBufferHanabiEntry
-import com.anur.engine.common.entry.FileHanabiEntry
+import com.anur.engine.common.core.FileHanabiEntryConstant
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/23
@@ -32,7 +32,7 @@ object MemoryLSM {
      * compute，并更新空间
      */
     fun put(key: String, entry: ByteBufferHanabiEntry) {
-        val expectedSizeOverHead = FileHanabiEntry.getExpectedSizeOverHead(key)
+        val expectedSizeOverHead = FileHanabiEntryConstant.getExpectedSizeOverHead(key)
         val entryExpectedSize = entry.expectedSize
         val expectedSize = expectedSizeOverHead + entryExpectedSize
 

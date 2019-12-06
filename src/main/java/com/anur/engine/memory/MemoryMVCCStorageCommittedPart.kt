@@ -23,6 +23,7 @@ object MemoryMVCCStorageCommittedPart {
      * 数据存储使用一个map，数据键 <-> VerAndHanabiEntry
      */
     private val dataKeeper = HashMap<String, VerAndHanabiEntry>()
+
     /**
      * 保存一个事务持有多少 key，且从小打大排列
      */
@@ -76,9 +77,6 @@ object MemoryMVCCStorageCommittedPart {
     private val SENTINEL = VerAndHanabiEntry(0, ByteBufferHanabiEntry.NONE)
 
     init {
-        /**
-         *
-         */
         HanabiExecutors.execute(
                 Runnable {
                     logger.info("MVCC 临界控制区已经启动，等待从水位控制 TrxManager 获取最新提交水位，并将数据提交到 LSM")
