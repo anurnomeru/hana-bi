@@ -1,8 +1,8 @@
-package com.anur.engine.storage.memory
+package com.anur.engine.memory
 
 import com.anur.core.log.Debugger
-import com.anur.engine.storage.entry.ByteBufferHanabiEntry
-import com.anur.engine.storage.entry.FileHanabiEntry
+import com.anur.engine.common.entry.ByteBufferHanabiEntry
+import com.anur.engine.common.entry.FileHanabiEntry
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/23

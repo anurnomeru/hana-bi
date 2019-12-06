@@ -1,6 +1,6 @@
-package com.anur.engine.storage.core
+package com.anur.engine.common.core
 
-import com.anur.engine.storage.entry.ByteBufferHanabiEntry
+import com.anur.engine.common.entry.ByteBufferHanabiEntry
 
 
 /**

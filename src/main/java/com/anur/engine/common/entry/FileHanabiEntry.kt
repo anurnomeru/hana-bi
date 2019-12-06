@@ -1,4 +1,4 @@
-package com.anur.engine.storage.entry
+package com.anur.engine.common.entry
 
 
 /**

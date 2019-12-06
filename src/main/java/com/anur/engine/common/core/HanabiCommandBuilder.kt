@@ -1,4 +1,4 @@
-package com.anur.engine.storage.core
+package com.anur.engine.common.core
 
 import com.anur.core.struct.OperationTypeEnum
 import com.anur.core.struct.base.Operation

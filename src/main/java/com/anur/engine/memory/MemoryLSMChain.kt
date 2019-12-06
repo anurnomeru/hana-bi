@@ -1,6 +1,6 @@
-package com.anur.engine.storage.memory
+package com.anur.engine.memory
 
-import com.anur.engine.storage.entry.ByteBufferHanabiEntry
+import com.anur.engine.common.entry.ByteBufferHanabiEntry
 import java.util.*
 
 /**

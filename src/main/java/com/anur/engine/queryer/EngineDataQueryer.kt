@@ -1,6 +1,6 @@
 package com.anur.engine.queryer
 
-import com.anur.engine.result.common.EngineExecutor
+import com.anur.engine.processor.common.EngineExecutor
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/31

@@ -17,7 +17,7 @@ import com.anur.core.struct.OperationTypeEnum;
 import com.anur.core.struct.base.Operation;
 import com.anur.engine.EngineFacade;
 import com.anur.util.HanabiExecutors;
-import com.anur.engine.storage.core.HanabiCommand;
+import com.anur.engine.common.core.HanabiCommand;
 import com.anur.io.hanalog.log.LogManager;
 import com.anur.io.hanalog.log.CommitProcessManager;
 

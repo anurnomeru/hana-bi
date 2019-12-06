@@ -1,6 +1,6 @@
-package com.anur.engine.result
+package com.anur.engine.processor
 
-import com.anur.engine.storage.entry.ByteBufferHanabiEntry
+import com.anur.engine.common.entry.ByteBufferHanabiEntry
 import com.anur.exception.UnexpectedException
 
 /**

@@ -1,11 +1,10 @@
-package com.anur.engine.storage.memory
+package com.anur.engine.memory
 
 import com.anur.core.log.Debugger
-import com.anur.core.log.DebuggerLevel
-import com.anur.engine.result.common.DataHandler
-import com.anur.engine.storage.core.VerAndHanabiEntry
-import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
-import com.anur.engine.storage.entry.ByteBufferHanabiEntry
+import com.anur.engine.processor.common.DataHandler
+import com.anur.engine.common.core.VerAndHanabiEntry
+import com.anur.engine.common.core.VerAndHanabiEntryWithKeyPair
+import com.anur.engine.common.entry.ByteBufferHanabiEntry
 import com.anur.exception.MemoryMVCCStorageUnCommittedPartException
 import java.util.*
 
