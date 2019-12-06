@@ -1,13 +1,14 @@
 package com.anur.engine
 
 import com.anur.core.log.Debugger
+import com.anur.core.log.DebuggerLevel
 import com.anur.core.struct.base.Operation
 import com.anur.engine.api.constant.CommandTypeConst
 import com.anur.engine.api.constant.common.CommonApiConst
 import com.anur.engine.api.constant.str.StrApiConst
 import com.anur.engine.queryer.EngineDataQueryer
-import com.anur.engine.result.common.DataHandler
 import com.anur.engine.result.EngineResult
+import com.anur.engine.result.common.DataHandler
 import com.anur.engine.result.common.EngineExecutor
 import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.engine.storage.memory.MemoryMVCCStorageUnCommittedPart
@@ -39,7 +40,7 @@ object EngineDataFlowControl {
                 CommandTypeConst.COMMON -> {
                     when (dataHandler.getApi()) {
                         CommonApiConst.START_TRX -> {
-                            logger.trace("事务 [${trxId}] 已经开启")
+                            logger.trace("事务 [{}] 已经开启", trxId)
                             return engineExecutor.engineResult // TODO
                         }
                         CommonApiConst.COMMIT_TRX -> {
@@ -96,7 +97,7 @@ object EngineDataFlowControl {
 
             if (dataHandler.shortTransaction) doCommit(trxId)
         } catch (e: Throwable) {
-            logger.error("存储引擎执行出错，将执行回滚，原因 [$e.message]")
+            logger.error("存储引擎执行出错，将执行回滚，原因 [{}]", e.message)
             e.printStackTrace()
 
             doRollBack(trxId)
@@ -108,8 +109,8 @@ object EngineDataFlowControl {
 
     private fun doQuery(engineExecutor: EngineExecutor) {
         EngineDataQueryer.doQuery(engineExecutor)
-        logger.trace("事务 [${engineExecutor.getDataHandler().getTrxId()}] 对 key [${engineExecutor.getDataHandler().key}] 进行了查询操作" +
-                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.hanabiEntry()}}")
+//        logger.trace("事务 [${engineExecutor.getDataHandler().getTrxId()}] 对 key [${engineExecutor.getDataHandler().key}] 进行了查询操作" +
+//                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.hanabiEntry()}}")
     }
 
     /**
@@ -125,7 +126,7 @@ object EngineDataFlowControl {
         TrxFreeQueuedSynchronizer.acquire(trxId, dataHandler.key) {
             MemoryMVCCStorageUnCommittedPart.commonOperate(dataHandler)
         }
-        logger.trace("事务 [${trxId}] 将 key [${engineExecutor.getDataHandler().key}] 设置为了新值")
+        logger.trace("事务 [{}] 将 key [{}] 设置为了新值", trxId, engineExecutor.getDataHandler().key)
     }
 
     /**
@@ -139,7 +140,7 @@ object EngineDataFlowControl {
             keys?.let { MemoryMVCCStorageUnCommittedPart.flushToCommittedPart(trxId, it) }
             TrxManager.releaseTrx(trxId)
         }
-        logger.trace("事务 [${trxId}] 已经提交")
+        logger.trace("事务 [{}] 已经提交", trxId)
     }
 
     private fun doRollBack(trxId: Long) {

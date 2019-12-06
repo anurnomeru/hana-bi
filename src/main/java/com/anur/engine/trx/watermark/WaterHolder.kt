@@ -1,7 +1,6 @@
 package com.anur.engine.trx.watermark
 
 import com.anur.core.log.Debugger
-import com.anur.core.log.DebuggerLevel
 import com.anur.engine.trx.manager.TrxAllocator
 import com.anur.engine.trx.manager.TrxSegment
 import java.util.*
@@ -79,7 +78,7 @@ class WaterHolder {
         when (val trxSegment = waterHolder[head]) {
             null -> logger.error("重复释放事务？？？？？？？？？？？？？？？？？？？？？")
             else -> {
-                val releaseIndex = trxSegment.release(TrxId)
+                trxSegment.release(TrxId)
                 logger.debug("事务 $TrxId 已经释放")
 
                 var releaseSegment = false

@@ -4,41 +4,48 @@ import com.anur.engine.storage.core.HanabiCommandBuilder
 import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.engine.storage.memory.MemoryLSM
 import com.anur.engine.trx.manager.TrxManager
+import java.nio.ByteBuffer
 import kotlin.random.Random
 
 /**
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
+    println(System.currentTimeMillis())
+    for (i in 0 until 10000) {
+        test1()
+        test2()
+        test3()
+        test4()
+        test5()
+    }
+    println(System.currentTimeMillis())
 
-//    for (i in 0 until 1000) {
-//        test1()
-//        test2()
-//        test3()
-//        test4()
-//        test5()
-//    }
-
-    test6()
+//    test6()
 }
 
 
 val map = HashMap<String, ByteBufferHanabiEntry>()
+
 // 100w 1.48g
 // 200w 2.97g
 // 优化后 200w -> 2.15g
-// 优化后 1g
+// 优化后
+// 200W -> 1g
+// 400W -> 3.22G
+// 400W -> 2.13G
 fun test6() {
 
     val random = Random(1)
 
-    for (i in 0 until 2000000) {
+    Thread.sleep(10000)
 
+    for (i in 0 until 4000000) {
         EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set(i.toString(), getRandomString(random.nextInt(200))))
+//        map.put(i.toString(), ByteBufferHanabiEntry(ByteBuffer.allocate(random.nextInt(200) + 6)))
     }
 
     Thread.sleep(10000000)
-
     MemoryLSM.get("1")
 }
 

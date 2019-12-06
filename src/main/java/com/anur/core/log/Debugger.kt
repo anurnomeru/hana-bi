@@ -3,7 +3,6 @@ package com.anur.core.log
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-
 /**
  * Created by Anur IjuoKaruKas on 2019/11/27
  *
@@ -33,6 +32,20 @@ class Debugger(clazz: Class<Any>) {
             DebuggerLevel.INFO -> h.info(s)
             DebuggerLevel.DEBUG -> h.debug(s)
             DebuggerLevel.TRACE -> h.trace(s)
+        }
+    }
+
+    fun info(s: String, vararg args: Any?) = invoke(s, { h.info(s, *args) }, *args)
+    fun debug(s: String, vararg args: Any?) = invoke(s, { h.debug(s, *args) }, *args)
+    fun trace(s: String, vararg args: Any?) = invoke(s, { h.trace(s, *args) }, *args)
+    fun error(s: String, vararg args: Any?) = h.error(s, *args)
+
+    private fun invoke(s: String, honlai: () -> Unit, vararg args: Any?) {
+        when (level) {
+            DebuggerLevel.NONE -> honlai.invoke()
+            DebuggerLevel.INFO -> h.info(s, *args)
+            DebuggerLevel.DEBUG -> h.debug(s, *args)
+            DebuggerLevel.TRACE -> h.trace(s, *args)
         }
     }
 }

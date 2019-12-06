@@ -3,8 +3,8 @@ package com.anur.engine.storage.memory
 import com.anur.core.log.Debugger
 import com.anur.core.log.DebuggerLevel
 import com.anur.engine.result.common.DataHandler
-import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.core.VerAndHanabiEntry
+import com.anur.engine.storage.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.exception.MemoryMVCCStorageUnCommittedPartException
 import java.util.*
@@ -42,7 +42,7 @@ object MemoryMVCCStorageUnCommittedPart {
         if (treeMap.containsKey(key) && treeMap[key]!!.trxId != trxId) {
             throw MemoryMVCCStorageUnCommittedPartException("mvcc uc部分出现了奇怪的bug，讲道理一个 key 只会对应一个 val，注意无锁控制 TrxFreeQueuedSynchronizer 是否有问题！")
         } else {
-            logger.debug("事务 [$trxId] key [$key] 已经进入 un commit part")
+            logger.debug("事务 [{}] key [{}] 已经进入 un commit part", trxId, key)
             treeMap[key] = VerAndHanabiEntry(trxId, hanabiEntry)
         }
     }

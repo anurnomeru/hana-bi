@@ -1,7 +1,6 @@
 package com.anur.engine.storage.memory
 
 import com.anur.core.log.Debugger
-import com.anur.core.log.DebuggerLevel
 import com.anur.engine.storage.entry.ByteBufferHanabiEntry
 import com.anur.engine.storage.entry.FileHanabiEntry
 
@@ -10,12 +9,12 @@ import com.anur.engine.storage.entry.FileHanabiEntry
  */
 object MemoryLSM {
 
-    val logger = Debugger(MemoryLSM.javaClass).switch(DebuggerLevel.INFO)
+    val logger = Debugger(MemoryLSM.javaClass)
 
     /**
      * 一个块 block 为 4Kb，假定平均一个元素为 64 - 128 byte，所以平均一下能存 1024 个 key
      */
-    private const val FullMemoryAccess = 4096 * 4096 * 4
+    private const val FullMemoryAccess = (1024 * 4) * 1024 * 16
 
     /**
      * 责任链第一个lsm容器
@@ -57,7 +56,7 @@ object MemoryLSM {
                 }
                 chainCount++
 
-                logger.trace("由于 HanabiEntry 过大，MemoryLSM 将为其单独分配一个 block，已进行扩容，现拥有 $chainCount 个 block")
+                logger.info("由于 HanabiEntry 过大，MemoryLSM 将为其单独分配一个 block，已进行扩容，现拥有 {} 个 block", chainCount)
             }
             /*
              * 如果达到阈值，则创建新的lsm块
@@ -71,8 +70,8 @@ object MemoryLSM {
                 firstChain = memoryLSMChain
 
                 chainCount++
-                logger.trace("在插入新 HanabiEntry size[$expectedSize] 后，block 大小 [${firstChain.nextChain!!.memoryAssess}] 将超过阈值 $FullMemoryAccess，" +
-                        " MemoryLSM 将新增一个 block，已进行扩容，现拥有 $chainCount 个 block")
+                logger.info("在插入新 HanabiEntry size[{}] 后，block 大小 [{}] 将超过阈值 {}，" +
+                        " MemoryLSM 将新增一个 block，已进行扩容，现拥有 {} 个 block", expectedSize, firstChain.nextChain!!.memoryAssess, FullMemoryAccess, chainCount)
             }
             /*
              * 普通情况
