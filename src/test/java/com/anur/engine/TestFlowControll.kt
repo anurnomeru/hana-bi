@@ -9,15 +9,15 @@ import kotlin.random.Random
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-//    test1()
-//    test2()
 
     for (i in 0 until 1000) {
+        test1()
+        test2()
         test3()
+        test4()
+        test5()
     }
 
-//    test4()
-//    test5()
 //    test6()
 }
 
@@ -89,6 +89,8 @@ fun test4() {
  * 所有的插入都将阻塞
  */
 fun test3() {
+    EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.delete("Anur"))
+
     val trx1 = TrxManager.allocateTrx()
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 1", trx1))
     EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set("Anur", "Version 2"))

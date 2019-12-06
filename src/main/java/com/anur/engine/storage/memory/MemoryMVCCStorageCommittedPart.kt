@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentSkipListMap
  */
 object MemoryMVCCStorageCommittedPart {
 
-    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass)
+    private val logger = Debugger(MemoryMVCCStorageCommittedPart.javaClass).switch(DebuggerLevel.INFO)
 
     /**
      * 数据存储使用一个map，数据键 <-> VerAndHanabiEntry
@@ -64,8 +64,10 @@ object MemoryMVCCStorageCommittedPart {
             locker.lockSupplier {
                 logger.debug("事务 $trxId : 【 key [${pair.key}] -> val [${pair.value.hanabiEntry.getValue()}] 】 已提交到 MVCC 临界控制区 commit part")
 
-                dataKeeper.compute(pair.key) { _, currentVersion ->
-                    pair.value.also { it.currentVersion = currentVersion }
+                synchronized(pair.key) {
+                    dataKeeper.compute(pair.key) { _, currentVersion ->
+                        pair.value.also { it.currentVersion = currentVersion }
+                    }
                 }
             }
         }
@@ -101,17 +103,16 @@ object MemoryMVCCStorageCommittedPart {
                             // 释放单个key
                             for (pair in pollLastEntry.value) {
                                 // 拿到当前键最新的一个版本
-                                val head = dataKeeper[pair.key]
-                                SENTINEL.currentVersion = head
+                                synchronized(pair.key) {
+                                    val head = dataKeeper[pair.key]
+                                    SENTINEL.currentVersion = head
 
-                                // 提交到lsm，并且抹去mvccUndoLog
-                                commitVAHERecursive(SENTINEL, pair.key, pair.value)
+                                    // 提交到lsm，并且抹去mvccUndoLog
+                                    commitVAHERecursive(SENTINEL, pair.key, pair.value)
 
-                                // 这种情况代表当前key已经没有任何 mvcc 日志了
-                                if (SENTINEL.currentVersion == null) {
-                                    locker.lockSupplier {
-                                        // 双重锁
-                                        if (SENTINEL.currentVersion == null) dataKeeper.remove(pair.key)
+                                    // 这种情况代表当前key已经没有任何 mvcc 日志了
+                                    if (SENTINEL.currentVersion == null) {
+                                        dataKeeper.remove(pair.key)
                                     }
                                 }
                             }

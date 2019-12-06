@@ -41,7 +41,7 @@ open class EngineResult {
 
     fun expect(str: String?) {
         if (getHanabiEntry()?.getValue()?.equals(str) == false) {
-            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.getValue()}]")
+            throw UnexpectedException("预期值为 $str 但实际为 [${getHanabiEntry()?.getValue()}] 数据来自 $queryExecutorDefinition")
         }
     }
 }
