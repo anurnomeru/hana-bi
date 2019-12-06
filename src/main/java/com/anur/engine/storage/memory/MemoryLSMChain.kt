@@ -1,6 +1,7 @@
 package com.anur.engine.storage.memory
 
 import com.anur.engine.storage.entry.ByteBufferHanabiEntry
+import java.util.*
 
 /**
  * Created by Anur IjuoKaruKas on 2019/12/4
@@ -14,7 +15,7 @@ class MemoryLSMChain {
 
     var nextChain: MemoryLSMChain? = null
 
-    val dataKeeper = HashMap<String, ByteBufferHanabiEntry>()
+    val dataKeeper = TreeMap<String, ByteBufferHanabiEntry>()
 
     fun get(key: String): ByteBufferHanabiEntry? {
         return dataKeeper[key] ?: nextChain?.get(key)

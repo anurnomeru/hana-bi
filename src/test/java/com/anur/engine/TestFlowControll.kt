@@ -11,17 +11,17 @@ import kotlin.random.Random
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-    println(System.currentTimeMillis())
-    for (i in 0 until 10000) {
-        test1()
-        test2()
-        test3()
-        test4()
-        test5()
-    }
-    println(System.currentTimeMillis())
-
-//    test6()
+//    println(System.currentTimeMillis())
+//    for (i in 0 until 10000) {
+//        test1()
+//        test2()
+//        test3()
+//        test4()
+//        test5()
+//    }
+//    println(System.currentTimeMillis())
+//
+    test6()
 }
 
 
@@ -40,10 +40,12 @@ fun test6() {
 
     Thread.sleep(10000)
 
-    for (i in 0 until 4000000) {
-        EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set(i.toString(), getRandomString(random.nextInt(200))))
+    for (i in 0 until 1000000) {
+        val key = getRandomString(random.nextInt(5)) + i.toString()
+        EngineDataFlowControl.commandInvoke(HanabiCommandBuilder.set(key, getRandomString(random.nextInt(200))))
 //        map.put(i.toString(), ByteBufferHanabiEntry(ByteBuffer.allocate(random.nextInt(200) + 6)))
     }
+
 
     Thread.sleep(10000000)
     MemoryLSM.get("1")
