@@ -30,7 +30,6 @@ enum class EventEnum {
      */
     COORDINATE_DISCONNECT_TO_LEADER,
 
-
     /**
      * 当协调器连接上 某节点
      */

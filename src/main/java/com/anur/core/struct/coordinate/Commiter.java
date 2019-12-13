@@ -11,6 +11,9 @@ import io.netty.channel.Channel;
  * Created by Anur IjuoKaruKas on 4/8/2019
  *
  * 告知客户端已经可以commit了
+ *
+ * 集群成员收到 COMMIT 消息时,需要回复一个 COMMIT RESPONSE,表明自己的 commit 进度, leader
+ * 则会 cover 自身 commit 进度
  */
 public class Commiter extends AbstractTimedStruct {
 

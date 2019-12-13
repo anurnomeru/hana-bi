@@ -84,6 +84,9 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
         }
     }
 
+    /**
+     * leader 收到来自客户端的 commitReport,并且 cover 自身进度
+     */
     fun commitReport(node: String, commitGAO: GenerationAndOffset) {
         val latestCommitGAO = CommitProcessManager.load()
 
@@ -136,7 +139,7 @@ object LeaderCoordinateManager : ReentrantReadWriteLocker() {
                         // 写入 ByteBufPreLogManager(避免成为follower没有这个进度)
                         ByteBufPreLogManager.cover(it)
                         // 写入本地文件，并通知存储引擎继续工作
-                        EngineFacade.play(it)
+                        EngineFacade.coverCommittedProjectGenerationAndOffset(it)
                         logger.debug("进度 {} 已经完成 commit ~", it.toString())
                     }
                     ?: latestCommitGAO

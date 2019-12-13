@@ -15,6 +15,8 @@ import java.util.concurrent.locks.ReentrantLock
  * Created by Anur IjuoKaruKas on 2019/10/10
  *
  * 存储引擎唯一对外开放的入口, 这使得存储引擎可以高内聚
+ *
+ * // todo 标记消费进度!!
  */
 object EngineFacade {
     private val logger = LoggerFactory.getLogger(CoordinateDecoder::class.java)
@@ -35,8 +37,9 @@ object EngineFacade {
 
                 try {
                     blockCheckIter(take.GAO)
+                    EngineDataFlowController.commandInvoke(take.operation)
                 } catch (e: Exception) {
-                    println()
+                    e.printStackTrace()
                 }
             }
         })
@@ -64,7 +67,7 @@ object EngineFacade {
     /**
      * 继续消费
      */
-    fun play(Gao: GenerationAndOffset) {
+    fun coverCommittedProjectGenerationAndOffset(Gao: GenerationAndOffset) {
         lock.lock()
         pauseLatch.signalAll()
         CommitProcessManager.cover(Gao)

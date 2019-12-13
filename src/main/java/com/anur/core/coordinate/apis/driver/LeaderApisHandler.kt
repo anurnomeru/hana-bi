@@ -52,6 +52,8 @@ object LeaderApisHandler {
         logger.debug("收到来自协调节点 {} 的 Fetch 请求 {} ", serverName, fetcher.fetchGAO)
 
         // TODO 虽然当前类叫做 Leader Api 管理，但是集群恢复阶段，Follower 也会收到 FetchRequest，这里做特殊处理
+        // 所以如果不是集群恢复阶段, 当leader收到 fetchRequest, 需要发送 COMMIT 类型的消息, 内容为当前 canCommit 的 GAO
+        // 同时, 在集群成员收到COMMIT 消息时,需要回复一个 COMMIT RESPONSE,表明自己的 fetch 进度
         if (ElectMeta.isLeader) {
             val canCommit = LeaderCoordinateManager.fetchReport(serverName, fetcher.fetchGAO)
 

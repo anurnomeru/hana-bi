@@ -20,10 +20,11 @@ import com.anur.exception.RollbackException
  *
  * 数据流转控制，具体参考文档 TrxDesign.MD
  */
-object EngineDataFlowControl {
+object EngineDataFlowController {
 
-    private val logger = Debugger(EngineDataFlowControl.javaClass)
+    private val logger = Debugger(EngineDataFlowController.javaClass)
 
+    // 返回值仅用于测试校验
     fun commandInvoke(opera: Operation): EngineResult {
         val engineExecutor = EngineExecutor(EngineResult())
         val dataHandler = DataHandler(opera)
@@ -40,11 +41,11 @@ object EngineDataFlowControl {
                     when (dataHandler.getApi()) {
                         CommonApiConst.START_TRX -> {
                             logger.trace("事务 [{}] 已经开启", trxId)
-                            return engineExecutor.engineResult // TODO
+                            return engineExecutor.engineResult
                         }
                         CommonApiConst.COMMIT_TRX -> {
                             doCommit(trxId)
-                            return engineExecutor.engineResult // TODO
+                            return engineExecutor.engineResult
                         }
                         CommonApiConst.ROLL_BACK -> {
                             throw RollbackException()
@@ -108,8 +109,8 @@ object EngineDataFlowControl {
 
     private fun doQuery(engineExecutor: EngineExecutor) {
         EngineDataQueryer.doQuery(engineExecutor)
-//        logger.trace("事务 [${engineExecutor.getDataHandler().getTrxId()}] 对 key [${engineExecutor.getDataHandler().key}] 进行了查询操作" +
-//                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.hanabiEntry()}}")
+        logger.trace("事务 [${engineExecutor.getDataHandler().getTrxId()}] 对 key [${engineExecutor.getDataHandler().key}] 进行了查询操作" +
+                " 数据位于 ${engineExecutor.engineResult.queryExecutorDefinition} 值为 ==> {${engineExecutor.hanabiEntry()}}")
     }
 
     /**

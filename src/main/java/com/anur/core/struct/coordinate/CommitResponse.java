@@ -9,6 +9,8 @@ import io.netty.channel.Channel;
 
 /**
  * Created by Anur IjuoKaruKas on 4/8/2019
+ *
+ * 当收到leader发来的可提交进度时,进行进度提交,并且进行当前最大提交进度的回包
  */
 public class CommitResponse extends AbstractTimedStruct {
 

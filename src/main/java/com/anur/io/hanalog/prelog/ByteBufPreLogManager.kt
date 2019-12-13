@@ -2,6 +2,7 @@ package com.anur.io.hanalog.prelog
 
 import com.anur.core.elect.model.GenerationAndOffset
 import com.anur.core.lock.rentrant.ReentrantReadWriteLocker
+import com.anur.engine.EngineFacade
 import com.anur.exception.LogException
 import com.anur.io.hanalog.common.PreLogMeta
 import com.anur.io.hanalog.log.CommitProcessManager
@@ -40,7 +41,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
     }
 
     /**
-     * 供 leader 写入使用
+     * 供 leader 写入使用, 仅供降级为 follower 时删除未提交的 gao
      */
     fun cover(GAO: GenerationAndOffset) {
         writeLocker {
@@ -104,7 +105,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
     }
 
     /**
-     * 将此 offset 往后的数据都提交到本地
+     * follower 将此 offset 往后的数据都从内存提交到本地
      */
     fun commit(GAO: GenerationAndOffset) {
         writeLocker {
@@ -116,7 +117,6 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
                 logger.trace("收到来自 Leader 节点的无效 Commit 请求 => {}，本地预日志 commit 进度 {} 已经大于等于此请求。", GAO.toString(), commitOffset.toString())
                 return@writeLocker
             } else {
-
                 val canCommit = readLockSupplierCompel(Supplier { if (GAO > preLogOffset) preLogOffset else GAO })
 
                 if (canCommit == commitOffset) {
@@ -135,6 +135,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
                     logger.debug("本地预日志 commit 进度由 {} 更新至 {}", commitOffset.toString(), canCommit.toString())
                     commitOffset = canCommit
                     discardBefore(canCommit)
+                    EngineFacade.coverCommittedProjectGenerationAndOffset(canCommit)
                 }
             }
         }
@@ -154,7 +155,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
             }
 
             val byteBufPreLog = head.firstEntry()
-                .value
+                    .value
 
             byteBufPreLog.getBefore(offset)
         })
@@ -174,7 +175,7 @@ object ByteBufPreLogManager : ReentrantReadWriteLocker() {
             }
 
             val byteBufPreLog = head.firstEntry()
-                .value
+                    .value
             if (byteBufPreLog.discardBefore(offset)) preLog.remove(byteBufPreLog.generation)
         })
     }

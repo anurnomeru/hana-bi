@@ -86,7 +86,9 @@ object FollowerClusterRecoveryManager {
         CommitProcessManager.discardInvalidMsg()
 
         HanabiListener.register(EventEnum.COORDINATE_CONNECT_TO_LEADER) {
-            EngineFacade.play(GenerationAndOffset.INVALID)
+
+            // 在连接到leader之后,首先将 GAO 置为不可用, 使得数据引擎停止消费
+            EngineFacade.coverCommittedProjectGenerationAndOffset(GenerationAndOffset.INVALID)
             ApisManager.send(ElectMeta.leader!!, RecoveryReporter(ByteBufPreLogManager.getCommitGAO()),
                 RequestProcessor(Consumer {
                     val recoveryComplete = RecoveryComplete(it)

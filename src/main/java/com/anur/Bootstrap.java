@@ -46,8 +46,9 @@ public class Bootstrap {
                         "|  __)| |/ _  |  _ \\ / _  | || \\| |\n" +
                         "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
                         "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
-                        "           Hanabi     (ver 0.0.1)\n\n" +
-                        "节点 - " + InetSocketAddressConfiguration.INSTANCE.getServerName() + "\n");
+                        "           Hanabi     (ver 0.0.1)\n" +
+                        "                                         A distributed key-value store \n\n" +
+                        "node - " + InetSocketAddressConfiguration.INSTANCE.getServerName() + "\n");
         
         HanabiExecutors.INSTANCE.execute(() -> {
             
