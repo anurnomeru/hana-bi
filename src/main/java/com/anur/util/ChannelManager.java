@@ -103,5 +103,6 @@ public class ChannelManager extends ReentrantReadWriteLocker {
     public enum ChannelType {
         ELECT,
         COORDINATE,
+        CLIENT,
     }
 }

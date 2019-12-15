@@ -2,6 +2,7 @@ package com.anur.core.struct.coordinate;
 
 import java.nio.ByteBuffer;
 import com.anur.core.struct.OperationTypeEnum;
+
 /**
  * Created by Anur IjuoKaruKas on 4/3/2019
  *

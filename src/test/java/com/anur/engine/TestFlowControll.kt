@@ -10,16 +10,16 @@ import kotlin.random.Random
  * Created by Anur IjuoKaruKas on 2019/10/31
  */
 fun main() {
-//    println(System.currentTimeMillis())
-//    for (i in 0 until 10000) {
-//        test1()
-//        test2()
-//        test3()
-//        test4()
-//        test5()
-//    }
-//    println(System.currentTimeMillis())
-//
+    println(System.currentTimeMillis())
+    for (i in 0 until 10000) {
+        test1()
+        test2()
+        test3()
+        test4()
+        test5()
+    }
+    println(System.currentTimeMillis())
+
     test6()
 }
 

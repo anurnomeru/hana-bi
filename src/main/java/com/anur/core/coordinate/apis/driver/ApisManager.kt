@@ -89,7 +89,12 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
         // serverName 是不会为空的，但是有一种情况例外，便是服务还未注册时 这里做特殊处理
         when {
             /*
-             * 业务先验的条件判断
+             * 业务先验的条件判断(来自客户端的连接)
+             */
+            typeEnum == OperationTypeEnum.CLIENT_REGISTER -> ServiceServerApisHandler.handleRegisterRequest(msg, channel)
+
+            /*
+             * 业务先验的条件判断(来自协调服务之间的连接)
              */
             typeEnum == OperationTypeEnum.REGISTER -> LeaderApisHandler.handleRegisterRequest(msg, channel)
             serverName == null -> logger.error("没有注册却发来了信息，猜想是过期的消息，或者出现了BUG！")
@@ -174,7 +179,7 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
 
                 logger.trace("正在重发向 {} 发送 {} 的任务", serverName, operationTypeEnum)
                 Timer.getInstance()// 扔进时间轮不断重试，直到收到此消息的回复
-                    .addTask(task)
+                        .addTask(task)
             }
         }
     }
@@ -186,7 +191,9 @@ object ApisManager : ReentrantReadWriteLocker(), Resetable {
     private fun appendToInFlightRequest(serverName: String, typeEnum: OperationTypeEnum, requestProcessor: RequestProcessor?) {
         writeLockSupplier(Supplier {
             logger.trace("InFlight {} {} => 创建发送任务", serverName, typeEnum)
-            inFlight.compute(serverName) { _, enums -> (enums ?: mutableMapOf()).also { it[typeEnum] = requestProcessor } }
+            inFlight.compute(serverName) { _, enums ->
+                (enums ?: mutableMapOf()).also { it[typeEnum] = requestProcessor }
+            }
         })
     }
 

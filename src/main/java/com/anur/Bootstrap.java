@@ -3,6 +3,7 @@ package com.anur;
 import com.anur.engine.api.constant.CommandTypeConst;
 import com.anur.engine.api.constant.TransactionTypeConst;
 import com.anur.engine.api.constant.str.StrApiConst;
+import com.anur.engine.common.core.HanabiCommandBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.anur.config.InetSocketAddressConfiguration;
@@ -20,6 +21,8 @@ import com.anur.util.HanabiExecutors;
 import com.anur.engine.common.core.HanabiCommand;
 import com.anur.io.hanalog.log.LogManager;
 import com.anur.io.hanalog.log.CommitProcessManager;
+
+import java.util.Random;
 
 /**
  * Created by Anur IjuoKaruKas on 2019/3/13
@@ -39,16 +42,16 @@ public class Bootstrap {
         InetSocketAddressConfiguration.INSTANCE.init(serverName);
         
         logger.info(
-                "\n\n" +
-                        " _     _                   _     _ \n" +
-                        "| |   | |                 | |   (_)\n" +
-                        "| |__ | | ____ ____   ____| | _  _ \n" +
-                        "|  __)| |/ _  |  _ \\ / _  | || \\| |\n" +
-                        "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
-                        "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
-                        "           Hanabi     (ver 0.0.1)\n" +
-                        "                                         A distributed key-value store \n\n" +
-                        "node - " + InetSocketAddressConfiguration.INSTANCE.getServerName() + "\n");
+            "\n\n" +
+                " _     _                   _     _ \n" +
+                "| |   | |                 | |   (_)\n" +
+                "| |__ | | ____ ____   ____| | _  _ \n" +
+                "|  __)| |/ _  |  _ \\ / _  | || \\| |\n" +
+                "| |   | ( ( | | | | ( ( | | |_) ) |\n" +
+                "|_|   |_|\\_||_|_| |_|\\_||_|____/|_|\n" +
+                "           Hanabi     (ver 0.0.1)\n" +
+                "                                         A distributed key-value store \n\n" +
+                "node - " + InetSocketAddressConfiguration.INSTANCE.getServerName() + "\n");
         
         HanabiExecutors.INSTANCE.execute(() -> {
             
@@ -87,19 +90,19 @@ public class Bootstrap {
                  * 启动协调服务器
                  */
                 CoordinateServerOperator.getInstance()
-                        .start();
+                    .start();
                 
                 /*
                  * 启动选举服务器，没什么主要的操作，这个服务器主要就是应答选票以及应答成为 Flower 用
                  */
                 ElectServerOperator.getInstance()
-                        .start();
+                    .start();
                 
                 /*
                  * 启动选举客户端，初始化各种投票用的信息，以及启动成为候选者的定时任务
                  */
                 ElectOperator.getInstance()
-                        .start();
+                    .start();
                 
                 /*
                  * 启动存储引擎
@@ -118,10 +121,9 @@ public class Bootstrap {
             
             try {
                 
-                for (int i = 0; i < 10000000; i++) {
+                for (int i = 0; i < 10000; i++) {
                     
-                    Operation operation = new Operation(OperationTypeEnum.COMMAND, "AnurKey",
-                                                        HanabiCommand.Companion.generator(99, TransactionTypeConst.SHORT, CommandTypeConst.STR, StrApiConst.SET, "HanabiValue-中文-"));
+                    Operation operation = HanabiCommandBuilder.INSTANCE.set(getRandomString(10), getRandomString(50), null);
                     LogManager.INSTANCE.appendWhileClusterValid(operation);
                 }
                 
@@ -134,4 +136,18 @@ public class Bootstrap {
             Thread.sleep(1000);
         }
     }
+    
+    static Random random = new Random();
+    
+    public static String getRandomString(int length) {
+        String str = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < length; i++) {
+            int number = random.nextInt(62);
+            sb.append(str.charAt(number));
+        }
+        return sb.toString();
+    }
 }
+
