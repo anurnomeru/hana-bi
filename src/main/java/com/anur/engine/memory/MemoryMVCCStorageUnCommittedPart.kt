@@ -1,7 +1,7 @@
 package com.anur.engine.memory
 
 import com.anur.core.log.Debugger
-import com.anur.engine.processor.common.DataHandler
+import com.anur.engine.processor.DataHandler
 import com.anur.engine.common.core.VerAndHanabiEntry
 import com.anur.engine.common.core.VerAndHanabiEntryWithKeyPair
 import com.anur.engine.common.entry.ByteBufferHanabiEntry

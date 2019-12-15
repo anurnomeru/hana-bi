@@ -1,8 +1,8 @@
 package com.anur.engine.queryer
 
 import com.anur.engine.queryer.common.QueryerChain
-import com.anur.engine.processor.QueryerDefinition
-import com.anur.engine.processor.common.EngineExecutor
+import com.anur.engine.result.QueryerDefinition
+import com.anur.engine.processor.EngineExecutor
 import com.anur.engine.memory.MemoryLSM
 
 /**

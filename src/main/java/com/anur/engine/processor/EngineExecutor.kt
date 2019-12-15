@@ -1,8 +1,8 @@
-package com.anur.engine.processor.common
+package com.anur.engine.processor
 
 import com.anur.core.log.Debugger
 import com.anur.core.log.DebuggerLevel
-import com.anur.engine.processor.EngineResult
+import com.anur.engine.result.EngineResult
 import com.anur.engine.common.entry.ByteBufferHanabiEntry
 import com.anur.exception.UnexpectedException
 
