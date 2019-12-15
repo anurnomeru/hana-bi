@@ -20,8 +20,6 @@ open class EngineResult {
      */
     var err: Throwable? = null
 
-// 仅查询有此部分数据
-
     /**
      * 查询来自引擎的哪个部分
      */
