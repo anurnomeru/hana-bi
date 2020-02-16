@@ -3,7 +3,6 @@ package com.anur.engine.queryer.common
 import com.anur.engine.result.QueryerDefinition
 import com.anur.engine.processor.EngineExecutor
 
-
 /**
  * Created by Anur IjuoKaruKas on 2019/11/27
  *
@@ -27,8 +26,7 @@ abstract class QueryerChain {
 
     fun query(engineExecutor: EngineExecutor) {
         doQuery(engineExecutor).let { engineExecutor.engineResult.getHanabiEntryOrigin() }
-                ?: next?.query(engineExecutor).let { engineExecutor.engineResult.getHanabiEntryOrigin() }
-                ?: keyNotFoundTilEnd(engineExecutor)
+            ?: next?.query(engineExecutor).let { engineExecutor.engineResult.getHanabiEntryOrigin() }
+            ?: keyNotFoundTilEnd(engineExecutor)
     }
 }
-

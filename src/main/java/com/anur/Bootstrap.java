@@ -118,10 +118,11 @@ public class Bootstrap {
             
             try {
                 
-                for (int i = 0; i < 10000000; i++) {
+                for (int i = 0; i < 100000000; i++) {
                     
                     Operation operation = new Operation(OperationTypeEnum.COMMAND, "AnurKey",
-                                                        HanabiCommand.Companion.generator(99, TransactionTypeConst.SHORT, CommandTypeConst.STR, StrApiConst.SET, "HanabiValue-中文-"));
+                                                        HanabiCommand.Companion.generator(
+                                                            99, TransactionTypeConst.SHORT, CommandTypeConst.STR, StrApiConst.SET, "HanabiValue-中文-"));
                     LogManager.INSTANCE.appendWhileClusterValid(operation);
                 }
                 
